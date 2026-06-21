@@ -24,6 +24,7 @@
     </div>
   </div>
   <div class="topbar-right">
+    <button class="top-connect tc-off" id="topConnect" type="button">🔗 Connect Tesla</button>
     <div class="today">Today<br/><strong id="todayLabel">—</strong></div>
     <div class="live" id="dataMode" title="Where the fleet figures come from"><span class="dot"></span><span id="dataModeLabel">sample data</span></div>
   </div>
@@ -164,6 +165,18 @@
             <span>Contribute this car's anonymised version data to wenFSD fleet stats</span>
           </label>
           <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only) so wenFSD reads your software version automatically — no manual logging. Opting in improves predictions for everyone. You can disconnect or opt out anytime.</p>
+
+          <!-- social profile (connected cars only) -->
+          <div class="profile-block" id="profileBlock" hidden>
+            <div class="pf-h">🏆 Join the leaderboard</div>
+            <div class="form-grid">
+              <label class="field"><span>Display name</span><input id="pf_name" maxlength="40" placeholder="e.g. JuniperJoy" autocomplete="off"/></label>
+              <label class="field"><span>TeslaMotorsClub handle <em>(unverified)</em></span><input id="pf_tmc" maxlength="40" placeholder="your TMC username" autocomplete="off"/></label>
+            </div>
+            <label class="switch-row"><input type="checkbox" id="pf_share"/> <span>Show me on the <strong>regional leaderboard</strong> — my handle + current version, in my region. Off = nobody sees me.</span></label>
+            <div class="pf-actions"><button class="btn-sm" id="pf_save" type="button">Save profile</button> <span class="pf-status" id="pf_status"></span></div>
+          </div>
+
           <button class="btn-link" id="clearDataBtn" type="button">Clear all my data from this device</button>
         </div>
       </div>
@@ -263,6 +276,15 @@
       <div id="calibrationBody"></div>
     </section>
   </div>
+
+  <!-- wen LEADERBOARD -->
+  <section class="card" id="leaderboardCard">
+    <div class="card-h-row">
+      <h2 class="card-h">wen Leaderboard 🏆 <span class="card-sub" id="lbSub"></span></h2>
+      <label class="explore-pick">Region <select id="lbRegion" class="inline-sel"></select></label>
+    </div>
+    <div id="leaderboardBody"></div>
+  </section>
 
   <!-- METHODOLOGY (collapsed — reference, not needed every visit) -->
   <section class="card">

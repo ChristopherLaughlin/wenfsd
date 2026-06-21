@@ -195,6 +195,30 @@ tr.fw-next td{background:rgba(70,180,140,.05)}
 .vm-src{font-size:11.5px;color:var(--mut2);margin-bottom:14px}
 .vm-notes-h{font-size:13px;font-weight:600;color:var(--txt);margin:6px 0 8px}
 .vm-nonotes{font-size:12.5px;color:var(--mut2)}
+/* top-bar connect control */
+.top-connect{font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;border:1px solid;transition:filter .12s}
+.top-connect:hover{filter:brightness(1.12)}
+.top-connect.tc-off{background:var(--red,#e0444e);color:#fff;border-color:transparent}
+.top-connect.tc-link{background:rgba(90,160,255,.12);color:var(--cyan);border-color:rgba(90,160,255,.4)}
+.top-connect.tc-on{background:rgba(70,180,140,.14);color:#5fd1a0;border-color:rgba(70,180,140,.45)}
+/* social profile block */
+.profile-block{margin:12px 0;padding:13px;background:#0b0e14;border:1px solid var(--line2);border-radius:11px}
+.pf-h{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:10px}
+.pf-actions{display:flex;align-items:center;gap:10px;margin-top:8px}
+.pf-status{font-size:11.5px}.pf-status.ok{color:#5fd1a0}.pf-status.err{color:#e88a8a}.pf-status.busy{color:var(--mut2)}
+/* leaderboard */
+.lb-empty{color:var(--mut);font-size:13px;line-height:1.6;padding:8px 2px}
+.lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:4px 0 10px}
+.lb-board{background:#0b0e14;border:1px solid var(--line);border-radius:12px;padding:13px}
+.lb-title{font-size:12.5px;font-weight:700;color:var(--txt);margin-bottom:10px}
+.lb-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.lb-list li{display:flex;align-items:center;gap:9px;font-size:13px}
+.lb-rank{width:18px;height:18px;flex:none;display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--mut2);background:#0c1019;border:1px solid var(--line);border-radius:6px}
+.lb-list li:nth-child(1) .lb-rank{color:#f1c453;border-color:rgba(241,196,83,.5)}
+.lb-name{flex:1;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-tmc{font-size:9px;font-weight:700;color:var(--cyan);border:1px solid rgba(90,160,255,.35);border-radius:4px;padding:0 4px;vertical-align:middle}
+.lb-val{color:var(--mut);font-size:12px}
+.lb-foot{font-size:11px;color:var(--mut2);line-height:1.5;margin:4px 0 0}
 .feed-meta{color:var(--mut2);font-size:11.5px}
 .feed-empty{color:var(--mut2);font-size:12.5px;padding:6px 2px}
 .cal-note{color:var(--mut);font-size:12.5px;line-height:1.55;margin:2px 0;max-width:60ch}

@@ -40,6 +40,8 @@
   }
   function render() {
     setSegHint();
+    const a0 = av();
+    setTopConnect(!!(a0 && a0.connected), !!(a0 && a0.connected && a0.optedIn));
     if (!av()) { renderEmptyState(); return; }
     const pred = currentPrediction();
     const isFSD = ui.target === "fsd";
@@ -247,6 +249,70 @@
       chip.className = "conn-chip " + (contributing ? "cc-on" : connected ? "cc-link" : "cc-off");
       chip.textContent = contributing ? "🔗 Connected · contributing" : connected ? "🔗 Connected" : "Not connected";
     }
+    setTopConnect(connected, contributing);
+    renderProfile(v);
+  }
+  // social profile editor (connected cars only): display name, TMC handle, public-share toggle
+  let _profileLoaded = false;
+  function renderProfile(v) {
+    const block = $("profileBlock"); if (!block) return;
+    const connected = !!(v && v.connected) && /^https?:$/.test(location.protocol);
+    block.hidden = !connected;
+    if (!connected) return;
+    if (!_profileLoaded) {
+      _profileLoaded = true;
+      fetch("/api/me/profile", { headers: { Accept: "application/json" }, credentials: "same-origin" })
+        .then(r => r.ok ? r.json() : null).then(p => { if (!p) return; $("pf_name").value = p.displayName || ""; $("pf_tmc").value = p.tmcUsername || ""; $("pf_share").checked = !!p.publicShare; }).catch(() => {});
+    }
+    const save = $("pf_save"), st = $("pf_status");
+    if (save) save.onclick = () => {
+      if (st) { st.textContent = "Saving…"; st.className = "pf-status busy"; }
+      fetch("/api/me/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ displayName: $("pf_name").value, tmcUsername: $("pf_tmc").value, publicShare: $("pf_share").checked }) })
+        .then(r => r.json()).then(() => { if (st) { st.textContent = "✓ Saved"; st.className = "pf-status ok"; } renderLeaderboard(); })
+        .catch(() => { if (st) { st.textContent = "⚠ couldn't save"; st.className = "pf-status err"; } });
+    };
+  }
+
+  // ---- regional leaderboard ----
+  function renderLeaderboard(region) {
+    const body = $("leaderboardBody"); if (!body) return;
+    if (!/^https?:$/.test(location.protocol)) { body.innerHTML = `<p class="lb-empty">The leaderboard runs on the live site (wenfsd.info). Not available in this offline preview.</p>`; return; }
+    const reg = region || (av() ? av().market : "Australia");
+    const sel = $("lbRegion");
+    if (sel) { if (!sel.dataset.filled) { sel.innerHTML = Object.keys(WEN.regions).map(m => `<option>${esc(m)}</option>`).join(""); sel.dataset.filled = "1"; } sel.value = reg; sel.onchange = () => renderLeaderboard(sel.value); }
+    body.innerHTML = `<p class="lb-empty">Loading ${esc(reg)}…</p>`;
+    fetch(`/api/leaderboard?region=${encodeURIComponent(reg)}`, { headers: { Accept: "application/json" } })
+      .then(r => r.json()).then(paintLeaderboard).catch(() => { body.innerHTML = `<p class="lb-empty">Leaderboard unavailable right now.</p>`; });
+  }
+  function paintLeaderboard(d) {
+    const body = $("leaderboardBody"); if (!body || !d) return;
+    if ($("lbSub")) $("lbSub").textContent = `${d.region} · ${d.participants} sharing${d.sample ? " · sample" : ""}`;
+    if (!d.participants) {
+      body.innerHTML = `<p class="lb-empty">Nobody's sharing in <strong>${esc(d.region)}</strong> yet. <strong>Be the first</strong> — connect your Tesla and flip on the leaderboard toggle in Your garage. 🏆</p>`;
+      return;
+    }
+    const nameCell = (p) => `${esc(p.name)}${p.tmc ? ` <span class="lb-tmc" title="self-claimed TMC handle (unverified)">TMC</span>` : ""}`;
+    const board = (title, emoji, rows, valFn) => rows && rows.length ? `<div class="lb-board"><div class="lb-title">${emoji} ${title}</div><ol class="lb-list">${rows.map((p, i) => `<li><span class="lb-rank">${i + 1}</span><span class="lb-name">${nameCell(p)}</span><span class="lb-val">${valFn(p)}</span></li>`).join("")}</ol></div>` : "";
+    body.innerHTML =
+      (d.sample ? `<div class="est-badge">⚠️ Sample leaderboard (offline/dev mode). The live board shows only real drivers who opted into sharing.</div>` : "") +
+      `<div class="lb-grid">` +
+        board("Furthest ahead", "🚀", d.ahead, p => esc(p.version)) +
+        board("Earliest in line", "⚡", d.earliest, p => `${p.pct}th pct`) +
+        board("Most overdue", "🐌", d.overdue, p => esc(p.version)) +
+      `</div>` +
+      `<p class="lb-foot">Only drivers who opted into public sharing appear here · TMC handles are self-claimed (unverified) · 🪙 wenPoints board arrives with guess settlement.</p>`;
+  }
+
+  // top-bar connection control — visible from the very top, the first thing users act on
+  function setTopConnect(connected, contributing) {
+    const tc = $("topConnect"); if (!tc) return;
+    tc.className = "top-connect " + (contributing ? "tc-on" : connected ? "tc-link" : "tc-off");
+    tc.textContent = contributing ? "✓ Connected · sharing" : connected ? "✓ Connected" : "🔗 Connect Tesla";
+    tc.title = connected ? "Manage your Tesla connection in Your garage" : "Link your Tesla (read-only) to auto-track your version";
+    tc.onclick = connected
+      ? () => { const g = $("garageCard"); if (g) g.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      : connectTesla;
   }
 
   // ---------------- garage ----------------
@@ -917,6 +983,7 @@
   renderDataSources();
   renderFeed();
   renderCalibration();
+  renderLeaderboard();
   wire();
   render();
 

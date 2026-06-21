@@ -8,6 +8,12 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Social profile (opt-in). public_share controls whether the owner's handle + car data
+-- appear on the regional leaderboard. tmc_username is a CLAIMED (unverified) handle —
+-- TeslaMotorsClub has no login API, so we can't verify ownership.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tmc_username TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS public_share BOOLEAN NOT NULL DEFAULT false;
 
 -- OAuth tokens per user (refresh token is long-lived; access token short-lived).
 -- NOTE: encrypt these at rest in production (e.g. pgcrypto or app-level KMS).
