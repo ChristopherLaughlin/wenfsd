@@ -1,6 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { predictNextOS, predictNextFSD } from "../src/predict.js";
+import { parseOS, verKey } from "../src/wendata.js";
+
+test("verKey parses + orders multi-part versions (incl. 2026.8.3.10)", () => {
+  assert.deepEqual(parseOS("2026.8.3.10").parts, [8, 3, 10]);
+  assert.ok(verKey("2026.8.3.10") < verKey("2026.14.6"));
+  assert.ok(verKey("2026.14.6") < verKey("2026.20.3"));
+  assert.ok(verKey("2026.8.3.10") < verKey("2026.8.3.11"));
+  assert.equal(verKey("not-a-version"), 0);
+});
+
+test("a car on an old build (2026.8.3.10) still predicts the newest rolling build", () => {
+  const p = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.8.3.10", earliness: 0.45 });
+  assert.equal(p.targetLabel, "2026.20.3");
+});
 
 const auAI4 = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.45, earlinessSource: "default", earlyAccess: false };
 

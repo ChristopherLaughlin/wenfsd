@@ -136,19 +136,29 @@ const WEN = (function () {
   const regionLag = Object.fromEntries(Object.entries(regions).map(([k, v]) => [k, v.osLagDays]));
 
   // ---- version helpers ----
-  // parse "2026.20.3" -> {year:2026, week:20, points:[3]} ; comparable via verKey
+  // Parse any "YYYY.WW[.x[.y[.z]]]" string (3–5 numeric parts), e.g. 2026.8.3.10.
   function parseOS(v) {
-    const m = String(v).match(/^(\d{4})\.(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+    const m = String(v).trim().match(/^(\d{4})((?:\.\d+){1,5})/);
     if (!m) return null;
-    return { year: +m[1], week: +m[2], p1: m[3] ? +m[3] : 0, p2: m[4] ? +m[4] : 0 };
+    const parts = m[2].split(".").filter(s => s !== "").map(Number);
+    return { year: +m[1], week: parts[0] || 0, p1: parts[1] || 0, p2: parts[2] || 0, p3: parts[3] || 0, parts };
   }
-  function verKey(v) { const p = parseOS(v); return p ? p.year * 1e9 + p.week * 1e6 + p.p1 * 1e3 + p.p2 : 0; }
+  // Single comparable integer (stays within JS safe-integer range; supports 5 fields).
+  function verKey(v) {
+    const p = parseOS(v); if (!p) return 0;
+    const c = p.parts, g = (i, cap) => Math.min(cap, c[i] || 0);
+    return p.year * 1e12 + g(0, 999) * 1e9 + g(1, 999) * 1e6 + g(2, 999) * 1e3 + g(3, 999);
+  }
   function cmpOS(a, b) { return verKey(a) - verKey(b); }
+  function isValidVersion(v) { return !!parseOS(v); }
+  // Example older builds for the version picker (any valid version is accepted — these are
+  // just suggestions; with a backend connected, the full real version list is offered).
+  const versionSuggestions = ["2026.8.3.10", "2026.8.3", "2026.2.9", "2025.44.30.5"];
   // FSD major from a string like "v13.2.9", "v14.x", "v14 (lite)" -> 13 / 14
   function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
   return { today, carPreset, versions, regions, regionLag, fsdMilestones, releaseNotes, feedSeeds, stats,
            // 'sample' until a live backend hydrates real data (api.js flips this to 'live').
-           dataMode: "sample",
-           earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor };
+           dataMode: "sample", versionSuggestions,
+           earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor, isValidVersion };
 })();

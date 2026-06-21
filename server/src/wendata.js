@@ -15,11 +15,16 @@ export const versions = MODEL.versions;
 export const regions = MODEL.regions;
 
 export function parseOS(v) {
-  const m = String(v).match(/^(\d{4})\.(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+  const m = String(v).trim().match(/^(\d{4})((?:\.\d+){1,5})/);
   if (!m) return null;
-  return { year: +m[1], week: +m[2], p1: m[3] ? +m[3] : 0, p2: m[4] ? +m[4] : 0 };
+  const parts = m[2].split(".").filter(s => s !== "").map(Number);
+  return { year: +m[1], week: parts[0] || 0, p1: parts[1] || 0, p2: parts[2] || 0, p3: parts[3] || 0, parts };
 }
-export function verKey(v) { const p = parseOS(v); return p ? p.year * 1e9 + p.week * 1e6 + p.p1 * 1e3 + p.p2 : 0; }
+export function verKey(v) {
+  const p = parseOS(v); if (!p) return 0;
+  const c = p.parts, g = (i, cap) => Math.min(cap, c[i] || 0);
+  return p.year * 1e12 + g(0, 999) * 1e9 + g(1, 999) * 1e6 + g(2, 999) * 1e3 + g(3, 999);
+}
 export function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
 // effective rollout percentile (Early Access shifts you earlier; history overrides)

@@ -192,9 +192,18 @@
     ms.innerHTML = Object.keys(WEN.regionLag).map(m => `<option ${m === v.market ? "selected" : ""}>${m}</option>`).join("");
     ms.onchange = () => { gstate = Garage.update(v.id, { market: ms.value }); renderActiveControls(); renderGarage(); ui.guessDays = null; clearGuess(); render(); };
 
+    populateVersionOptions();
     const vs = $("versionSel");
-    vs.innerHTML = WEN.versions.map(x => `<option ${x.version === v.installedVersion ? "selected" : ""}>${x.version}</option>`).join("");
-    vs.onchange = () => { gstate = Garage.update(v.id, { installedVersion: vs.value }); renderGarage(); render(); };
+    vs.value = v.installedVersion || "";
+    setVerHint(vs.value);
+    const commitVer = () => {
+      const val = vs.value.trim();
+      setVerHint(val);
+      gstate = Garage.update(v.id, { installedVersion: val });
+      renderGarage(); render();
+    };
+    vs.onchange = commitVer;
+    vs.oninput = () => setVerHint(vs.value.trim());
 
     const es = $("earlySlider");
     es.value = Math.round(v.earliness * 100);
@@ -220,6 +229,21 @@
 
     renderHistory();
   }
+  function setVerHint(val) {
+    const el = $("verHint"); if (!el) return;
+    if (!val) { el.textContent = ""; el.className = ""; return; }
+    const ok = WEN.isValidVersion(val);
+    el.textContent = ok ? "" : "— check the format (e.g. 2026.8.3.10)";
+    el.className = ok ? "" : "ver-warn";
+  }
+  function populateVersionOptions() {
+    const set = new Set();
+    WEN.versions.forEach(v => set.add(v.version));
+    (WEN.versionSuggestions || []).forEach(v => set.add(v));
+    gstate.vehicles.forEach(v => { if (v.installedVersion) set.add(v.installedVersion); (v.history || []).forEach(h => h.version && set.add(h.version)); });
+    const dl = $("versionOptions");
+    if (dl) dl.innerHTML = [...set].sort((a, b) => WEN.verKey(b) - WEN.verKey(a)).map(v => `<option value="${esc(v)}"></option>`).join("");
+  }
   function setEarlyLabel() {
     const v = av(), base = v.earliness, eff = effEarliness(v);
     const shifted = Math.abs(eff - base) > 0.005 && v.earlinessSource !== "history";
@@ -229,8 +253,6 @@
   // ---- update history -> estimated earliness ----
   function renderHistory() {
     const v = av();
-    const hv = $("h_ver");
-    if (hv) hv.innerHTML = WEN.versions.map(x => `<option>${x.version}</option>`).join("");
     const list = v.history || [];
     $("histList").innerHTML = list.length
       ? list.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((h, i) =>
@@ -277,7 +299,7 @@
     $("cancelVehicleBtn").onclick = () => { $("addForm").hidden = true; $("addVehicleBtn").hidden = false; renderGarage(); };
 
     $("f_market").innerHTML = Object.keys(WEN.regionLag).map(m => `<option ${m === "Australia" ? "selected" : ""}>${m}</option>`).join("");
-    $("f_ver").innerHTML = WEN.versions.map(x => `<option>${x.version}</option>`).join("");
+    populateVersionOptions();
 
     $("vinDecodeBtn").onclick = doDecode;
     $("vinInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); doDecode(); } });
@@ -298,7 +320,7 @@
         hardware: hw,
         market,
         drive: region.drive || "RHD",
-        installedVersion: $("f_ver").value,
+        installedVersion: $("f_ver").value.trim() || (WEN.versions[0] && WEN.versions[0].version) || "2026.14.6",
         fsdVersion: fsdInfo ? fsdInfo.current : "—",
         earliness: 0.5, earlinessSource: "default",
         updateChannel: "standard", earlyAccess: false,
@@ -320,17 +342,17 @@
 
     $("addHistBtn").onclick = () => { $("histForm").hidden = !$("histForm").hidden; };
     $("h_add").onclick = () => {
-      const ver = $("h_ver").value, date = $("h_date").value;
+      const ver = $("h_ver").value.trim(), date = $("h_date").value;
       if (!ver || !date) return;
       const v = av(); const hist = (v.history || []).concat([{ version: ver, date }]);
       gstate = Garage.update(v.id, { history: hist });
-      $("h_date").value = ""; $("histForm").hidden = true;
-      renderHistory();
+      $("h_date").value = ""; $("h_ver").value = ""; $("histForm").hidden = true;
+      populateVersionOptions(); renderHistory();
     };
   }
   function resetForm() {
     $("vinInput").value = ""; $("vinResult").innerHTML = "";
-    $("f_nick").value = ""; $("f_model").value = "Model Y"; $("f_year").value = 2026; $("f_hw").value = "AI4";
+    $("f_nick").value = ""; $("f_model").value = "Model Y"; $("f_year").value = 2026; $("f_hw").value = "AI4"; $("f_ver").value = "";
   }
   function doDecode() {
     const d = VIN.decode($("vinInput").value);
