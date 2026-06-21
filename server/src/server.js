@@ -54,9 +54,11 @@ const authLimiter = rateLimit({ windowMs: 60_000, max: 20, standardHeaders: true
 // --- Tesla partner public key (Tesla fetches this to trust your domain) ---
 app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem", async (req, res) => {
   try {
-    const pem = await readFile(path.join(__dirname, "..", "keys", "public-key.pem"), "utf8");
+    // prefer the env var (works on git-based deploys where keys/*.pem aren't committed)
+    const pem = config.tesla.publicKey || await readFile(path.join(__dirname, "..", "keys", "public-key.pem"), "utf8");
+    if (!pem) throw new Error("no key");
     res.type("application/x-pem-file").send(pem);
-  } catch { res.status(404).send("public key not configured — see server/README.md"); }
+  } catch { res.status(404).send("public key not configured — set TESLA_PUBLIC_KEY or add server/keys/public-key.pem"); }
 });
 
 app.get("/healthz", (req, res) => res.json({ ok: true, mock: config.mockMode }));

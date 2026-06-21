@@ -18,6 +18,10 @@ export const config = {
     authBase: process.env.TESLA_AUTH_BASE || "https://auth.tesla.com",
     audience: process.env.TESLA_AUDIENCE || "https://fleet-api.prod.na.vn.cloud.tesla.com",
     privateKeyPath: process.env.TESLA_PRIVATE_KEY_PATH || "keys/private-key.pem",
+    // PEM keys can also come straight from env (preferred on hosts that deploy from git,
+    // where keys/*.pem are gitignored). Literal "\n" sequences are unescaped to newlines.
+    publicKey: (process.env.TESLA_PUBLIC_KEY || "").replace(/\\n/g, "\n"),
+    privateKey: (process.env.TESLA_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
   },
 
   databaseUrl: process.env.DATABASE_URL || "",
