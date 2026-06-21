@@ -204,13 +204,12 @@
 
   <!-- FSD AUSTRALIA REGULATORY TRACKER -->
   <section class="card fleet-card" id="fsdCard">
-    <h2 class="card-h">FSD versions by region &amp; hardware</h2>
-    <p class="hint">FSD is a <strong>separate track</strong> from the OS version, and rollout depends on both <strong>region</strong> (regulatory approval) and <strong>hardware</strong> (HW3/AI3 is capped; HW4/AI4 gets the latest). The stats below reflect <em>your</em> car's region &amp; hardware.</p>
-    <div class="fsd-grid">
-      <div class="fsd-stat"><div class="fsd-num" id="fsdStatus">—</div><div class="fsd-lbl">FSD status (your region/HW)</div></div>
-      <div class="fsd-stat"><div class="fsd-num" id="fsdUsBuild">—</div><div class="fsd-lbl">your current FSD</div></div>
-      <div class="fsd-stat"><div class="fsd-num" id="fsdApproval">—</div><div class="fsd-lbl">next FSD — est. arrival</div></div>
+    <div class="card-h-row">
+      <h2 class="card-h">FSD by region &amp; hardware</h2>
+      <label class="explore-pick">Explore <select id="exploreRegionSel" class="inline-sel" aria-label="Region to explore"></select></label>
     </div>
+    <p class="hint">FSD is a <strong>separate track</strong> from the OS version; rollout depends on <strong>region</strong> (regulatory approval) and <strong>hardware</strong> (HW3/AI3 capped; HW4/AI4 latest). Pick any region above to explore its rollout — your own car's prediction stays at the top.</p>
+    <div class="fsd-grid" id="fsdGrid"></div>
     <div class="mx-wrap" id="fsdMatrix"></div>
     <div class="tl-head" id="fsdTlHead">FSD rollout timeline</div>
     <ol class="timeline" id="fsdTimeline"></ol>

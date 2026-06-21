@@ -4,7 +4,7 @@
   const today = WEN.today;
 
   let gstate = Garage.get();           // { vehicles, activeId }
-  const ui = { target: "standard", guessDays: null, addingHistory: false };
+  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null };
 
   function av() { return Garage.active(gstate); }
 
@@ -481,16 +481,32 @@
     return `${word} (~${pct}th pct)`;
   }
   const MODE_LABEL = { rolling: "Rolling out", early: "Early/staged rollout", gated: "Awaiting approval", current: "On newest", capped: "Hardware-capped" };
-  function renderFSD() {
-    const c = av() ? car() : null;
-    const region = c ? (WEN.regions[c.market] || {}) : {};
-    const f = (c && region.fsd) ? region.fsd[c.hardware] : null;
-    $("fsdStatus").textContent = f ? (MODE_LABEL[f.mode] || f.mode) : "—";
-    $("fsdUsBuild").textContent = f ? f.current : "—";
-    if (c) { const fp = Predict.predictNextFSD(c, today); $("fsdApproval").textContent = (fp.capped || fp.unavailable) ? "—" : Predict.fmtDate(fp.medianDate).replace(/^\w+, /, ""); }
-    else $("fsdApproval").textContent = "—";
+  function activeFsdRegion() { return ui.exploreRegion || (av() ? av().market : "Australia"); }
 
-    // region × hardware matrix (highlights the active car's region if any)
+  function renderFSD() {
+    const v = av(), rname0 = activeFsdRegion();
+    const region = WEN.regions[rname0] || {};
+    const hw = v ? v.hardware : "AI4";
+    const isYours = !!(v && rname0 === v.market);
+    const f = region.fsd ? region.fsd[hw] : null;
+
+    // region picker
+    const sel = $("exploreRegionSel");
+    if (sel) {
+      sel.innerHTML = Object.keys(WEN.regions).map(m => `<option ${m === rname0 ? "selected" : ""}>${m}${v && m === v.market ? " — you" : ""}</option>`).join("");
+      sel.onchange = () => { ui.exploreRegion = sel.value.replace(/ — you$/, ""); renderFSD(); renderRegions(); };
+    }
+
+    // typical-car ETA for the explored region (existing fleet, 50th pct) — or your car if it's your region
+    const etaCar = isYours ? car() : { market: rname0, hardware: hw, fsdVersion: f ? f.current : null, earlinessPercentile: 0.5, earlyAccess: false, newCar: false };
+    const fp = f ? Predict.predictNextFSD(etaCar, today) : null;
+    const eta = fp && !fp.capped && !fp.unavailable ? Predict.fmtDate(fp.medianDate).replace(/^\w+, /, "") : (f && (f.mode === "capped" || (fp && fp.capped)) ? "capped" : "—");
+    $("fsdGrid").innerHTML =
+      `<div class="fsd-stat"><div class="fsd-num">${f ? (MODE_LABEL[f.mode] || f.mode) : "—"}</div><div class="fsd-lbl">FSD status · ${esc(rname0)} ${esc(hw)}</div></div>` +
+      `<div class="fsd-stat"><div class="fsd-num">${f ? esc(f.current) : "—"}</div><div class="fsd-lbl">current FSD ${isYours ? "(yours)" : "(typical car)"}</div></div>` +
+      `<div class="fsd-stat"><div class="fsd-num">${esc(eta)}</div><div class="fsd-lbl">next FSD — ${isYours ? "your ETA" : "typical-car ETA"}</div></div>`;
+
+    // region × hardware matrix (highlights the explored region)
     const rows = Object.keys(WEN.regions).map(rname => {
       const r = WEN.regions[rname];
       const cell = (hw) => {
@@ -499,13 +515,13 @@
         const next = x.next ? `<span class="mx-next">→ ${esc(x.next)}</span>` : `<span class="mx-capped">capped</span>`;
         return `<td><div class="mx-cur">${esc(x.current)}</div><div class="mx-mode mode-${x.mode}">${MODE_LABEL[x.mode] || x.mode}</div>${next}</td>`;
       };
-      const isActive = c && rname === c.market;
-      return `<tr class="${isActive ? "mx-active" : ""}${c ? " mx-click" : ""}"${c ? ` data-set-market="${esc(rname)}" title="Switch your car to ${esc(rname)}"` : ""}><td class="mx-region">${esc(rname)}${isActive ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;
+      const isShown = rname === rname0, isCar = v && rname === v.market;
+      return `<tr class="${isShown ? "mx-active" : ""} mx-click" data-explore-region="${esc(rname)}" title="Explore ${esc(rname)}"><td class="mx-region">${esc(rname)}${isCar ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;
     }).join("");
     $("fsdMatrix").innerHTML =
       `<table class="mx-table"><thead><tr><th>Region</th><th>HW4 / AI4</th><th>HW3 / AI3</th></tr></thead><tbody>${rows}</tbody></table>`;
 
-    const tlHead = $("fsdTlHead"); if (tlHead) tlHead.textContent = c ? `${c.market} FSD timeline` : "Global FSD rollout timeline";
+    const tlHead = $("fsdTlHead"); if (tlHead) tlHead.textContent = `${rname0} FSD timeline`;
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
@@ -627,9 +643,16 @@
   }
   function flash(el) { el.classList.add("rn-flash"); setTimeout(() => el.classList.remove("rn-flash"), 1200); }
 
+  // explore a region's data (FSD card + region highlights) — independent of your car
+  function exploreRegion(name) {
+    if (!WEN.regions[name]) return;
+    ui.exploreRegion = name; renderFSD(); renderRegions();
+    const card = $("fsdCard"); if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
   function renderRegions() {
-    const activeMarket = av() ? av().market : null;
-    const clickable = !!av();
+    const shown = activeFsdRegion();
+    const carMarket = av() ? av().market : null;
     const base = WEN.regions["United States"].osLagDays;
     const lags = Object.values(WEN.regions).map(r => r.osLagDays - base);
     const maxLag = Math.max(1, ...lags);
@@ -637,10 +660,10 @@
       const r = WEN.regions[name];
       const lag = r.osLagDays - base;
       const p = Predict.predictNextOS({ market: name, hardware: "AI4", installedVersion: "2026.14.6", earlinessPercentile: 0.5 }, today);
-      const isA = name === activeMarket;
+      const isShown = name === shown, isCar = name === carMarket;
       const barW = (lag / maxLag) * 100;
-      return `<div class="rp-row ${isA ? "rp-active" : ""}${clickable ? " rp-click" : ""}"${clickable ? ` data-set-market="${esc(name)}" title="Switch your car to ${esc(name)}"` : ""}>` +
-        `<div class="rp-name">${esc(name)}${isA ? ' <span class="tag-you">you</span>' : ''} <span class="rp-drive">${r.drive}</span></div>` +
+      return `<div class="rp-row ${isShown ? "rp-active" : ""} rp-click" data-explore-region="${esc(name)}" title="Explore ${esc(name)}">` +
+        `<div class="rp-name">${esc(name)}${isCar ? ' <span class="tag-you">you</span>' : ''} <span class="rp-drive">${r.drive}</span></div>` +
         `<div class="rp-lag">${lag === 0 ? "US baseline" : "+" + lag + "d behind US"}</div>` +
         `<div class="rp-bar"><span style="width:${Math.max(2, barW)}%"></span></div>` +
         `<div class="rp-eta">${esc(p.targetLabel)} in <strong>~${Math.max(0, p.daysToMedian)}d</strong></div>` +
@@ -716,13 +739,13 @@
     // delegated clicks for dynamically-rendered interactive elements (region rows, FSD
     // matrix rows, firmware/feed version links) — bound once, survive re-renders.
     function handleActivate(e) {
-      const m = e.target.closest("[data-set-market]");
-      if (m) { e.preventDefault(); setMarket(m.getAttribute("data-set-market")); return; }
+      const er = e.target.closest("[data-explore-region]");
+      if (er) { e.preventDefault(); exploreRegion(er.getAttribute("data-explore-region")); return; }
       const g = e.target.closest("[data-goto-version]");
       if (g) { e.preventDefault(); gotoVersion(g.getAttribute("data-goto-version")); return; }
     }
     document.addEventListener("click", handleActivate);
-    document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-goto-version],[data-set-market]")) handleActivate(e); });
+    document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-goto-version],[data-explore-region]")) handleActivate(e); });
 
     document.querySelectorAll("#targetSeg .seg-btn").forEach(btn => {
       btn.onclick = () => {
