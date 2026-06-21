@@ -97,6 +97,21 @@ apiRouter.get("/me/vehicles", ah(async (req, res) => {
   res.json({ vehicles: r.rows });
 }));
 
+// update per-car settings that must PERSIST server-side (so they survive reloads / devices):
+// fleet-contribution opt-in, Early Access flag, market. Body: { optedIn?, earlyAccess?, market? }
+apiRouter.patch("/me/vehicle/:vin", ah(async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "not linked" });
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  const sets = [], vals = [];
+  if (typeof req.body.optedIn === "boolean") { sets.push(`opted_in=$${sets.length + 1}`); vals.push(req.body.optedIn); }
+  if (typeof req.body.earlyAccess === "boolean") { sets.push(`early_access=$${sets.length + 1}`); vals.push(req.body.earlyAccess); }
+  if (req.body.market && W.regions[req.body.market]) { sets.push(`market=$${sets.length + 1}`); vals.push(req.body.market); }
+  if (!sets.length) return res.json({ ok: true, unchanged: true });
+  vals.push(req.session.userId, req.params.vin);
+  await query(`UPDATE vehicles SET ${sets.join(", ")} WHERE user_id=$${vals.length - 1} AND vin=$${vals.length}`, vals);
+  res.json({ ok: true });
+}));
+
 // delete one of the signed-in user's vehicles (+ its snapshots) — data-deletion right
 apiRouter.delete("/me/vehicle/:vin", ah(async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: "not linked" });

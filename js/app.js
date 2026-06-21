@@ -166,6 +166,41 @@
       alert("Connect Tesla works on the live site (wenfsd.info). In this offline preview, use 'Add by VIN' instead.");
     }
   }
+  // persist a setting on a CONNECTED car to the server (so it survives reloads / devices).
+  // Local-only cars and the file:// preview just update localStorage.
+  function persistConnected(v, patch) {
+    if (!v || !v.connected || !v.vin || !/^https?:$/.test(location.protocol)) return;
+    fetch(`/api/me/vehicle/${encodeURIComponent(v.vin)}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+      body: JSON.stringify(patch),
+    }).catch(() => {});
+  }
+  function disconnectTesla() {
+    if (!/^https?:$/.test(location.protocol)) return;
+    fetch("/api/me", { method: "DELETE", credentials: "same-origin" }).catch(() => {}).finally(() => {
+      const v = av(); if (v) gstate = Garage.update(v.id, { connected: false, optedIn: false });
+      renderGarage(); renderActiveControls(); render();
+    });
+  }
+  // reflect Tesla-connection + contribution state across the consent block + a header chip,
+  // so it's always obvious whether you're linked and contributing.
+  function renderConnectState(v) {
+    const connected = !!(v && v.connected), contributing = connected && !!v.optedIn;
+    const btn = $("connectTeslaBtn"), hint = $("connectHint"), chip = $("connChip");
+    if (btn) {
+      btn.classList.toggle("is-connected", connected);
+      if (connected) { btn.textContent = "✓ Connected to Tesla — click to disconnect"; btn.onclick = () => { if (confirm("Disconnect your Tesla account and remove its linked data?")) disconnectTesla(); }; }
+      else { btn.textContent = "🔗 Connect Tesla account — auto-track"; btn.onclick = connectTesla; }
+    }
+    if (hint) hint.innerHTML = connected
+      ? `Your Tesla is linked <strong>read-only</strong> — wenFSD reads your software version automatically and scores a prediction when you next update. ${contributing ? "You're <strong>contributing</strong> anonymised version data to fleet stats." : "You're <strong>not</strong> contributing to fleet stats — tick the box above to help everyone's predictions."}`
+      : `Linking uses Tesla's official OAuth (read-only) so wenFSD reads your software version automatically — no manual logging. You can disconnect or opt out anytime.`;
+    if (chip) {
+      chip.hidden = false;
+      chip.className = "conn-chip " + (contributing ? "cc-on" : connected ? "cc-link" : "cc-off");
+      chip.textContent = contributing ? "🔗 Connected · contributing" : connected ? "🔗 Connected" : "Not connected";
+    }
+  }
 
   // ---------------- garage ----------------
   function renderGarage() {
@@ -250,12 +285,13 @@
     };
 
     const ea = $("earlyAccessChk"); ea.checked = !!v.earlyAccess;
-    ea.onchange = () => { gstate = Garage.update(v.id, { earlyAccess: ea.checked }); ui.guessDays = null; clearGuess(); setEarlyLabel(); render(); };
+    ea.onchange = () => { gstate = Garage.update(v.id, { earlyAccess: ea.checked }); persistConnected(v, { earlyAccess: ea.checked }); ui.guessDays = null; clearGuess(); setEarlyLabel(); render(); };
     const nc = $("newCarChk"); if (nc) { nc.checked = !!v.newCar; nc.onchange = () => { gstate = Garage.update(v.id, { newCar: nc.checked }); ui.guessDays = null; clearGuess(); render(); }; }
 
     const opt = $("optInToggle");
     opt.checked = !!v.optedIn;
-    opt.onchange = () => { gstate = Garage.update(v.id, { optedIn: opt.checked }); };
+    opt.onchange = () => { gstate = Garage.update(v.id, { optedIn: opt.checked }); persistConnected(v, { optedIn: opt.checked }); renderConnectState(av()); };
+    renderConnectState(v);
 
     const clr = $("clearDataBtn");
     if (clr) clr.onclick = () => {
@@ -578,6 +614,7 @@
   function setMarket(name) {
     const v = av(); if (!v || !WEN.regions[name] || name === v.market) return;
     gstate = Garage.update(v.id, { market: name });
+    persistConnected(v, { market: name });
     renderActiveControls(); renderGarage(); ui.guessDays = null; clearGuess(); render();
   }
   // jump to a version's release note (opening it) or its firmware-table row
