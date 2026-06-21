@@ -147,13 +147,22 @@ const Predict = (function () {
 
     let out, note;
     if (f.mode === "rolling" || f.mode === "early") {
-      const t0Days = daysBetween(today, f.t0);
-      const t0Sigma = f.t0Sigma || (f.mode === "early" ? 7 : 3);
-      out = mcPredict({ t0Days, k: f.k, L: 0.9, earliness: car.earlinessPercentile, t0Sigma, floorDays: carrierFloor, today, seedStr: "FSD" + f.next + car.market + car.earlinessPercentile });
-      out._t0Days = t0Days; out._k = f.k;
-      note = (f.mode === "early"
-        ? `${f.next} is in early/staged rollout in ${car.market}${f.firstSeen ? " (started " + shortFsd(f.firstSeen) + ", ~" + (f.fleetPct || "?") + "% so far)" : ""}. Wider band than a normal update.`
-        : `${f.next} is actively rolling out to ${car.hardware} cars in ${car.market}.`) + carrierNote;
+      // Major FSD version jumps go to NEW DELIVERIES first; the existing fleet gets a separate,
+      // later OTA wave. So an existing owner is NOT "early in line" — they're in the slower wave.
+      const existingWave = f.newDeliveryFirst && !car.newCar;
+      const t0Days = daysBetween(today, f.t0) + (existingWave ? (f.existingFleetDelayDays || 45) : 0);
+      const t0Sigma = existingWave ? (f.existingFleetSigma || 21) : (f.t0Sigma || (f.mode === "early" ? 7 : 3));
+      out = mcPredict({ t0Days, k: f.k, L: 0.9, earliness: car.earlinessPercentile, t0Sigma, floorDays: carrierFloor, today, seedStr: "FSD" + f.next + car.market + car.earlinessPercentile + (existingWave ? "x" : "n") });
+      out._t0Days = t0Days; out._k = f.k; out.wave = f.newDeliveryFirst ? (car.newCar ? "new" : "existing") : null;
+      if (f.newDeliveryFirst && existingWave) {
+        note = `${f.next} is reaching ${car.market} on new ${car.hardware} deliveries first. Your existing car joins a separate, later OTA wave — that's why recent buyers may already have it while you don't. Wide band.` + carrierNote;
+      } else if (f.newDeliveryFirst && car.newCar) {
+        note = `${f.next} is shipping on new ${car.market} deliveries now — as a recent delivery you're in the first wave.` + carrierNote;
+      } else {
+        note = (f.mode === "early"
+          ? `${f.next} is in early/staged rollout in ${car.market}${f.firstSeen ? " (started " + shortFsd(f.firstSeen) + ", ~" + (f.fleetPct || "?") + "% so far)" : ""}. Wider band than a normal update.`
+          : `${f.next} is actively rolling out to ${car.hardware} cars in ${car.market}.`) + carrierNote;
+      }
     } else if (f.mode === "gated") {
       out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness: car.earlinessPercentile, today, seedStr: "FSDg" + f.next + car.market + car.earlinessPercentile });
       const a = out.approval;

@@ -66,7 +66,7 @@ const WEN = (function () {
       AI4: { current: "v13.2.8", next: "v14.x", mode: "gated", approval: { earliestDays: 25, modeDays: 90, latestDays: 220 }, k: 0.09 },
       AI3: { current: "v12.6.4", next: null, mode: "capped" } } },
     "Australia": { osLagDays: 12, drive: "RHD", fsd: {
-      AI4: { current: "v13.2.9", next: "v14.x", mode: "early", firstSeen: "2026-06-09", fleetPct: 18, k: 0.11, t0: "2026-06-23", t0Sigma: 6 },
+      AI4: { current: "v13.2.9", next: "v14.x", mode: "early", firstSeen: "2026-06-09", fleetPct: 18, k: 0.11, t0: "2026-06-23", t0Sigma: 6, newDeliveryFirst: true, existingFleetDelayDays: 55, existingFleetSigma: 21 },
       AI3: { current: "v12.6.4", next: "v14 (lite)", mode: "gated", approval: { earliestDays: 5, modeDays: 30, latestDays: 75 }, k: 0.09 } } },
     "New Zealand": { osLagDays: 14, drive: "RHD", fsd: {
       AI4: { current: "v13.2.9", next: "v14.x", mode: "gated", approval: { earliestDays: 14, modeDays: 45, latestDays: 110 }, k: 0.08 },

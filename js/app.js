@@ -23,7 +23,7 @@
       model: v.model, year: v.year, hardware: v.hardware,
       market: v.market, drive: v.drive,
       earlinessPercentile: effEarliness(v), installedVersion: v.installedVersion,
-      fsdVersion: v.fsdVersion,
+      fsdVersion: v.fsdVersion, earlyAccess: v.earlyAccess, newCar: !!v.newCar,
     };
   }
 
@@ -123,7 +123,11 @@
     $("predBasisBody").innerHTML =
       `<p><strong>What:</strong> when <strong>${esc(pred.targetLabel || (isFSD ? "the next FSD version" : "the next update"))}</strong> reaches <strong>${esc(v.nickname || "your car")}</strong>${pred.current ? ` (currently on ${esc(pred.current)})` : ""}.</p>` +
       `<ol class="basis-steps">` +
-        `<li><strong>Your position:</strong> we place your car at its <strong>${pct}</strong> spot in the fleet rollout${v.earlyAccess ? " (incl. Early Access)" : ""}. Earlier cars get each build first.</li>` +
+        `<li><strong>Your position:</strong> ${pred.wave === "existing"
+          ? `for a <strong>major new FSD version</strong>, Tesla ships it to new deliveries first — your existing car waits for the separate, later OTA wave. (Tick “recent delivery” in your garage if you just took delivery.)`
+          : pred.wave === "new"
+          ? `you marked your car a <strong>recent delivery</strong>, so you're in the first wave for this new FSD version.`
+          : `we place your car at its <strong>${pct}</strong> rollout position${v.earlyAccess ? " (incl. Early Access)" : ""} — where your car has historically landed within each update wave.`}</li>` +
         `<li><strong>The model:</strong> Tesla pushes each version as an S-curve across the fleet. We fit a logistic curve and read off your spot, then run Monte-Carlo for the 80% window.</li>` +
         `<li><strong>The timing anchor:</strong> ${anchor}</li>` +
       `</ol>` +
@@ -247,6 +251,7 @@
 
     const ea = $("earlyAccessChk"); ea.checked = !!v.earlyAccess;
     ea.onchange = () => { gstate = Garage.update(v.id, { earlyAccess: ea.checked }); ui.guessDays = null; clearGuess(); setEarlyLabel(); render(); };
+    const nc = $("newCarChk"); if (nc) { nc.checked = !!v.newCar; nc.onchange = () => { gstate = Garage.update(v.id, { newCar: nc.checked }); ui.guessDays = null; clearGuess(); render(); }; }
 
     const opt = $("optInToggle");
     opt.checked = !!v.optedIn;

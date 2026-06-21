@@ -148,7 +148,10 @@
           "fleetPct": 18,
           "k": 0.11,
           "t0": "2026-06-23",
-          "t0Sigma": 6
+          "t0Sigma": 6,
+          "newDeliveryFirst": true,
+          "existingFleetDelayDays": 55,
+          "existingFleetSigma": 21
         },
         "AI3": {
           "current": "v12.6.4",

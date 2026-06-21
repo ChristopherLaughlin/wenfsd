@@ -96,16 +96,21 @@ export function predictNextFSD(car, opts = {}) {
   const carrier = carrierBuild(car.hardware, nextMajor, versions);
   const carrierFloor = carrier ? Math.max(0, daysBetween(today, carrier.t0) + regionDelta(car.market) - 4) : null;
 
-  let out;
+  let out, wave = null;
   if (f.mode === "rolling" || f.mode === "early") {
-    out = mcPredict({ t0Days: daysBetween(today, f.t0), k: f.k, L: 0.9, earliness, t0Sigma: f.t0Sigma || (f.mode === "early" ? 7 : 3), floorDays: carrierFloor, today, seedStr: "FSD" + f.next + car.market + earliness });
+    // major FSD version jumps reach new deliveries first; the existing fleet gets a later wave
+    const existingWave = f.newDeliveryFirst && !car.newCar;
+    if (f.newDeliveryFirst) wave = car.newCar ? "new" : "existing";
+    const t0Days = daysBetween(today, f.t0) + (existingWave ? (f.existingFleetDelayDays || 45) : 0);
+    const t0Sigma = existingWave ? (f.existingFleetSigma || 21) : (f.t0Sigma || (f.mode === "early" ? 7 : 3));
+    out = mcPredict({ t0Days, k: f.k, L: 0.9, earliness, t0Sigma, floorDays: carrierFloor, today, seedStr: "FSD" + f.next + car.market + earliness + (existingWave ? "x" : "n") });
   } else if (f.mode === "gated") {
     out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness, today, seedStr: "FSDg" + f.next + car.market + earliness });
   } else { // current
     out = mcPredict({ t0Days: f.cadenceDays || 35, k: f.k || 0.15, L: 0.9, earliness, t0Sigma: (f.cadenceDays || 35) * 0.45, today, seedStr: "FSDc" + car.market + earliness });
   }
   out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
-  out.carrierBuild = carrier ? carrier.version : null;
+  out.carrierBuild = carrier ? carrier.version : null; out.wave = wave;
   return out;
 }
 
