@@ -25,6 +25,10 @@ const WEN = (function () {
   const earlyAccessShift = -0.30;
 
   // ---- OS version distribution (drives rollout curves + release cadence) ----
+  // CONVENTION: each version's `t0` is the rollout MIDPOINT for the AUSTRALIAN fleet
+  // (AU is the baseline, AU_LAG=12 in predict.js). Predictions for other regions apply
+  // `regions[market].osLagDays - 12` as a delta. Do NOT set t0 from a version's firstSeen
+  // (that's the rollout START, ~10+ days before the midpoint) — see api.js hydration.
   const versions = [
     { version: "2026.20.3", firstSeen: "2026-06-17", fleetPct: 9.8, status: "rolling", branch: "standard",
       k: 0.34, t0: "2026-06-27", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
@@ -144,5 +148,7 @@ const WEN = (function () {
   function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
   return { today, carPreset, versions, regions, regionLag, fsdMilestones, releaseNotes, feedSeeds, stats,
+           // 'sample' until a live backend hydrates real data (api.js flips this to 'live').
+           dataMode: "sample",
            earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor };
 })();

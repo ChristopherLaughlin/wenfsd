@@ -120,11 +120,11 @@
     }
     if (v.earlinessSource !== "history") tips.push(`📊 <strong>Log your update history</strong> — turns a typical-owner estimate into a personalised one`);
     if (!v.optedIn) tips.push(`🔗 <strong>Connect your Tesla</strong> (read-only) to auto-track and sharpen everyone's predictions`);
-    const conf = v.earlinessSource === "history" ? "high — from your real update history"
-      : v.earlyAccess ? "medium — typical-owner prior + your Early Access setting" : "medium — typical-owner prior";
+    const conf = v.earlinessSource === "history" ? "higher — from your real update history"
+      : v.earlyAccess ? "lower — typical-owner prior + your Early Access setting" : "lower — typical-owner prior";
     $("predictTips").innerHTML =
       (tips.length ? `<div class="tips-list">${tips.map(t => `<div class="tip">${t}</div>`).join("")}</div>` : "") +
-      `<div class="basis">Confidence: <strong>${conf}</strong> · logistic rollout + Monte&nbsp;Carlo · aggregated from 5 trackers</div>`;
+      `<div class="basis">Confidence: <strong>${conf}</strong>. Bands are <em>modelled</em> (logistic rollout + Monte&nbsp;Carlo), not yet empirically back-tested against real per-car timing — treat as estimates.</div>`;
   }
 
   function countdownHTML(d) {
@@ -211,6 +211,13 @@
     opt.checked = !!v.optedIn;
     opt.onchange = () => { gstate = Garage.update(v.id, { optedIn: opt.checked }); };
 
+    const clr = $("clearDataBtn");
+    if (clr) clr.onclick = () => {
+      if (confirm("Remove all your vehicles and history from this device? This can't be undone.")) {
+        gstate = Garage.clearAll(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render();
+      }
+    };
+
     renderHistory();
   }
   function setEarlyLabel() {
@@ -246,7 +253,8 @@
       $("earlyEstimate").innerHTML =
         `<div class="est-row"><span>📊 Estimated from ${est.n} logged update${est.n > 1 ? "s" : ""}: ` +
         `<strong>${pctLabel(est.earliness)}</strong></span>` +
-        `<button class="btn-sm" id="applyEstBtn" type="button">Use this</button></div>`;
+        `<button class="btn-sm" id="applyEstBtn" type="button">Use this</button></div>` +
+        `<div class="est-note">Derived by inverting the modelled rollout curve for each version — sharper than the slider, but only as good as the model until we have your live data.</div>`;
       $("applyEstBtn").onclick = () => {
         gstate = Garage.update(v.id, { earliness: est.earliness, earlinessSource: "history" });
         renderActiveControls(); ui.guessDays = null; clearGuess(); render();
@@ -347,7 +355,12 @@
     if (ui.guessDays != null) showGuessResult(pred);
   }
   function showGuessResult(pred) {
-    const guessStr = $("guessDate").value; if (!guessStr) return;
+    const guessStr = $("guessDate").value;
+    if (!guessStr || isNaN(new Date(guessStr + "T00:00:00Z"))) {
+      $("guessResult").classList.add("show");
+      $("guessResult").innerHTML = `<div class="score-lines"><div class="muted">Pick a valid date first 📅</div></div>`;
+      return;
+    }
     const r = Predict.scoreGuess(pred, guessStr, today);
     ui.guessDays = r.guessDays;
     const verdict = r.score >= 85 ? "🔥 Bang on — right in the fat part of the distribution." :
@@ -406,6 +419,16 @@
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
+  // ---- sample-vs-live honesty indicator ----
+  function renderDataMode() {
+    const live = WEN.dataMode === "live";
+    const el = $("dataMode"), lbl = $("dataModeLabel");
+    if (lbl) lbl.textContent = live ? "live fleet data" : "sample data";
+    if (el) { el.classList.toggle("is-sample", !live); el.title = live ? "Live, aggregated from connected cars + trackers" : "Illustrative sample data — connect a backend / your Tesla for live figures"; }
+    const fwSub = document.querySelector("#fwSub");
+    if (fwSub) fwSub.textContent = live ? "live distribution" : "sample distribution";
+  }
+
   // ---- data sources attribution (we aggregate the public trackers) ----
   const DEFAULT_SOURCES = [
     { name: "Tessie", ok: true }, { name: "Teslascope", ok: true }, { name: "TeslaFi", ok: true },
@@ -493,7 +516,8 @@
   }
   function renderStats() {
     const s = WEN.stats;
-    $("statsStrip").innerHTML = [["AU cars", s.auCars.toLocaleString()], ["cars tracked", s.carsTracked.toLocaleString()],
+    const note = WEN.dataMode === "live" ? "" : `<div class="stats-sample">⚠ illustrative sample figures — not live counts</div>`;
+    $("statsStrip").innerHTML = note + [["AU cars", s.auCars.toLocaleString()], ["cars tracked", s.carsTracked.toLocaleString()],
       ["updates logged", s.updatesLogged.toLocaleString()], ["versions", s.versionsTracked], ["2026 releases", s.releases2026]]
       .map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
   }
@@ -540,6 +564,7 @@
   wireAddForm();
   renderFSD();
   renderStats();
+  renderDataMode();
   renderDataSources();
   startFeed();
   wire();
@@ -547,7 +572,7 @@
 
   // Optional live-data bridge: js/api.js calls this after hydrating WEN.* from the backend.
   window.WENFSD = {
-    rerender() { renderFSD(); renderStats(); render(); },
+    rerender() { renderFSD(); renderStats(); renderDataMode(); render(); },
     setSources(list, live) { renderDataSources(list, live); },
     get activeVehicle() { return av(); },
   };

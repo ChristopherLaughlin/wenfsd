@@ -25,7 +25,7 @@
   </div>
   <div class="topbar-right">
     <div class="today">Today<br/><strong id="todayLabel">—</strong></div>
-    <div class="live"><span class="dot"></span>live fleet</div>
+    <div class="live" id="dataMode" title="Where the fleet figures come from"><span class="dot"></span><span id="dataModeLabel">sample data</span></div>
   </div>
 </header>
 
@@ -152,6 +152,7 @@
             <span>Contribute this car's anonymised version data to wenFSD fleet stats</span>
           </label>
           <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only) so wenFSD reads your software version automatically — no manual logging. Opting in improves predictions for everyone. You can disconnect or opt out anytime.</p>
+          <button class="btn-link" id="clearDataBtn" type="button">Clear all my data from this device</button>
         </div>
       </div>
     </section>
@@ -190,7 +191,7 @@
       <button class="btn" id="guessBtn">Score my guess</button>
       <div id="guessResult" class="guess-result"></div>
       <div class="consensus">
-        <div class="consensus-h">Community consensus</div>
+        <div class="consensus-h">Model-derived likelihood <span class="consensus-sub">(not a community poll)</span></div>
         <div id="consensusBar" class="consensus-bar"></div>
         <div id="consensusTxt" class="consensus-txt"></div>
       </div>
@@ -227,7 +228,7 @@
 
   <!-- FIRMWARE TRACKER TABLE -->
   <section class="card">
-    <h2 class="card-h">AU fleet firmware tracker <span class="card-sub">live distribution</span></h2>
+    <h2 class="card-h">AU fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>
     <div class="table-wrap">
       <table class="fw-table">
         <thead>
@@ -253,7 +254,7 @@
         <li><strong>wenFSD predicts</strong>: a logistic S-curve (matching Tesla's staged, VIN-based A/B rollout), placed by your rollout percentile, then Monte&nbsp;Carlo → a real date <strong>distribution</strong> + 80% band.</li>
         <li><strong>It models what actually moves your spot in line</strong>: your Advanced/Standard update channel &amp; Early Access, your hardware (HW3 capped, HW4 latest), your region's regulatory status, and Tesla's measured ~monthly cadence.</li>
         <li><strong>Two tracks, tied together</strong>: next OS build and next FSD version — and since FSD ships <em>inside</em> OS builds, FSD can't arrive before the build that carries it.</li>
-        <li><strong>You can guess</strong>, get scored against the model, and compare to the community.</li>
+        <li><strong>You can guess</strong> and get scored against the model's probability distribution.</li>
       </ul>
       <div class="stats-strip" id="statsStrip"></div>
     </section>

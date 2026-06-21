@@ -31,15 +31,21 @@
 
     // --- firmware versions + release notes (fleet-weighted consensus across trackers) ---
     try {
-      const { versions } = await getJSON("/api/fleet/firmware?merged=1");
+      const fw = await getJSON("/api/fleet/firmware?merged=1");
+      const versions = fw.versions;
+      if (fw.mode === "live") WEN.dataMode = "live";
       if (Array.isArray(versions) && versions.length) {
         const byVer = new Map(WEN.versions.map(v => [v.version, v]));
         WEN.versions = versions.map(row => {
           const prev = byVer.get(row.version) || {};
+          // t0 is the rollout MIDPOINT, not first-seen. Prefer a real fitted t0 from the
+          // backend; otherwise estimate midpoint ≈ first-seen + ~10 days (never first-seen).
+          const fittedT0 = row.t0 ? String(row.t0).slice(0, 10) : null;
+          const estT0 = row.firstSeen ? Predict.isoDay(Predict.addDays(String(row.firstSeen).slice(0, 10), 10)) : null;
           return Object.assign({
             notes: prev.notes || "",
-            k: prev.k || 0.33,
-            t0: prev.t0 || (row.firstSeen ? String(row.firstSeen).slice(0, 10) : WEN.today),
+            k: row.k || prev.k || 0.33,
+            t0: fittedT0 || prev.t0 || estT0 || WEN.today,
           }, {
             version: row.version,
             firstSeen: (row.firstSeen ? String(row.firstSeen).slice(0, 10) : prev.firstSeen) || WEN.today,

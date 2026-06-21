@@ -13,7 +13,9 @@ const Predict = (function () {
   const AU_LAG = 12; // seed OS midpoints (versions[].t0) are AU-based; other regions offset from this
 
   // ---- dates ----
-  function toDate(s) { return new Date(s + (String(s).length <= 10 ? "T00:00:00" : "")); }
+  // Parse calendar dates as UTC midnight so client + server compute identically
+  // (server uses the same convention). Display still localises via toLocaleDateString.
+  function toDate(s) { return new Date(typeof s === "string" && s.length <= 10 ? s + "T00:00:00Z" : s); }
   function daysBetween(a, b) { return (toDate(b) - toDate(a)) / DAY; }
   function addDays(s, n) { const d = (typeof s === "string") ? toDate(s) : new Date(s); return new Date(d.getTime() + n * DAY); }
   function isoDay(d) { return new Date(d).toISOString().slice(0, 10); }
