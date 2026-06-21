@@ -3,10 +3,14 @@ import { config } from "./config.js";
 
 // In mock mode we never touch Postgres — db.query() throws if called.
 function sslConfig() {
-  if (/localhost|127\.0\.0\.1/.test(config.databaseUrl)) return false;       // local: no SSL
-  if (config.databaseCa) return { ca: config.databaseCa, rejectUnauthorized: true }; // verified
-  if (config.databaseSslInsecure) return { rejectUnauthorized: false };       // explicit opt-out
-  return { rejectUnauthorized: true };                                        // default: verify
+  const url = config.databaseUrl;
+  // local or private-network (Railway/Render internal) connections don't need SSL
+  if (/localhost|127\.0\.0\.1|\.railway\.internal|\.internal[:/]|\.internal$/.test(url)) return false;
+  if (config.databaseCa) return { ca: config.databaseCa, rejectUnauthorized: true }; // fully verified
+  // Managed Postgres (Railway/Render/Heroku/Supabase) presents a self-signed cert and
+  // supplies no CA, so strict verification fails. Encrypt the connection but don't verify
+  // the chain unless a CA is provided via DATABASE_CA (recommended for production).
+  return { rejectUnauthorized: false };
 }
 
 let pool = null;
