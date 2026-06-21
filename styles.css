@@ -140,6 +140,26 @@ tr.mx-click:hover td{background:#11161f}
 .refresh-status.busy{color:var(--mut2)}
 .refresh-status.ok{color:#5fd1a0}
 .refresh-status.err{color:#e88a8a}
+.nerve{display:flex;gap:8px;margin:10px 0 14px}
+.nerve-btn{flex:1;display:flex;flex-direction:column;gap:2px;align-items:center;padding:9px 6px;background:#0c1019;border:1px solid var(--line);border-radius:11px;cursor:pointer;color:var(--mut);transition:border-color .12s,background .12s}
+.nerve-btn b{font-size:12.5px;color:var(--txt)}
+.nerve-btn small{font-size:10.5px;color:var(--mut2)}
+.nerve-btn:hover{border-color:var(--line2)}
+.nerve-btn.active{border-color:var(--cyan);background:rgba(90,160,255,.08)}
+.shot{margin-top:14px;border:1px solid var(--line2);border-radius:12px;padding:14px;background:linear-gradient(180deg,#0c1019,#0b0e14)}
+.shot-safe{border-color:rgba(70,180,140,.4)}.shot-bold{border-color:rgba(90,160,255,.4)}.shot-yolo{border-color:rgba(230,140,60,.5)}
+.shot-mode{font-size:11px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--cyan);margin-bottom:6px}
+.shot-yolo .shot-mode{color:#e8915a}.shot-safe .shot-mode{color:#5fd1a0}
+.shot-call{font-size:14px;color:var(--txt);margin-bottom:12px}
+.shot-stats{display:flex;gap:10px;margin-bottom:12px}
+.shot-stats>div{flex:1;background:#0b0e14;border:1px solid var(--line);border-radius:10px;padding:10px}
+.shot-stats b{display:block;font-size:22px;font-weight:700;color:var(--txt);line-height:1}
+.shot-stats span{display:block;font-size:10.5px;color:var(--mut2);margin-top:4px;line-height:1.35}
+.shot-verdict{font-size:13px;color:var(--mut);line-height:1.5;margin-bottom:10px}
+.shot-stake{font-size:11.5px;color:var(--mut2);margin-bottom:12px}
+.shot-actions{display:flex;gap:8px}
+.seg-hint{font-size:11.5px;color:var(--mut2);margin:-10px 0 16px;line-height:1.5;max-width:54ch}
+.seg-hint strong{color:var(--mut)}.seg-hint em{color:var(--cyan);font-style:normal}
 .feed-meta{color:var(--mut2);font-size:11.5px}
 .feed-empty{color:var(--mut2);font-size:12.5px;padding:6px 2px}
 .cal-note{color:var(--mut);font-size:12.5px;line-height:1.55;margin:2px 0;max-width:60ch}

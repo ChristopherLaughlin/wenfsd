@@ -4,7 +4,7 @@
   const today = WEN.today;
 
   let gstate = Garage.get();           // { vehicles, activeId }
-  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null };
+  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold" };
 
   function av() { return Garage.active(gstate); }
 
@@ -32,7 +32,14 @@
   }
 
   // ---------------- render ----------------
+  function setSegHint() {
+    const el = $("segHint"); if (!el) return;
+    el.innerHTML = ui.target === "fsd"
+      ? `Showing the <strong>next FSD release</strong> (e.g. v13 → v14) — the self-driving software, on its own track. Tap <em>Next software update</em> for your next firmware build.`
+      : `Showing your <strong>next OS build</strong> (the 2026.x.x firmware number). Tap <em>Next FSD version</em> for the next Full Self-Driving release.`;
+  }
   function render() {
+    setSegHint();
     if (!av()) { renderEmptyState(); return; }
     const pred = currentPrediction();
     const isFSD = ui.target === "fsd";
@@ -148,7 +155,7 @@
       const c2 = Object.assign(car(), { earlinessPercentile: effEarliness(Object.assign({}, v, { earlyAccess: true })) });
       const p2 = ui.target === "fsd" ? Predict.predictNextFSD(c2, today) : Predict.predictNextOS(c2, today);
       const delta = Math.round(pred.daysToMedian - (p2.daysToMedian != null ? p2.daysToMedian : pred.daysToMedian));
-      if (delta >= 1) tip = `<div class="tips-list"><div class="tip">🔓 <strong>Tesla's Early Access Program</strong> would get this about <strong>${delta} day${delta > 1 ? "s" : ""} sooner</strong></div></div>`;
+      if (delta >= 1) tip = `<div class="tips-list"><div class="tip">🔓 <strong>Tesla's Early Access Program</strong> would get this about <strong>${delta} day${delta > 1 ? "s" : ""} sooner</strong>. Too bad you aren't some sort of Tesla "influencer" filming yourself sitting in your car all day. 🎥</div></div>`;
     }
     $("predictTips").innerHTML = tip;
   }
@@ -464,40 +471,77 @@
       (d.warnings.length ? `<div class="vin-warn">⚠ ${esc(d.warnings.join(" "))}</div>` : "");
   }
 
-  // ---------------- guess game ----------------
+  // ---------------- "Call your shot" guess game ----------------
+  const RISK = {
+    safe: { label: "🛡️ Sensible", window: 10, mult: 1, tag: "safe" },
+    bold: { label: "🎯 Confident", window: 5, mult: 2.5, tag: "bold" },
+    yolo: { label: "🎲 Trust me bro", window: 2, mult: 6, tag: "yolo" },
+  };
   function renderGuess(pred) {
     if (!$("guessDate").value) $("guessDate").value = Predict.isoDay(pred.medianDate);
-    renderConsensus(pred);
+    document.querySelectorAll("#nervePick .nerve-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.risk === ui.guessRisk);
+      b.onclick = () => {
+        ui.guessRisk = b.dataset.risk;
+        document.querySelectorAll("#nervePick .nerve-btn").forEach(x => x.classList.toggle("active", x === b));
+        if (ui.guessDays != null) showGuessResult(pred);
+      };
+    });
     if (ui.guessDays != null) showGuessResult(pred);
   }
   function showGuessResult(pred) {
     const guessStr = $("guessDate").value;
     if (!guessStr || isNaN(new Date(guessStr + "T00:00:00Z"))) {
       $("guessResult").classList.add("show");
-      $("guessResult").innerHTML = `<div class="score-lines"><div class="muted">Pick a valid date first 📅</div></div>`;
+      $("guessResult").innerHTML = `<div class="muted">Pick a valid date first 📅</div>`;
       return;
     }
-    const r = Predict.scoreGuess(pred, guessStr, today);
-    ui.guessDays = r.guessDays;
-    const verdict = r.score >= 85 ? "🔥 Bang on — right in the fat part of the distribution." :
-      r.score >= 60 ? "👍 Solid guess, close to the model." :
-      r.score >= 35 ? "🤔 Plausible, but the model leans elsewhere." : "🎲 Bold. The model thinks this is a long shot.";
-    const dir = r.offsetDays === 0 ? "exactly the model's pick" :
-      r.offsetDays > 0 ? `${r.offsetDays} day(s) later than the model` : `${-r.offsetDays} day(s) earlier than the model`;
+    const risk = RISK[ui.guessRisk] || RISK.bold;
+    const g = Predict.daysBetween(today, guessStr);
+    ui.guessDays = g;
+    const odds = Math.round(Math.max(0, Math.min(1, pred.probWithin(g + risk.window) - pred.probWithin(g - risk.window))) * 100);
+    const potential = Math.round(100 * risk.mult);
+    const v = av();
+    const target = pred.targetLabel || "the next update";
+    const dateNice = Predict.fmtDate(guessStr).replace(/^\w+, /, "");
+    const blurb = `📲 Calling it: my Tesla gets ${target} by ${dateNice} (${risk.label} mode). wenFSD gives me ${odds}%. Screenshot so you can mock me later 😤 → wenfsd.info`;
     $("guessResult").innerHTML =
-      `<div class="score-big"><span>${r.score}</span><small>/100 skill</small></div>` +
-      `<div class="score-lines"><div>${verdict}</div><div class="muted">You're ${dir}.</div>` +
-      `<div class="muted">${Math.round(r.within3 * 100)}% model mass within ±3 days · ${Math.round(r.cdf * 100)}% chance on or before then.</div></div>`;
+      `<div class="shot shot-${risk.tag}">` +
+        `<div class="shot-mode">${risk.label} mode</div>` +
+        `<div class="shot-call">You're calling <strong>${esc(target)}</strong> by <strong>${esc(dateNice)}</strong>.</div>` +
+        `<div class="shot-stats"><div><b>${odds}%</b><span>house odds you nail the ±${risk.window}-day window</span></div><div><b>🪙 ${potential}</b><span>wenPoints if you're right</span></div></div>` +
+        `<div class="shot-verdict">${guessVerdict(risk, odds, g, pred)}</div>` +
+        `<div class="shot-stake">📸 Lock it in, screenshot it, hold yourself to it. The model's odds are the house — your job is to beat them.</div>` +
+        `<div class="shot-actions"><button class="btn-sm" id="copyBrag" type="button">🔗 Copy brag</button><button class="btn-sm" id="shareTmc" type="button">💬 Take it to TMC</button></div>` +
+      `</div>`;
     $("guessResult").classList.add("show");
     Charts.distribution($("distChart"), pred, today, ui.guessDays);
+    $("copyBrag").onclick = () => copyText(blurb, $("copyBrag"));
+    $("shareTmc").onclick = () => { copyText(blurb, $("shareTmc")); window.open("https://teslamotorsclub.com/tmc/", "_blank", "noopener"); };
   }
-  function renderConsensus(pred) {
-    const buckets = [{ lbl: "this week", days: 7 }, { lbl: "next week", days: 14 }, { lbl: "this month", days: 30 }, { lbl: "later", days: 9999 }];
-    let prev = 0; const seed = Math.round(Math.max(0, pred.median - 1) * 7);
-    const vals = buckets.map((b, i) => { const c = Math.round(pred.probWithin(b.days) * 100); const x = Math.max(0, c - prev); prev = c; return Math.max(2, x + ((seed >> i) % 5) - 2); });
-    const tot = vals.reduce((a, b) => a + b, 0); const pcts = vals.map(x => Math.round((x / tot) * 100));
-    $("consensusBar").innerHTML = buckets.map((b, i) => `<div class="cseg cseg${i}" style="width:${pcts[i]}%" title="${b.lbl}: ${pcts[i]}%"></div>`).join("");
-    $("consensusTxt").innerHTML = buckets.map((b, i) => `<span><i class="cdot cseg${i}"></i>${b.lbl} ${pcts[i]}%</span>`).join("");
+  function guessVerdict(risk, odds, g, pred) {
+    const off = Math.round(g - pred.daysToMedian);
+    if (risk.tag === "yolo") {
+      if (odds <= 12) return `Absolute degenerate behaviour. The model gives you ${odds}%. Two weeks? Trust me bro. 🫡`;
+      if (odds >= 35) return `Bold <em>and</em> the model agrees?! Suspicious. Are you secretly a Tesla engineer?`;
+      return `Respect the nerve — ${odds}% at a 6× payout. Fortune favours the brave (occasionally).`;
+    }
+    if (risk.tag === "safe") {
+      return odds >= 45 ? `The sensible choice. You'll probably be right, and nobody will be impressed. 🥱`
+        : `Playing it safe… while still fighting the model. Bold strategy, Cotton.`;
+    }
+    if (off > 7) return `Betting it drags. The cynic's special — the model thinks you're <em>too</em> pessimistic.`;
+    if (off < -7) return `Betting it lands early, you optimist. The model says don't hold your breath.`;
+    return `A respectable call. The model gives you ${odds}%.`;
+  }
+  function copyText(text, btn) {
+    const done = () => { if (!btn) return; const t = btn.textContent; btn.textContent = "✓ Copied!"; setTimeout(() => { btn.textContent = t; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    else fallbackCopy(text, done);
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(ta); if (done) done();
   }
   function clearGuess() { $("guessResult").classList.remove("show"); $("guessResult").innerHTML = ""; $("guessDate").value = ""; }
 

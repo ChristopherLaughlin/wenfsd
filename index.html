@@ -36,9 +36,10 @@
   <section class="hero card">
     <div class="hero-left">
       <div class="seg" id="targetSeg" role="tablist" aria-label="Prediction target">
-        <button class="seg-btn active" data-target="standard" role="tab" aria-selected="true">Next software update</button>
-        <button class="seg-btn" data-target="fsd" role="tab" aria-selected="false">Next FSD version</button>
+        <button class="seg-btn active" data-target="standard" role="tab" aria-selected="true" title="Your next OS build — the 2026.x.x version number">Next software update</button>
+        <button class="seg-btn" data-target="fsd" role="tab" aria-selected="false" title="The next Full Self-Driving release — e.g. v13 → v14">Next FSD version</button>
       </div>
+      <p class="seg-hint" id="segHint"></p>
       <div class="hero-head" aria-live="polite" role="status">
         <div class="hero-eyebrow" id="heroEyebrow">Predicted arrival on your car</div>
         <div class="hero-date" id="heroDate">—</div>
@@ -190,19 +191,19 @@
 
     <!-- GUESS GAME -->
     <section class="card guess-card">
-      <h2 class="card-h">Make your guess 🎯</h2>
-      <p class="hint">Pick the day you think your car updates. wenFSD scores it against the full probability model.</p>
+      <h2 class="card-h">Call your shot 🎯 <span class="card-sub">wen, exactly?</span></h2>
+      <p class="hint">Bet on the day <strong>your</strong> car updates. Pick your nerve — the bolder the call, the bigger the bragging rights (and the harder the fall).</p>
       <label class="field">
         <span>Your predicted date</span>
         <input type="date" id="guessDate" />
       </label>
-      <button class="btn" id="guessBtn">Score my guess</button>
-      <div id="guessResult" class="guess-result"></div>
-      <div class="consensus">
-        <div class="consensus-h">Model-derived likelihood <span class="consensus-sub">(not a community poll)</span></div>
-        <div id="consensusBar" class="consensus-bar"></div>
-        <div id="consensusTxt" class="consensus-txt"></div>
+      <div class="nerve" id="nervePick" role="group" aria-label="How bold is your call?">
+        <button class="nerve-btn" data-risk="safe" type="button"><b>🛡️ Sensible</b><small>±10 days · 1×</small></button>
+        <button class="nerve-btn active" data-risk="bold" type="button"><b>🎯 Confident</b><small>±5 days · 2.5×</small></button>
+        <button class="nerve-btn" data-risk="yolo" type="button"><b>🎲 Trust me bro</b><small>±2 days · 6×</small></button>
       </div>
+      <button class="btn" id="guessBtn">Lock in my call 🔒</button>
+      <div id="guessResult" class="guess-result"></div>
     </section>
   </div>
 
