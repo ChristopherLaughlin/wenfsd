@@ -120,6 +120,12 @@ tr.mx-click:hover td{background:#11161f}
 .feed-relver[data-goto-version]{cursor:pointer}
 .feed-relver[data-goto-version]:hover{color:var(--cyan);text-decoration:underline}
 [data-goto-version]:focus-visible,[data-set-market]:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:4px}
+.why-details>summary{cursor:pointer;list-style:none;margin:0;user-select:none}
+.why-details>summary::-webkit-details-marker{display:none}
+.why-details>summary::after{content:" ▸";color:var(--mut);font-weight:400}
+.why-details[open]>summary::after{content:" ▾"}
+.why-details>summary:hover{color:var(--cyan)}
+.why-details .why{margin-top:14px}
 .feed-meta{color:var(--mut2);font-size:11.5px}
 .feed-empty{color:var(--mut2);font-size:12.5px;padding:6px 2px}
 .cal-note{color:var(--mut);font-size:12.5px;line-height:1.55;margin:2px 0;max-width:60ch}

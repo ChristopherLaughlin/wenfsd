@@ -125,12 +125,12 @@
           <input type="range" id="earlySlider" min="3" max="97" value="42" aria-label="How early you usually get updates, as a rollout percentile" />
           <div class="slider-ends"><small>first wave</small><small>last wave</small></div>
         </label>
-        <p class="hint" id="earlyHint">This is your <strong>rollout percentile</strong> — where your car historically lands in each wave. Log your real update history below and wenFSD estimates it for you.</p>
+        <p class="hint" id="earlyHint">Your <strong>rollout percentile</strong> — where your car lands in each wave. Log your update history below and wenFSD estimates it for you.</p>
 
         <div class="channel-row">
           <label class="switch-row inline"><input type="checkbox" id="earlyAccessChk"/> <span>I'm in the <strong>Early Access Program</strong></span></label>
         </div>
-        <p class="hint">The <strong>Early Access Program</strong> puts you in the first wave — wenFSD shifts your effective percentile accordingly. (The Advanced vs Standard update toggle, by contrast, makes little measurable difference to timing in practice, so we don't factor it in.)</p>
+        <p class="hint">The <strong>Early Access Program</strong> puts you in the first wave — wenFSD shifts your effective percentile accordingly.</p>
 
         <!-- update history -> real earliness estimate -->
         <div class="history">
@@ -231,11 +231,11 @@
 
   <!-- FIRMWARE TRACKER TABLE -->
   <section class="card fleet-card" id="firmwareCard">
-    <h2 class="card-h">AU fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>
+    <h2 class="card-h">Fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>
     <div class="table-wrap">
       <table class="fw-table">
         <thead>
-          <tr><th>Version</th><th>Status</th><th>AU fleet</th><th>7-day velocity</th><th>First seen</th><th>FSD build (AI4)</th><th>Notes</th></tr>
+          <tr><th>Version</th><th>Status</th><th>Fleet share</th><th>7-day velocity</th><th>First seen</th><th>FSD build (AI4)</th><th>Notes</th></tr>
         </thead>
         <tbody id="fwBody"></tbody>
       </table>
@@ -254,20 +254,22 @@
       <h2 class="card-h">Model calibration <span class="card-sub">back-tested against real tracker history</span></h2>
       <div id="calibrationBody"></div>
     </section>
+  </div>
 
-    <!-- METHODOLOGY -->
-    <section class="card">
-      <h2 class="card-h">Why wenFSD beats the trackers</h2>
+  <!-- METHODOLOGY (collapsed — reference, not needed every visit) -->
+  <section class="card">
+    <details class="why-details">
+      <summary class="card-h">Why wenFSD beats the trackers</summary>
       <ul class="why">
         <li><strong>Teslascope · TeslaFi · Tessie · fleetctrl · teslaupdates</strong> are all <em>observational</em> — install counts, % of fleet, daily velocity, status. None tell <em>you</em> when <em>your</em> car is next.</li>
         <li><strong>wenFSD predicts</strong>: a logistic S-curve (matching Tesla's staged, VIN-based A/B rollout), placed by your rollout percentile, then Monte&nbsp;Carlo → a real date <strong>distribution</strong> + 80% band.</li>
-        <li><strong>It models what actually moves your spot in line</strong>: your Advanced/Standard update channel &amp; Early Access, your hardware (HW3 capped, HW4 latest), your region's regulatory status, and Tesla's measured ~monthly cadence.</li>
+        <li><strong>It models what actually moves your spot in line</strong>: your Early Access setting, your hardware (HW3 capped, HW4 latest), your region's regulatory status, and Tesla's measured cadence.</li>
         <li><strong>Two tracks, tied together</strong>: next OS build and next FSD version — and since FSD ships <em>inside</em> OS builds, FSD can't arrive before the build that carries it.</li>
         <li><strong>You can guess</strong> and get scored against the model's probability distribution.</li>
       </ul>
       <div class="stats-strip" id="statsStrip"></div>
-    </section>
-  </div>
+    </details>
+  </section>
 
   <footer class="foot">
     <p>wenFSD is an independent project. Predictions are <strong>modelled statistical estimates</strong>, not Tesla commitments, and confidence bands are not yet empirically back-tested. Figures marked “sample” are illustrative, not live counts.</p>
