@@ -37,6 +37,13 @@ export async function pollOnce() {
       const fleet = await tesla.listVehicles(access);
       const state = new Map(fleet.map(f => [f.vin, f.state]));
       for (const c of cars) {
+        // Record the open prediction for the car's KNOWN version FIRST — this is a pure
+        // computation from data already in the DB (no Tesla API call, no need to wake the car),
+        // so it must run even for asleep cars. Otherwise a car that's asleep at every poll
+        // never gets a prediction despite us knowing its version.
+        if (c.current_version) { try { await ensurePrediction(c); } catch (e) { console.warn(`[poller] ensure ${c.vin}:`, e.message); } }
+
+        // Reading a FRESH version (to detect an update → score) does need the car awake.
         if (state.get(c.vin) && state.get(c.vin) !== "online") { skipped++; continue; } // asleep/offline — don't wake it
         try {
           const version = await tesla.getVehicleVersion(access, c.vin);
@@ -49,9 +56,8 @@ export async function pollOnce() {
             await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [c.id, version, c.market, c.hardware]);
             await query(`UPDATE vehicles SET current_version=$1 WHERE id=$2`, [version, c.id]);
             c.current_version = version;
+            await ensurePrediction(c);   // open a fresh prediction for the new version
           }
-          // RECORD a prediction for the car's current version (one open bet per car-version).
-          if (c.current_version) await ensurePrediction(c);
         } catch (e) { if (e.code !== 408) console.warn(`[poller] ${c.vin}:`, e.message); }
       }
     } catch (e) { console.warn(`[poller] user ${userId}:`, e.message); }

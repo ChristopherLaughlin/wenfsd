@@ -109,6 +109,9 @@ app.listen(config.port, async () => {
     const { applySchema } = await import("./db.js");
     if (await applySchema()) console.log("  ✓ database schema ensured");
   } catch (e) { console.error("  ✗ schema apply failed:", e.message); }
+  // one-shot poll on boot so predictions + aggregates refresh immediately after a deploy,
+  // instead of waiting up to an hour for the next cron tick. Non-blocking; never crashes boot.
+  pollOnce().then((r) => console.log("  ✓ boot poll:", JSON.stringify(r))).catch((e) => console.error("  boot poll failed:", e && e.message));
 });
 
 // --- scheduled jobs (real mode only) ---
