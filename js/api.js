@@ -24,9 +24,9 @@
   }
 
   async function hydrate() {
-    // bail quietly unless the backend is actually present
+    // bail quietly unless the backend is actually present (health endpoint is at /healthz)
     let health;
-    try { health = await getJSON("/api/healthz"); } catch { return; }
+    try { health = await getJSON("/healthz"); } catch { return; }
     if (!health || !health.ok) return;
 
     // --- PRIORITY: pull the owner's linked vehicles into the garage FIRST, so nothing else

@@ -9,6 +9,9 @@ import { merge, fetchAll, sourceStatus } from "../sources/index.js";
 
 export const apiRouter = Router();
 
+// alias so both /healthz and /api/healthz work
+apiRouter.get("/healthz", (req, res) => res.json({ ok: true, mock: config.mockMode }));
+
 // wrap async handlers so thrown errors hit the error middleware instead of hanging
 const ah = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
