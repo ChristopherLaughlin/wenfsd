@@ -25,12 +25,19 @@ I'll create the repo and push all 16 commits. After that, every `git push` runs 
 gh repo create wenfsd --private --source . --remote origin --push
 ```
 
-## 2. 🟡 Start the Tesla Fleet API application — DO THIS NOW (long pole)
+## 2. 🟡 Start the Tesla Fleet API application
 1. Sign in at **https://developer.tesla.com** → create an application.
-2. **Redirect URI:** `https://wenfsd.info/auth/callback`
+2. Fill Registration ("Just for me") + Application Details.
 3. **Scopes:** `openid offline_access vehicle_device_data` (read-only is enough).
-4. Note your **Client ID** and **Client Secret** (used in Step 6).
-5. Read their terms / any fees now so there are no surprises later.
+4. ⚠️ **The "Client Details" domain fields (Allowed Origin / Redirect) will only validate once
+   `wenfsd.info` is LIVE with a real TLS certificate.** Tesla checks the cert at entry time.
+   So **do Steps 4 + 6 (deploy + DNS) FIRST**, confirm `https://wenfsd.info/healthz` works, then
+   come back and enter:
+   - Allowed Origin: `https://wenfsd.info`
+   - Allowed Redirect: `https://wenfsd.info/auth/callback`
+5. Do NOT front the domain with a Cloudflare proxy (orange cloud) — Tesla rejects reverse
+   proxies. Railway/Render's own domain + cert is fine.
+6. Finish → note your **Client ID** and **Client Secret** (used in Step 5).
 
 ## 3. 🟢 Generate the secrets (I'll print these for you to paste)
 ```bash
