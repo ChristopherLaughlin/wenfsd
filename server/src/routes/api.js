@@ -4,13 +4,25 @@ import { config } from "../config.js";
 import { query, hasDb } from "../db.js";
 import { predictNextOS, predictNextFSD } from "../predict.js";
 import { SEED_VERSIONS, SEED_FEED, SEED_STATS } from "../seed.js";
+import { merge, fetchAll, sourceStatus } from "../sources/index.js";
 
 export const apiRouter = Router();
 
 apiRouter.get("/fleet/firmware", async (req, res) => {
+  // ?merged=1 → fleet-weighted consensus across the external trackers (works in mock too)
+  if (req.query.merged) {
+    try { const versions = await merge({ live: req.query.live === "1" }); return res.json({ source: "merged", versions }); }
+    catch (e) { return res.status(502).json({ error: String(e.message || e) }); }
+  }
   if (config.mockMode || !hasDb()) return res.json({ source: "mock", versions: SEED_VERSIONS });
   const r = await query(`SELECT version, branch, first_seen, install_count, fleet_pct, fit_t0 AS t0, fit_k AS k FROM firmware_versions ORDER BY first_seen DESC NULLS LAST LIMIT 40`);
   res.json({ source: "db", versions: r.rows });
+});
+
+// status of every external tracker source
+apiRouter.get("/sources", async (req, res) => {
+  try { res.json({ sources: sourceStatus(await fetchAll({ live: req.query.live === "1" })) }); }
+  catch (e) { res.status(502).json({ error: String(e.message || e) }); }
 });
 
 apiRouter.get("/fleet/feed", async (req, res) => {

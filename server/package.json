@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "poll": "node src/poller.js --once",
+    "sources": "node src/sources-refresh.js",
     "migrate": "node src/migrate.js"
   },
   "dependencies": {

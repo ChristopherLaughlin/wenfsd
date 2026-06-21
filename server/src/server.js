@@ -49,8 +49,13 @@ app.listen(config.port, () => {
   if (config.mockMode) console.log("  MOCK_MODE: serving seed data, no Tesla/DB calls.");
 });
 
-// --- scheduled polling (real mode only) ---
+// --- scheduled polling + external-source refresh (real mode only) ---
 if (!config.mockMode) {
   cron.schedule(config.pollCron, () => { pollOnce().catch((e) => console.error("[cron]", e)); });
   console.log(`  poller scheduled: ${config.pollCron}`);
+  // refresh external tracker data a few times a day
+  cron.schedule("17 */6 * * *", async () => {
+    try { const db = await import("./db.js"); const { refreshAll } = await import("./sources/index.js"); await refreshAll(db, { live: true }); }
+    catch (e) { console.error("[sources cron]", e); }
+  });
 }
