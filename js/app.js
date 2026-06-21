@@ -493,7 +493,7 @@
     }
     const w = 60, h = 18, bw = w / 7;
     const bars = vals.map((inst, i) => { const bh = max > 0 ? Math.max(1, (inst / max) * h) : 1; return `<rect x="${(i * bw + 1).toFixed(1)}" y="${(h - bh).toFixed(1)}" width="${(bw - 1.5).toFixed(1)}" height="${bh.toFixed(1)}" rx="1"/>`; }).join("");
-    return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${bars}</svg>`;
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="7-day install velocity">${bars}</svg>`;
   }
   function renderTable() {
     const mine = av() ? av().installedVersion : null;
@@ -543,8 +543,8 @@
   function wire() {
     document.querySelectorAll("#targetSeg .seg-btn").forEach(btn => {
       btn.onclick = () => {
-        document.querySelectorAll("#targetSeg .seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active"); ui.target = btn.dataset.target;
+        document.querySelectorAll("#targetSeg .seg-btn").forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); });
+        btn.classList.add("active"); btn.setAttribute("aria-selected", "true"); ui.target = btn.dataset.target;
         ui.guessDays = null; clearGuess(); render();
         $("fsdCard").classList.toggle("spotlight", ui.target === "fsd");
         if (ui.target === "fsd") $("fsdCard").scrollIntoView({ behavior: "smooth", block: "nearest" });

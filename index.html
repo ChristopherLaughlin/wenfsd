@@ -33,11 +33,11 @@
   <!-- HERO PREDICTION -->
   <section class="hero card">
     <div class="hero-left">
-      <div class="seg" id="targetSeg">
-        <button class="seg-btn active" data-target="standard">Next software update</button>
-        <button class="seg-btn" data-target="fsd">Next FSD version</button>
+      <div class="seg" id="targetSeg" role="tablist" aria-label="Prediction target">
+        <button class="seg-btn active" data-target="standard" role="tab" aria-selected="true">Next software update</button>
+        <button class="seg-btn" data-target="fsd" role="tab" aria-selected="false">Next FSD version</button>
       </div>
-      <div class="hero-head">
+      <div class="hero-head" aria-live="polite" role="status">
         <div class="hero-eyebrow" id="heroEyebrow">Predicted arrival on your car</div>
         <div class="hero-date" id="heroDate">—</div>
         <div class="hero-window" id="heroWindow">—</div>
@@ -49,7 +49,7 @@
     </div>
     <div class="hero-right">
       <div class="ring-wrap">
-        <svg viewBox="0 0 180 180" class="ring">
+        <svg viewBox="0 0 180 180" class="ring" aria-hidden="true" focusable="false">
           <circle cx="90" cy="90" r="78" class="ring-bg"/>
           <circle cx="90" cy="90" r="78" class="ring-fg" id="ringFg"/>
         </svg>
@@ -76,7 +76,7 @@
         <label class="field">
           <span>VIN <em>— auto-detects model, year &amp; hardware</em></span>
           <div class="vin-row">
-            <input id="vinInput" placeholder="e.g. LRWYGDEK8TC000123" maxlength="17" autocomplete="off" spellcheck="false"/>
+            <input id="vinInput" placeholder="e.g. LRWYGDEK8TC000123" maxlength="17" autocomplete="off" spellcheck="false" aria-label="Vehicle Identification Number"/>
             <button class="btn-sm" id="vinDecodeBtn" type="button">Decode</button>
           </div>
           <div id="vinResult" class="vin-result"></div>
@@ -119,7 +119,7 @@
 
         <label class="field">
           <span>How early do you usually get updates? <em id="earlyVal">average</em></span>
-          <input type="range" id="earlySlider" min="3" max="97" value="42" />
+          <input type="range" id="earlySlider" min="3" max="97" value="42" aria-label="How early you usually get updates, as a rollout percentile" />
           <div class="slider-ends"><small>first wave</small><small>last wave</small></div>
         </label>
         <p class="hint" id="earlyHint">This is your <strong>rollout percentile</strong> — where your car historically lands in each wave. Log your real update history below and wenFSD estimates it for you.</p>
@@ -261,7 +261,9 @@
   </div>
 
   <footer class="foot">
-    wenFSD is an independent modelling demo. Predictions are probabilistic estimates, not Tesla commitments. Fleet figures seeded from public mid-2026 tracker snapshots. Not affiliated with Tesla, Teslascope, TeslaFi, or Tessie.
+    <p>wenFSD is an independent project. Predictions are <strong>modelled statistical estimates</strong>, not Tesla commitments, and confidence bands are not yet empirically back-tested. Figures marked “sample” are illustrative, not live counts.</p>
+    <p>Not affiliated with, endorsed by, or sponsored by Tesla, Inc. — Tesla, Model Y, and FSD are trademarks of Tesla, Inc. Not affiliated with Teslascope, TeslaFi, Tessie, FleetCtrl, or Tesla Updates.</p>
+    <p class="foot-links"><a href="PRIVACY.md">Privacy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a></p>
   </footer>
 </main>
 

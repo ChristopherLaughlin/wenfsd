@@ -15,7 +15,8 @@ const Charts = (function () {
     const W = container.clientWidth || 680, H = 300;
     const m = { l: 44, r: 16, t: 18, b: 34 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
-    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart" });
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart", role: "img",
+      "aria-label": `Rollout S-curve: most likely arrival in about ${Math.max(0, pred.daysToMedian)} days, with an 80% window.` });
 
     const horizon = pred.horizon;
     const x = d => m.l + (d / horizon) * iw;
@@ -78,7 +79,8 @@ const Charts = (function () {
     const W = container.clientWidth || 680, H = 220;
     const m = { l: 40, r: 12, t: 14, b: 30 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
-    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart" });
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart", role: "img",
+      "aria-label": "Probability distribution of which day your car receives the update." });
 
     const lo = Math.max(0, Math.floor(pred.p10) - 2);
     const hi = Math.ceil(pred.p90) + 2;
