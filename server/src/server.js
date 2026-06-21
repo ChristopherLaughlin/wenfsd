@@ -67,10 +67,22 @@ app.use("/api", apiLimiter, apiRouter);
 
 // --- static frontend: serve ONLY the known assets, never server/ or dotfiles ---
 const STATIC_OPTS = { dotfiles: "ignore", index: false };
-app.get("/", (req, res) => res.sendFile(path.join(REPO_ROOT, "index.html")));
+// Cache-bust JS/CSS per deploy so browsers always load matching code (no stale-JS bugs).
+const BUILD = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.SOURCE_VERSION || String(Date.now());
+let _indexHtml = null;
+async function serveIndex(req, res) {
+  try {
+    if (_indexHtml == null) {
+      const raw = await readFile(path.join(REPO_ROOT, "index.html"), "utf8");
+      _indexHtml = raw.replace(/(src|href)="(js\/[^"?]+|styles\.css)"/g, `$1="$2?v=${BUILD}"`);
+    }
+    res.type("html").set("Cache-Control", "no-cache").send(_indexHtml);
+  } catch { res.sendStatus(500); }
+}
+app.get("/", serveIndex);
+app.get("/index.html", serveIndex);
 app.use("/js", express.static(path.join(REPO_ROOT, "js"), STATIC_OPTS));
 app.get("/styles.css", (req, res) => res.sendFile(path.join(REPO_ROOT, "styles.css")));
-app.get("/index.html", (req, res) => res.sendFile(path.join(REPO_ROOT, "index.html")));
 // hard block anything sensitive even if a future static mount is added
 app.use((req, res, next) => {
   if (/^\/(server|node_modules|\.git|\.claude|memory)(\/|$)/.test(req.path)) return res.status(404).end();

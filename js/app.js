@@ -605,6 +605,15 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
   // ---------------- boot ----------------
+  // Expose the live-data bridge FIRST, before any render runs — so js/api.js can always
+  // call setLinkState/addConnectedVehicles even if a boot render throws.
+  window.WENFSD = {
+    rerender() { renderFSD(); renderStats(); renderDataMode(); render(); },
+    setSources(list, live) { renderDataSources(list, live); },
+    addConnectedVehicles, setLinkState,
+    get activeVehicle() { return av(); },
+  };
+
   $("todayLabel").textContent = new Date(today + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
   renderGarage();
   renderActiveControls();
@@ -669,12 +678,4 @@
       el.innerHTML = `Not connected on this device (or your session expired). Use <strong>Connect Tesla account</strong> below to link your car.`;
     }
   }
-
-  // Optional live-data bridge: js/api.js calls these after talking to the backend.
-  window.WENFSD = {
-    rerender() { renderFSD(); renderStats(); renderDataMode(); render(); },
-    setSources(list, live) { renderDataSources(list, live); },
-    addConnectedVehicles, setLinkState,
-    get activeVehicle() { return av(); },
-  };
 })();
