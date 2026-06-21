@@ -55,9 +55,8 @@
     $("heroEyebrow").textContent = "Welcome to wenFSD";
     $("heroDate").textContent = "Add your Tesla to begin";
     $("heroWindow").textContent = "";
-    $("heroCountdown").innerHTML = "";
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
-    $("confRow").innerHTML = ""; $("probMini").innerHTML = "";
+    $("confRow").innerHTML = "";
     $("heroNote").innerHTML = "Add your car by VIN (we'll decode the model, year &amp; hardware) and wenFSD predicts your next software update and next FSD version — with confidence bands. No vehicles are tracked until you add one.";
     $("predictTips").innerHTML = "";
     $("curveChart").innerHTML = svgEmpty("Add a vehicle to see its rollout curve");
@@ -75,9 +74,8 @@
     $("heroEyebrow").textContent = (ui.target === "fsd" ? "Next FSD version" : "Next update") + " for " + (av().nickname || "your car");
     $("heroDate").textContent = pred.capped ? "Not coming" : "Unknown";
     $("heroWindow").textContent = pred.capped ? "hardware-limited" : "";
-    $("heroCountdown").innerHTML = `<div class="cd"><div class="cd-num">—</div><div class="cd-lbl">${pred.capped ? "capped" : "no data"}</div></div>`;
-    $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
-    $("confRow").innerHTML = ""; $("probMini").innerHTML = "";
+    $("ringDays").textContent = pred.capped ? "—" : "?"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
+    $("confRow").innerHTML = "";
     $("heroNote").innerHTML = `Currently on <strong>${esc(pred.current || "—")}</strong>. ${esc(pred.note || "")}`;
     $("predictTips").innerHTML = "";
     $("distChart").innerHTML = ""; $("curveChart").innerHTML = "";
@@ -93,7 +91,6 @@
     $("heroEyebrow").textContent = `Predicted arrival of ${what} on ${av().nickname || "your car"}`;
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
     $("heroWindow").textContent = "80% window: " + shortDate(pred.p10Date) + " → " + shortDate(pred.p90Date);
-    $("heroCountdown").innerHTML = countdownHTML(pred.daysToMedian);
 
     const ring = $("ringFg"), C = 2 * Math.PI * 78, d = pred.daysToMedian;
     const frac = Math.max(0.04, Math.min(1, 1 - Math.min(d, 120) / 120));
@@ -102,9 +99,6 @@
 
     const w7 = Math.round(pred.probWithin(7) * 100), w14 = Math.round(pred.probWithin(14) * 100), w30 = Math.round(pred.probWithin(30) * 100);
     $("confRow").innerHTML = [chip("7 days", w7), chip("14 days", w14), chip("30 days", w30)].join("");
-    $("probMini").innerHTML =
-      `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,7))}</span><b>${w7}%</b></div>` +
-      `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,30))}</span><b>${w30}%</b></div>`;
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
     renderBasis(pred);
     renderTips(pred);
@@ -133,35 +127,28 @@
         `<li><strong>The model:</strong> Tesla pushes each version as an S-curve across the fleet. We fit a logistic curve and read off your spot, then run Monte-Carlo for the 80% window.</li>` +
         `<li><strong>The timing anchor:</strong> ${anchor}</li>` +
       `</ol>` +
-      `<p class="basis-warn">⚠️ These run on <strong>assumed</strong> rollout parameters — we don't yet have crowdsourced fleet data, so the anchor dates (the FSD one especially) are educated estimates, not observed data or a Tesla commitment.</p>`;
+      `<p class="basis-conf">Confidence: <strong>${esc(confLabel(v))}</strong>.</p>` +
+      `<p class="basis-warn">⚠️ Bands are <strong>modelled</strong> (logistic rollout + Monte-Carlo), not yet empirically back-tested against real per-car timing — treat as estimates. The anchor dates (the FSD one especially) are educated estimates, not a Tesla commitment.</p>`;
+  }
+  function confLabel(v) {
+    return v.earlinessSource === "history" ? "higher — from your real update history"
+      : v.earlyAccess ? "lower — typical-owner prior + your Early Access setting" : "lower — typical-owner prior";
   }
 
-  // actionable "what would make this sooner" tips + confidence basis
+  // ONE actionable insight — the Early-Access delta (computed, not a generic CTA). The
+  // generic "log history"/"connect Tesla" prompts live in the garage, so we don't repeat them.
   function renderTips(pred) {
-    const v = av(), tips = [];
+    const v = av();
+    let tip = "";
     if (!v.earlyAccess && v.earlinessSource !== "history") {
       const c2 = Object.assign(car(), { earlinessPercentile: effEarliness(Object.assign({}, v, { earlyAccess: true })) });
       const p2 = ui.target === "fsd" ? Predict.predictNextFSD(c2, today) : Predict.predictNextOS(c2, today);
       const delta = Math.round(pred.daysToMedian - (p2.daysToMedian != null ? p2.daysToMedian : pred.daysToMedian));
-      if (delta >= 1) tips.push(`🔓 <strong>Join Tesla's Early Access Program</strong> — about <strong>${delta} day${delta > 1 ? "s" : ""} sooner</strong>`);
+      if (delta >= 1) tip = `<div class="tips-list"><div class="tip">🔓 <strong>Tesla's Early Access Program</strong> would get this about <strong>${delta} day${delta > 1 ? "s" : ""} sooner</strong></div></div>`;
     }
-    if (v.earlinessSource !== "history") tips.push(`📊 <strong>Log your update history</strong> — turns a typical-owner estimate into a personalised one`);
-    if (!v.optedIn) tips.push(`🔗 <strong>Connect your Tesla</strong> (read-only) to auto-track and sharpen everyone's predictions`);
-    const conf = v.earlinessSource === "history" ? "higher — from your real update history"
-      : v.earlyAccess ? "lower — typical-owner prior + your Early Access setting" : "lower — typical-owner prior";
-    $("predictTips").innerHTML =
-      (tips.length ? `<div class="tips-list">${tips.map(t => `<div class="tip">${t}</div>`).join("")}</div>` : "") +
-      `<div class="basis">Confidence: <strong>${conf}</strong>. Bands are <em>modelled</em> (logistic rollout + Monte&nbsp;Carlo), not yet empirically back-tested against real per-car timing — treat as estimates.</div>`;
+    $("predictTips").innerHTML = tip;
   }
 
-  function countdownHTML(d) {
-    if (d <= 0) return `<div class="cd"><div class="cd-num">↓</div><div class="cd-lbl">expected now</div></div>`;
-    const wk = Math.floor(d / 7), dd = d % 7;
-    return `<div class="cd"><div class="cd-num">${d}</div><div class="cd-lbl">days</div></div>` +
-           `<div class="cd-sep">≈</div>` +
-           `<div class="cd"><div class="cd-num">${wk}</div><div class="cd-lbl">weeks</div></div>` +
-           (dd ? `<div class="cd"><div class="cd-num">${dd}</div><div class="cd-lbl">days</div></div>` : "");
-  }
   function chip(label, pct) {
     const cls = pct >= 66 ? "hi" : pct >= 33 ? "mid" : "lo";
     return `<div class="chip ${cls}"><div class="chip-pct">${pct}%</div><div class="chip-lbl">within ${label}</div></div>`;

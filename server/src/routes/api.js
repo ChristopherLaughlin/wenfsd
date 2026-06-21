@@ -45,6 +45,27 @@ apiRouter.get("/release-notes", ah(async (req, res) => {
   res.json({ mode: live ? "live" : "sample", notes });
 }));
 
+// Debug/watch view of the signed-in owner's own predictions (open + scored). Privacy-safe:
+// never exposes another user's cars.
+apiRouter.get("/predictions", ah(async (req, res) => {
+  if (config.mockMode || !hasDb()) return res.json({ predictions: [], summary: { open: 0, scored: 0, hits: 0 } });
+  if (!req.session.userId) return res.status(401).json({ error: "not linked" });
+  const r = await query(
+    `SELECT v.vin, p.from_version, p.target_label, p.made_at, p.median_date, p.p10_date, p.p90_date,
+            p.scored, p.actual_date, p.error_days, p.hit
+       FROM predictions p JOIN vehicles v ON v.id = p.vehicle_id
+      WHERE v.user_id = $1 ORDER BY p.made_at DESC LIMIT 50`, [req.session.userId]);
+  const rows = r.rows;
+  res.json({
+    predictions: rows,
+    summary: {
+      open: rows.filter(x => !x.scored).length,
+      scored: rows.filter(x => x.scored).length,
+      hits: rows.filter(x => x.hit).length,
+    },
+  });
+}));
+
 apiRouter.get("/calibration", ah(async (req, res) => {
   const live = req.query.live === "1" && config.allowLiveSources;
   const cal = await cached("cal:" + live, 6 * 60 * 60_000, () => computeCalibration({ live }));
