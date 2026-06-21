@@ -11,12 +11,13 @@ export async function pollOnce() {
     console.log("[poller] MOCK_MODE/no DB — skipping real poll.");
     return { polled: 0 };
   }
-  // group opted-in vehicles by user so we refresh a token once and list vehicles once
+  // poll ALL linked vehicles (each owner consented by connecting, so we can read their own
+  // car's version for their prediction). Aggregate fleet stats still only count opted-in cars
+  // (see recomputeAggregates). Group by user so we refresh a token / list vehicles once.
   const rows = (await query(
     `SELECT v.id, v.vin, v.current_version, v.market, v.hardware, v.user_id,
             t.access_token, t.refresh_token, t.expires_at
-       FROM vehicles v JOIN oauth_tokens t ON t.user_id = v.user_id
-      WHERE v.opted_in = true`)).rows;
+       FROM vehicles v JOIN oauth_tokens t ON t.user_id = v.user_id`)).rows;
 
   const byUser = new Map();
   for (const r of rows) { if (!byUser.has(r.user_id)) byUser.set(r.user_id, { tok: r, cars: [] }); byUser.get(r.user_id).cars.push(r); }

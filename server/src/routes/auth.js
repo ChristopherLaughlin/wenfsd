@@ -60,6 +60,20 @@ authRouter.get("/callback", async (req, res, next) => {
              hardware=COALESCE(vehicles.hardware,$6), market=COALESCE(vehicles.market,$7)`,
           [userId, v.vin, d.model, d.model_year, d.generation || null, d.hardware, d.market, d.drive]);
       }
+
+      // best-effort: read current software version for AWAKE cars so a prediction shows
+      // immediately. Never wake a sleeping car; never let this break the redirect.
+      step = "read-versions";
+      for (const v of vehicles) {
+        if (v.state && v.state !== "online") continue;
+        try {
+          const version = await tesla.getVehicleVersion(tokens.access_token, v.vin);
+          if (version) {
+            const row = await query(`UPDATE vehicles SET current_version=$1 WHERE vin=$2 RETURNING id, market, hardware`, [version, v.vin]);
+            if (row.rows[0]) await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [row.rows[0].id, version, row.rows[0].market, row.rows[0].hardware]);
+          }
+        } catch (_) { /* asleep/unavailable — the poller will pick it up later */ }
+      }
     }
     req.session.userId = userId;
     res.redirect("/?linked=1");

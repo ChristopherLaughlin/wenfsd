@@ -246,6 +246,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .gcar-name{font-weight:700;font-size:14px}
 .gcar-sub{font-size:11.5px;color:var(--mut);font-family:var(--mono)}
 .gcar-ver{font-size:11px;color:var(--cyan);font-family:var(--mono);margin-top:2px}
+.gcar-link{font-size:10px;font-weight:700;color:var(--green);background:rgba(55,214,122,.12);padding:1px 6px;border-radius:5px;vertical-align:middle;margin-left:4px}
 .gcar-x{background:transparent;border:0;color:var(--mut2);font-size:20px;cursor:pointer;width:26px;height:26px;border-radius:7px;line-height:1}
 .gcar-x:hover{background:rgba(230,41,55,.15);color:var(--acc2)}
 

@@ -159,10 +159,11 @@
     $("activeControls").hidden = false;
     $("garageList").innerHTML = gstate.vehicles.map(v => {
       const isA = v.id === gstate.activeId;
+      const verText = v.installedVersion ? "on " + esc(v.installedVersion) : "version unknown — waiting for first Tesla read";
       return `<div class="gcar ${isA ? "active" : ""}" data-id="${v.id}">` +
-        `<div class="gcar-main"><div class="gcar-name">${esc(v.nickname || v.model)}</div>` +
+        `<div class="gcar-main"><div class="gcar-name">${esc(v.nickname || v.model)}${v.connected ? ' <span class="gcar-link" title="Connected to your Tesla account">🔗 connected</span>' : ''}</div>` +
         `<div class="gcar-sub">${v.year} ${esc(v.model)}${v.generation ? " " + v.generation : ""} · ${v.hardware} · ${esc(v.market)}</div>` +
-        `<div class="gcar-ver">on ${esc(v.installedVersion)}</div></div>` +
+        `<div class="gcar-ver">${verText}</div></div>` +
         `<button class="gcar-x" data-del="${v.id}" title="Remove this vehicle">×</button>` +
         `</div>`;
     }).join("");
@@ -592,10 +593,43 @@
   wire();
   render();
 
-  // Optional live-data bridge: js/api.js calls this after hydrating WEN.* from the backend.
+  // Pull the owner's Tesla-linked vehicles (from /api/me/vehicles) into the garage.
+  function addConnectedVehicles(list) {
+    if (!Array.isArray(list) || !list.length) return;
+    list.forEach(v => {
+      const market = (WEN.regions[v.market]) ? v.market : "Australia";
+      const region = WEN.regions[market] || {};
+      const s = Garage.get();
+      const existing = s.vehicles.find(x => (x.vin || "").toUpperCase() === (v.vin || "").toUpperCase());
+      if (existing) {
+        const patch = {
+          model: v.model || existing.model, year: v.model_year || existing.year,
+          generation: v.generation || existing.generation, hardware: v.hardware || existing.hardware,
+          market, drive: v.drive || region.drive || existing.drive,
+          earlyAccess: !!v.early_access, optedIn: !!v.opted_in, connected: true,
+        };
+        if (v.current_version) patch.installedVersion = v.current_version;   // don't clobber a manual entry with null
+        if (v.earliness != null) { patch.earliness = v.earliness; patch.earlinessSource = "history"; }
+        gstate = Garage.update(existing.id, patch);
+      } else {
+        gstate = Garage.add({
+          nickname: [v.model_year, v.model, v.generation].filter(Boolean).join(" ") || "My Tesla",
+          vin: v.vin, model: v.model || "Model Y", year: v.model_year || 2026, generation: v.generation || "",
+          hardware: v.hardware || "AI4", market, drive: v.drive || region.drive || "RHD",
+          installedVersion: v.current_version || "", fsdVersion: "",
+          earliness: v.earliness != null ? v.earliness : 0.5, earlinessSource: v.earliness != null ? "history" : "default",
+          earlyAccess: !!v.early_access, optedIn: !!v.opted_in, connected: true, history: [],
+        });
+      }
+    });
+    renderGarage(); renderActiveControls(); render();
+  }
+
+  // Optional live-data bridge: js/api.js calls these after talking to the backend.
   window.WENFSD = {
     rerender() { renderFSD(); renderStats(); renderDataMode(); render(); },
     setSources(list, live) { renderDataSources(list, live); },
+    addConnectedVehicles,
     get activeVehicle() { return av(); },
   };
 })();

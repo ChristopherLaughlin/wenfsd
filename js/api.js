@@ -102,6 +102,19 @@
     } catch (e) { /* keep seed */ }
 
     if (window.WENFSD && window.WENFSD.rerender) window.WENFSD.rerender();
+
+    // --- pull the signed-in owner's Tesla-linked vehicles into the garage ---
+    try {
+      const r = await fetch("/api/me/vehicles", { headers: { Accept: "application/json" } });
+      if (r.ok) {
+        const { vehicles } = await r.json();
+        if (Array.isArray(vehicles) && vehicles.length && window.WENFSD && window.WENFSD.addConnectedVehicles) {
+          window.WENFSD.addConnectedVehicles(vehicles);
+        }
+      }
+      // 401 = not linked yet → nothing to pull, that's fine
+    } catch (e) { /* ignore */ }
+
     console.info("[wenFSD] hydrated from live API (source: " + (health.mock ? "mock backend" : "database") + ")");
   }
 
