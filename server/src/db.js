@@ -20,4 +20,17 @@ export async function query(text, params) {
 }
 
 export function hasDb() { return !!pool; }
+
+// Apply db/schema.sql (idempotent: all CREATE TABLE IF NOT EXISTS) — run on boot in real mode.
+export async function applySchema() {
+  if (!pool) return false;
+  const { readFile } = await import("node:fs/promises");
+  const { fileURLToPath } = await import("node:url");
+  const path = (await import("node:path")).default;
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const sql = await readFile(path.join(dir, "..", "db", "schema.sql"), "utf8");
+  await pool.query(sql);
+  return true;
+}
+
 export { pool };

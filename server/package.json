@@ -11,6 +11,7 @@
     "poll": "node src/poller.js --once",
     "sources": "node src/sources-refresh.js",
     "migrate": "node src/migrate.js",
+    "register-domain": "node src/register-domain.js",
     "test": "node --test"
   },
   "dependencies": {

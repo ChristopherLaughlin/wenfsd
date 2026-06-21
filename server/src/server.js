@@ -84,10 +84,15 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: config.mockMode ? String(err.message || err) : "internal error" });
 });
 
-app.listen(config.port, () => {
+app.listen(config.port, async () => {
   console.log(`wenFSD server on :${config.port}  (mock=${config.mockMode})`);
   console.log(`  → http://localhost:${config.port}`);
-  if (config.mockMode) console.log("  MOCK_MODE: serving seed data, no Tesla/DB calls.");
+  if (config.mockMode) { console.log("  MOCK_MODE: serving seed data, no Tesla/DB calls."); return; }
+  // real mode: ensure the schema exists (idempotent) so you never run a manual migrate
+  try {
+    const { applySchema } = await import("./db.js");
+    if (await applySchema()) console.log("  ✓ database schema ensured");
+  } catch (e) { console.error("  ✗ schema apply failed:", e.message); }
 });
 
 // --- scheduled jobs (real mode only) ---
