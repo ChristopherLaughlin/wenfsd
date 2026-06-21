@@ -614,22 +614,30 @@
       ["updates logged", (+s.updatesLogged || 0).toLocaleString()], ["versions", s.versionsTracked || 0]]
       .map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
   }
-  function startFeed() {
-    const feed = $("feed"); let i = 0;
-    const times = ["just now", "1m ago", "3m ago", "6m ago", "11m ago", "18m ago", "25m ago", "33m ago"];
-    function row(s, t) {
-      return `<span class="feed-when">${t}</span><span class="feed-main"><span class="feed-region">${s.region}</span> ` +
-        `<span class="feed-model">${s.model}</span> <span class="hwtag">${s.hw}</span></span>` +
-        `<span class="feed-ver">${s.from} <em>→</em> <strong>${s.to}</strong></span>`;
-    }
-    feed.innerHTML = WEN.feedSeeds.map((s, idx) => `<li>${row(s, times[idx] || "earlier")}</li>`).join("");
-    $("feedSub").textContent = WEN.feedSeeds.length + " recent";
-    setInterval(() => {
-      const s = WEN.feedSeeds[i % WEN.feedSeeds.length]; i++;
-      const li = document.createElement("li"); li.innerHTML = row(s, "just now"); li.classList.add("flash");
-      feed.insertBefore(li, feed.firstChild);
-      while (feed.children.length > 8) feed.removeChild(feed.lastChild);
-    }, 4200);
+  // Real rollout-activity feed: recent version RELEASES from the tracker data (firstSeen,
+  // fleet %, install activity, FSD build, sources). Replaces the old fabricated per-car
+  // ticker — no invented cities, no fake "just now" stream. Live in live mode; seed model
+  // (badged) in sample mode. Sorted newest-first by first-seen.
+  function renderFeed() {
+    const feed = $("feed");
+    if (!feed) return;
+    const rows = (WEN.versions || [])
+      .filter(v => v.firstSeen)
+      .slice()
+      .sort((a, b) => String(b.firstSeen).localeCompare(String(a.firstSeen)))
+      .slice(0, 8);
+    if (!rows.length) { feed.innerHTML = `<li class="feed-empty">No recent rollout activity yet.</li>`; $("feedSub").textContent = ""; return; }
+    feed.innerHTML = rows.map(v => {
+      const pct = v.fleetPct != null ? `${v.fleetPct}% of fleet` : null;
+      const inst = v.recentInstalls ? `🔥 ${Number(v.recentInstalls).toLocaleString()} installs/wk` : null;
+      const fsd = (v.fsdBuild && v.fsdBuild.AI4 && v.fsdBuild.AI4 !== "—") ? `FSD ${v.fsdBuild.AI4}` : null;
+      const meta = [pct, inst, fsd].filter(Boolean).join(" · ");
+      const src = (v.sources && v.sources.length) ? `via ${v.sources.join(", ")}` : "";
+      return `<li><span class="feed-when">${shortDate(v.firstSeen)}</span>` +
+        `<span class="feed-main"><strong class="feed-relver">${esc(v.version)}</strong>${meta ? ` <span class="feed-meta">${esc(meta)}</span>` : ""}</span>` +
+        `<span class="feed-ver">${esc(src)}</span></li>`;
+    }).join("");
+    $("feedSub").textContent = rows.length + " recent releases";
   }
 
   // ---------------- events ----------------
@@ -654,7 +662,7 @@
   // Expose the live-data bridge FIRST, before any render runs — so js/api.js can always
   // call setLinkState/addConnectedVehicles even if a boot render throws.
   window.WENFSD = {
-    rerender() { renderFSD(); renderStats(); renderDataMode(); render(); },
+    rerender() { renderFSD(); renderStats(); renderDataMode(); renderFeed(); render(); },
     setSources(list, live) { renderDataSources(list, live); },
     addConnectedVehicles, setLinkState,
     get activeVehicle() { return av(); },
@@ -668,7 +676,7 @@
   renderStats();
   renderDataMode();
   renderDataSources();
-  startFeed();
+  renderFeed();
   wire();
   render();
 

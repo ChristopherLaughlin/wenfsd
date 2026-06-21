@@ -108,6 +108,9 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .est-badge{display:inline-block;margin-bottom:14px;padding:7px 11px;background:rgba(220,160,40,.09);border:1px solid rgba(220,160,40,.28);border-radius:8px;font-size:11.5px;color:#d8b25a;font-weight:600}
 .est-badge span{color:var(--mut2);font-weight:400}
 .fw-active{color:#e8915a;font-size:11.5px;white-space:nowrap}
+.feed-relver{color:var(--txt)}
+.feed-meta{color:var(--mut2);font-size:11.5px}
+.feed-empty{color:var(--mut2);font-size:12.5px;padding:6px 2px}
 .fleet-card.estimate-mode{position:relative}
 
 .hero-right{display:flex;flex-direction:column;align-items:center;gap:14px}

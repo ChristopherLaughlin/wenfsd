@@ -109,13 +109,8 @@
       }
     } catch (e) { /* keep */ }
 
-    // --- real live feed (DB version-change events) ---
-    try {
-      const fd = await getJSON("/api/fleet/feed");
-      if (fd && fd.source === "db" && Array.isArray(fd.feed) && fd.feed.length) {
-        WEN.feedSeeds = fd.feed.map(f => ({ region: f.region || "—", model: f.model || "Tesla", hw: f.hw || "AI4", from: f.from || "—", to: f.to || f.version || "—" }));
-      }
-    } catch (e) { /* keep */ }
+    // (The "Recent rollout activity" feed is derived client-side from the real version data
+    //  loaded above — no separate fabricated per-car feed.)
 
     try { if (window.WENFSD && window.WENFSD.rerender) window.WENFSD.rerender(); } catch (e) { console.warn("[wenFSD] rerender failed:", e && e.message); }
 
