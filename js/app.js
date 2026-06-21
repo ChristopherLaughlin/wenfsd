@@ -46,6 +46,7 @@
     renderGuess(pred);
     renderTable();
     renderRegions();
+    renderReleaseNotes();
     return pred;
   }
 
@@ -63,6 +64,7 @@
     $("guessResult").classList.remove("show"); $("guessResult").innerHTML = "";
     renderTable();
     renderRegions();
+    renderReleaseNotes();
   }
   function svgEmpty(msg) {
     return `<div class="chart-empty">${esc(msg)}</div>`;
@@ -80,6 +82,7 @@
     $("guessResult").classList.remove("show"); $("guessResult").innerHTML = "";
     renderTable();
     renderRegions();
+    renderReleaseNotes();
   }
 
   function renderHero(pred) {
@@ -382,6 +385,25 @@
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
+  // ---- release notes (fleetctrl-style changelog) ----
+  const RN_TAG = { FSD: "rn-fsd", Dashcam: "rn-feat", Charging: "rn-feat", Sentry: "rn-feat", Nav: "rn-feat", Fix: "rn-fix", Safety: "rn-safety", UI: "rn-ui" };
+  function renderReleaseNotes() {
+    const mine = av() ? av().installedVersion : null;
+    const order = WEN.versions.map(v => v.version).filter(v => WEN.releaseNotes[v]);
+    $("releaseNotes").innerHTML = order.map(ver => {
+      const rn = WEN.releaseNotes[ver];
+      const isMine = ver === mine;
+      const items = rn.items.map(it => `<li><span class="rn-tag ${RN_TAG[it.tag] || "rn-feat"}">${esc(it.tag)}</span>${esc(it.text)}</li>`).join("");
+      const regions = (rn.regions || []).map(r => `<span class="rn-region">${esc(r)}</span>`).join("");
+      return `<details class="rn-item${isMine ? " rn-mine" : ""}"${isMine ? " open" : ""}>` +
+        `<summary><span class="rn-ver">${esc(ver)}</span>${isMine ? ' <span class="tag-you">you</span>' : ''}` +
+        `<span class="rn-date">${esc(rn.date)}</span><span class="rn-fsdb">FSD ${esc(rn.fsd || "—")}</span>` +
+        `<span class="rn-regions">${regions}</span></summary>` +
+        `<ul class="rn-items">${items}</ul>` +
+        `<div class="rn-src">via ${esc(rn.source || "trackers")}</div></details>`;
+    }).join("");
+  }
+
   // ---- per-region OS rollout panel (country breakdown) ----
   function renderRegions() {
     const activeMarket = av() ? av().market : null;

@@ -69,6 +69,41 @@ const WEN = (function () {
       AI3: { current: "v12.6.4", next: "v14 (lite)", mode: "gated", approval: { earliestDays: 14, modeDays: 50, latestDays: 120 }, k: 0.08 } } },
   };
 
+  // Release notes per version (fleetctrl-style changelog). In real mode these are
+  // ingested + merged from the external trackers; this is the seed/offline copy.
+  const releaseNotes = {
+    "2026.20.3": { date: "2026-06-17", regions: ["US", "Europe", "Down Under"], fsd: "v14.3.4 (HW4)", source: "FleetCtrl + Teslascope",
+      items: [
+        { tag: "FSD", text: "FSD (Supervised) v14.3.4 for HW4 — smoother lane changes, fewer interventions" },
+        { tag: "Dashcam", text: "Dashcam Viewer timeline scrubbing & clip export" },
+        { tag: "Charging", text: "Redesigned charging stats with cost-per-session breakdown" },
+        { tag: "Sentry", text: "Sentry Mode power-draw optimisation (lower vampire drain)" },
+      ] },
+    "2026.20": { date: "2026-06-10", regions: ["US", "Europe"], fsd: "v14.3.2 (HW4)", source: "FleetCtrl",
+      items: [
+        { tag: "FSD", text: "FSD (Supervised) v14.3.2 for HW4 — initial v14 branch" },
+        { tag: "Nav", text: "New trip planner with smarter charging stops" },
+        { tag: "Fix", text: "Bluetooth reconnection stability fixes" },
+      ] },
+    "2026.14.6.11": { date: "2026-06-05", regions: ["US", "Down Under"], fsd: "v14.3.4 (HW4)", source: "Teslascope",
+      items: [
+        { tag: "FSD", text: "FSD v14.3.4 bundled for HW4 on the .14.6 branch" },
+        { tag: "Nav", text: "Navigation reliability improvements" },
+        { tag: "Fix", text: "Point fix addressing media playback dropouts" },
+      ] },
+    "2026.14.6": { date: "2026-05-22", regions: ["Global"], fsd: "v13.2.9 (HW4)", source: "TeslaFi",
+      items: [
+        { tag: "FSD", text: "FSD v13.2.9 for HW4" },
+        { tag: "Safety", text: "Blind Spot camera image improvements" },
+        { tag: "UI", text: "Refreshed media player interface" },
+      ] },
+    "2026.14.2": { date: "2026-05-08", regions: ["Global"], fsd: "v13.2.8 (HW4)", source: "TeslaFi",
+      items: [
+        { tag: "FSD", text: "FSD v13.2.8 for HW4" },
+        { tag: "UI", text: "Minor UI polish and localisation fixes" },
+      ] },
+  };
+
   // FSD regulatory milestones (Australia headline; shown in the FSD card)
   const fsdMilestones = [
     { date: "2025-XX", label: "FSD v13 (Supervised) goes live for AU HW4 — first RHD market", done: true },
@@ -108,6 +143,6 @@ const WEN = (function () {
   // FSD major from a string like "v13.2.9", "v14.x", "v14 (lite)" -> 13 / 14
   function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
-  return { today, carPreset, versions, regions, regionLag, fsdMilestones, feedSeeds, stats,
+  return { today, carPreset, versions, regions, regionLag, fsdMilestones, releaseNotes, feedSeeds, stats,
            earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor };
 })();
