@@ -85,6 +85,12 @@
       }
     } catch (e) { /* no real data → stays sample */ }
 
+    // --- owner's REAL update history (auto-populated from their Tesla's version snapshots) ---
+    try {
+      const h = await fetch("/api/me/history", { headers: { Accept: "application/json" }, credentials: "same-origin" });
+      if (h.ok) { const d = await h.json(); if (d.history && d.history.length && window.WENFSD && window.WENFSD.addHistory) window.WENFSD.addHistory(d.history); }
+    } catch (e) { /* ignore */ }
+
     // --- source attribution strip (who we aggregated + live status) ---
     try {
       const sc = await getJSON("/api/sources?live=1");

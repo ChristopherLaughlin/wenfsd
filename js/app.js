@@ -463,21 +463,25 @@
   // ---- update history -> estimated earliness ----
   function renderHistory() {
     const v = av();
-    const list = v.history || [];
+    const list = (v.history || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+    const srcTag = (h) => h.source === "tesla" ? `<span class="hsrc hsrc-tesla" title="Read automatically from your Tesla">🛰️ auto</span>`
+      : h.source === "estimated" ? `<span class="hsrc hsrc-est" title="Estimated from the model — edit the date to make it exact">✏️ est</span>` : "";
     $("histList").innerHTML = list.length
-      ? list.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((h, i) =>
-          `<li><span>${esc(h.version)}</span><span class="hmut">${h.date}</span><button class="hist-x" data-hi="${i}">×</button></li>`).join("")
-      : `<li class="hist-empty">No updates logged yet. Add a couple to estimate your rollout percentile from real data.</li>`;
+      ? list.map((h) => `<li><span class="hver">${esc(h.version)}</span>${srcTag(h)}<input type="date" class="hdate" data-hkey="${esc(h.version + "|" + h.date)}" value="${esc(h.date)}" aria-label="date for ${esc(h.version)}"/><button class="hist-x" data-hkey="${esc(h.version + "|" + h.date)}" aria-label="remove">×</button></li>`).join("")
+      : `<li class="hist-empty">No updates logged yet. Hit <strong>📅 Estimate</strong> to fill in likely dates (then edit any to exact), or log one manually.</li>`;
 
-    $("histList").querySelectorAll("[data-hi]").forEach(b => {
-      b.onclick = () => {
-        const idx = +b.dataset.hi;
-        const sorted = v.history.slice().sort((a, c) => (a.date < c.date ? 1 : -1));
-        const target = sorted[idx];
-        const newHist = v.history.filter(h => !(h.version === target.version && h.date === target.date));
-        gstate = Garage.update(v.id, { history: newHist });
-        applyEstimate(); renderHistory();
-      };
+    $("histList").querySelectorAll(".hist-x").forEach(b => b.onclick = () => {
+      const [ver, date] = b.dataset.hkey.split("|");
+      gstate = Garage.update(v.id, { history: (v.history || []).filter(h => !(h.version === ver && h.date === date)) });
+      applyEstimate(); renderHistory();
+    });
+    $("histList").querySelectorAll(".hdate").forEach(inp => inp.onchange = () => {
+      const [ver, date] = inp.dataset.hkey.split("|"); const nd = inp.value;
+      if (!nd) return;
+      const hist = (v.history || []).map(h => (h.version === ver && h.date === date) ? { version: ver, date: nd, source: "exact" } : h);
+      gstate = Garage.update(v.id, { history: hist });
+      gstate = Garage.update(v.id, { earlinessSource: "history" });
+      applyEstimate(); renderActiveControls(); render();
     });
 
     const est = Garage.estimateEarliness(v);
@@ -501,6 +505,47 @@
       gstate = Garage.update(v.id, { earliness: est.earliness });
       renderActiveControls(); render();
     }
+  }
+
+  // Fill in LIKELY dates for the car's recent updates (from the model + your rollout position),
+  // tagged "est" and editable — correct any to exact and it becomes real signal.
+  function estimateHistory() {
+    const v = av(); if (!v) return;
+    const myKey = WEN.verKey(v.installedVersion || "0");
+    const P = Math.min(0.97, Math.max(0.03, effEarliness(v)));
+    const logit = (p) => Math.log(p / (1 - p));
+    const path = (WEN.versions || [])
+      .filter(x => WEN.verKey(x.version) <= myKey && ["rolling", "tapering", "mature", "legacy"].includes(x.status))
+      .sort((a, b) => WEN.verKey(b.version) - WEN.verKey(a.version)).slice(0, 4);
+    const est = path.map(x => {
+      const t0 = x.t0 || x.firstSeen; if (!t0) return null;
+      const offset = Math.round(logit(P) / (x.k || 0.33));
+      const date = Predict.isoDay(Predict.addDays(t0, offset));
+      return (date && new Date(date) <= new Date(today)) ? { version: x.version, date, source: "estimated" } : null;
+    }).filter(Boolean);
+    const merged = (v.history || []).slice();
+    for (const e of est) if (!merged.some(h => h.version === e.version)) merged.push(e);
+    gstate = Garage.update(v.id, { history: merged });
+    renderHistory();
+  }
+
+  // Merge REAL update history (version snapshots) read from the owner's Tesla, by VIN.
+  function addHistory(entries) {
+    if (!Array.isArray(entries) || !entries.length) return;
+    const byVin = {};
+    entries.forEach(e => { if (e.vin && e.version && e.date) (byVin[String(e.vin).toUpperCase()] = byVin[String(e.vin).toUpperCase()] || []).push(e); });
+    const s = Garage.get(); let touched = false;
+    s.vehicles.forEach(veh => {
+      const ev = byVin[String(veh.vin || "").toUpperCase()]; if (!ev) return;
+      const nonTesla = (veh.history || []).filter(h => h.source !== "tesla");
+      const tesla = ev.map(e => ({ version: e.version, date: String(e.date).slice(0, 10), source: "tesla" }));
+      const seen = new Set(), merged = [];
+      for (const h of tesla.concat(nonTesla)) { const k = h.version + "|" + h.date; if (!seen.has(k)) { seen.add(k); merged.push(h); } }
+      Garage.update(veh.id, { history: merged });
+      if (merged.some(h => h.source === "tesla" || h.source === "exact")) Garage.update(veh.id, { earlinessSource: "history" });
+      touched = true;
+    });
+    if (touched) { gstate = Garage.get(); applyEstimate(); try { renderActiveControls(); render(); } catch (e) {} }
   }
 
   // ---------------- add vehicle + VIN ----------------
@@ -545,6 +590,7 @@
     $("connectTeslaBtn").onclick = connectTesla;
 
     $("addHistBtn").onclick = () => { $("histForm").hidden = !$("histForm").hidden; };
+    if ($("estHistBtn")) $("estHistBtn").onclick = () => estimateHistory();
     $("h_add").onclick = () => {
       const ver = $("h_ver").value.trim(), date = $("h_date").value;
       if (!ver || !date) return;
@@ -1001,7 +1047,7 @@
     rerender() { renderFSD(); renderStats(); renderDataMode(); renderFeed(); render(); },
     setSources(list, live) { renderDataSources(list, live); },
     setCalibration(cal) { renderCalibration(cal); },
-    addConnectedVehicles, setLinkState,
+    addConnectedVehicles, setLinkState, addHistory,
     get activeVehicle() { return av(); },
   };
 

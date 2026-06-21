@@ -418,6 +418,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .hist-list .hist-empty{color:var(--mut2);font-family:var(--sans);border:0;display:block}
 .hist-x{background:transparent;border:0;color:var(--mut2);cursor:pointer;font-size:15px;padding:0 4px}
 .hist-x:hover{color:var(--acc2)}
+.history-actions{display:inline-flex;gap:6px}
+.hist-list .hver{font-weight:700}
+.hist-list .hdate{margin-left:auto;background:#0c1019;border:1px solid var(--line);border-radius:7px;color:var(--txt);font:inherit;font-size:12px;padding:3px 6px;font-family:var(--mono)}
+.hist-list .hdate:hover{border-color:var(--cyan)}
+.hsrc{font-size:9.5px;font-weight:700;font-family:var(--sans);padding:1px 5px;border-radius:5px;border:1px solid}
+.hsrc-tesla{color:#5fd1a0;border-color:rgba(70,180,140,.4);background:rgba(70,180,140,.08)}
+.hsrc-est{color:#e8b15a;border-color:rgba(220,160,40,.35);background:rgba(220,160,40,.08)}
 .early-est{margin-top:10px}
 .est-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;
   background:rgba(57,212,255,.07);border:1px solid rgba(57,212,255,.25);border-radius:9px;padding:9px 12px}
