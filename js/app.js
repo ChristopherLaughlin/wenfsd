@@ -497,6 +497,7 @@
     if (WEN.releaseNotesSource !== "live") ALWAYS_MODELLED.add("releaseNotesCard");
     document.querySelectorAll(".fleet-card").forEach(card => {
       card.style.display = "";
+      if (card.id === "calibrationCard") { const b = card.querySelector(":scope > .est-badge"); if (b) b.remove(); card.classList.remove("estimate-mode"); return; } // self-describes its own mode
       const modelled = ALWAYS_MODELLED.has(card.id);
       const showBadge = modelled || !live;
       card.classList.toggle("estimate-mode", showBadge);
@@ -516,6 +517,26 @@
         ? `✓ Showing live fleet data aggregated from connected cars + public trackers.`
         : `Showing <strong>your real car data</strong> plus <em>modelled estimates</em> for the fleet-wide views below — each one clearly badged. Estimates become live figures as real Teslas connect and we aggregate the public trackers. No figure is presented as observed unless it is.`;
     }
+  }
+
+  // ---- model calibration / back-test against real tracker history ----
+  function renderCalibration(cal) {
+    const el = $("calibrationBody");
+    if (!el) return;
+    if (!cal || cal.mode !== "live") {
+      el.innerHTML = `<p class="cal-note">Calibration appears once live sources are enabled. It back-tests the engine against real release history from the public trackers — cadence, rollout velocity and coverage. No fabricated accuracy figure is shown: per-car hit-rate is published only once enough connected cars provide ground truth.</p>`;
+      return;
+    }
+    const c = cal.cadence, v = cal.velocity, cov = cal.coverage, tiles = [];
+    if (c) tiles.push(["Release cadence", `~${c.medianDays}d`, `median between OS branches · ${c.meanDays}±${c.sdDays}d mean · from ${c.branches} real branches`]);
+    if (v) tiles.push(["Rollout velocity", `~${v.medianDaysQ1toQ3}d`, `installs go 25%→75% once a version reaches cars · ${v.sampleVersions} rollouts (TeslaFi daily data)`]);
+    if (cov) tiles.push(["Coverage", `${cov.versions} versions`, `${cov.versionsWithShare} with fleet share · ${cov.sourceCount} live sources`]);
+    el.innerHTML =
+      `<div class="cal-grid">` +
+      tiles.map(([h, big, sub]) => `<div class="cal-tile"><div class="cal-h">${esc(h)}</div><div class="cal-big">${esc(big)}</div><div class="cal-sub">${esc(sub)}</div></div>`).join("") +
+      `</div>` +
+      (cov && cov.sources && cov.sources.length ? `<div class="cal-src">Validated against real history from: <strong>${cov.sources.map(esc).join(" · ")}</strong></div>` : "") +
+      `<div class="cal-honesty">✓ ${esc(cal.honesty || "")}</div>`;
   }
 
   // ---- data sources attribution (we aggregate the public trackers) ----
@@ -664,6 +685,7 @@
   window.WENFSD = {
     rerender() { renderFSD(); renderStats(); renderDataMode(); renderFeed(); render(); },
     setSources(list, live) { renderDataSources(list, live); },
+    setCalibration(cal) { renderCalibration(cal); },
     addConnectedVehicles, setLinkState,
     get activeVehicle() { return av(); },
   };
@@ -677,6 +699,7 @@
   renderDataMode();
   renderDataSources();
   renderFeed();
+  renderCalibration();
   wire();
   render();
 

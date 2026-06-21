@@ -112,6 +112,14 @@
     // (The "Recent rollout activity" feed is derived client-side from the real version data
     //  loaded above — no separate fabricated per-car feed.)
 
+    // --- model calibration / back-test against real tracker history ---
+    try {
+      const cal = await getJSON("/api/calibration?live=1");
+      if (cal && cal.mode === "live" && window.WENFSD && window.WENFSD.setCalibration) {
+        window.WENFSD.setCalibration(cal);
+      }
+    } catch (e) { /* keep placeholder */ }
+
     try { if (window.WENFSD && window.WENFSD.rerender) window.WENFSD.rerender(); } catch (e) { console.warn("[wenFSD] rerender failed:", e && e.message); }
 
     console.info("[wenFSD] hydrated from live API (source: " + (health.mock ? "mock backend" : "database") + ")");

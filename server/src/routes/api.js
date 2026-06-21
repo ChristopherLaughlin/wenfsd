@@ -6,6 +6,7 @@ import { predictNextOS, predictNextFSD } from "../predict.js";
 import * as W from "../wendata.js";
 import { SEED_VERSIONS, SEED_FEED, SEED_STATS } from "../seed.js";
 import { merge, fetchAll, sourceStatus, fetchReleaseNotes } from "../sources/index.js";
+import { computeCalibration } from "../calibration.js";
 
 export const apiRouter = Router();
 
@@ -42,6 +43,12 @@ apiRouter.get("/release-notes", ah(async (req, res) => {
   // notes change rarely once published → cache 6h
   const notes = await cached("notes:" + live, 6 * 60 * 60_000, () => fetchReleaseNotes({ live }));
   res.json({ mode: live ? "live" : "sample", notes });
+}));
+
+apiRouter.get("/calibration", ah(async (req, res) => {
+  const live = req.query.live === "1" && config.allowLiveSources;
+  const cal = await cached("cal:" + live, 6 * 60 * 60_000, () => computeCalibration({ live }));
+  res.json(cal);
 }));
 
 apiRouter.get("/sources", ah(async (req, res) => {
