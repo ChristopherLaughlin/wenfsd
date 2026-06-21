@@ -18,14 +18,15 @@ const Garage = (function () {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
   }
 
-  // seed with the demo Juniper on first run so the dashboard isn't empty
-  function seed() {
-    const v = {
+  // Optional demo car — loaded only when the user clicks "try a demo car", never automatically.
+  function demoVehicle() {
+    return {
       id: uid(),
-      nickname: "My Model Y",
+      nickname: "Demo Model Y",
       vin: "",
       model: WEN.carPreset.model,
       year: WEN.carPreset.year,
+      generation: "Juniper",
       hardware: WEN.carPreset.hardware,
       market: WEN.carPreset.market,
       drive: WEN.carPreset.drive,
@@ -38,16 +39,16 @@ const Garage = (function () {
       optedIn: false,
       history: [],
     };
-    const state = { vehicles: [v], activeId: v.id };
-    save(state);
-    return state;
   }
+  function loadDemo() { const s = get(); const v = demoVehicle(); s.vehicles.push(v); s.activeId = v.id; save(s); return s; }
 
-  function get() { return load() || seed(); }
+  // Default state is EMPTY — the user adds their own vehicles.
+  function get() { return load() || { vehicles: [], activeId: null }; }
+  function isEmpty() { return get().vehicles.length === 0; }
 
   function active(state) {
     state = state || get();
-    return state.vehicles.find(v => v.id === state.activeId) || state.vehicles[0];
+    return state.vehicles.find(v => v.id === state.activeId) || state.vehicles[0] || null;
   }
 
   function setActive(id) { const s = get(); s.activeId = id; save(s); return s; }
@@ -75,8 +76,7 @@ const Garage = (function () {
   function remove(id) {
     const s = get();
     s.vehicles = s.vehicles.filter(v => v.id !== id);
-    if (!s.vehicles.length) return seed();
-    if (s.activeId === id) s.activeId = s.vehicles[0].id;
+    if (s.activeId === id) s.activeId = s.vehicles.length ? s.vehicles[0].id : null;
     save(s);
     return s;
   }
@@ -110,5 +110,5 @@ const Garage = (function () {
     return "v" + Math.abs((Date.now() ^ (Math.random() * 1e9)) | 0).toString(36);
   }
 
-  return { get, save, active, setActive, add, update, remove, estimateEarliness, seed };
+  return { get, save, active, setActive, add, update, remove, estimateEarliness, isEmpty, loadDemo };
 })();

@@ -124,16 +124,9 @@
         <p class="hint" id="earlyHint">This is your <strong>rollout percentile</strong> — where your car historically lands in each wave. Log your real update history below and wenFSD estimates it for you.</p>
 
         <div class="channel-row">
-          <label class="field channel-field">
-            <span>Update channel</span>
-            <select id="channelSel">
-              <option value="standard">Standard</option>
-              <option value="advanced">Advanced — pulls sooner</option>
-            </select>
-          </label>
-          <label class="switch-row inline"><input type="checkbox" id="earlyAccessChk"/> <span>Early Access Program</span></label>
+          <label class="switch-row inline"><input type="checkbox" id="earlyAccessChk"/> <span>I'm in the <strong>Early Access Program</strong></span></label>
         </div>
-        <p class="hint">Tesla's <strong>Advanced</strong> update setting (Controls → Software) and the <strong>Early Access Program</strong> genuinely get you releases sooner — wenFSD shifts your effective percentile to match.</p>
+        <p class="hint">The <strong>Early Access Program</strong> puts you in the first wave — wenFSD shifts your effective percentile accordingly. (The Advanced vs Standard update toggle, by contrast, makes little measurable difference to timing in practice, so we don't factor it in.)</p>
 
         <!-- update history -> real earliness estimate -->
         <div class="history">

@@ -8,14 +8,11 @@
 
   function av() { return Garage.active(gstate); }
 
-  // effective rollout percentile = base + controllable factors (update channel, Early Access).
-  // If earliness came from real logged history, it already reflects those — don't double-count.
+  // effective rollout percentile = base, shifted earlier if you're in the Early Access Program.
+  // If earliness came from real logged history it already reflects that — don't double-count.
   function effEarliness(v) {
     let e = v.earliness;
-    if (v.earlinessSource !== "history") {
-      e += (WEN.channelShift[v.updateChannel] || 0);
-      if (v.earlyAccess) e += WEN.earlyAccessShift;
-    }
+    if (v.earlinessSource !== "history" && v.earlyAccess) e += WEN.earlyAccessShift;
     return Math.min(0.97, Math.max(0.03, e));
   }
 
@@ -36,6 +33,7 @@
 
   // ---------------- render ----------------
   function render() {
+    if (!av()) { renderEmptyState(); return; }
     const pred = currentPrediction();
     const isFSD = ui.target === "fsd";
     $("curveVer").textContent = pred.targetLabel || (isFSD ? "FSD" : "OS");
@@ -48,6 +46,24 @@
     renderGuess(pred);
     renderTable();
     return pred;
+  }
+
+  function renderEmptyState() {
+    $("curveVer").textContent = "";
+    $("heroEyebrow").textContent = "Welcome to wenFSD";
+    $("heroDate").textContent = "Add your Tesla to begin";
+    $("heroWindow").textContent = "";
+    $("heroCountdown").innerHTML = "";
+    $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
+    $("confRow").innerHTML = ""; $("probMini").innerHTML = "";
+    $("heroNote").innerHTML = "Add your car by VIN (we'll decode the model, year &amp; hardware) and wenFSD predicts your next software update and next FSD version — with confidence bands. No vehicles are tracked until you add one.";
+    $("curveChart").innerHTML = svgEmpty("Add a vehicle to see its rollout curve");
+    $("distChart").innerHTML = svgEmpty("Add a vehicle to see the probability distribution");
+    $("guessResult").classList.remove("show"); $("guessResult").innerHTML = "";
+    renderTable();
+  }
+  function svgEmpty(msg) {
+    return `<div class="chart-empty">${esc(msg)}</div>`;
   }
 
   function renderNoPrediction(pred) {
@@ -81,7 +97,7 @@
     $("probMini").innerHTML =
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,7))}</span><b>${w7}%</b></div>` +
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,30))}</span><b>${w30}%</b></div>`;
-    $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().updateChannel === "advanced" || av().earlyAccess ? " (incl. your update settings)" : ""}.</span>`;
+    $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
   }
 
   function countdownHTML(d) {
@@ -99,13 +115,28 @@
 
   // ---------------- garage ----------------
   function renderGarage() {
+    if (!gstate.vehicles.length) {
+      $("activeControls").hidden = true;
+      $("addVehicleBtn").hidden = $("addForm").hidden ? false : true;
+      $("garageList").innerHTML =
+        `<div class="garage-empty">` +
+        `<div class="ge-icon">🚗</div>` +
+        `<div class="ge-title">Your garage is empty</div>` +
+        `<div class="ge-sub">Add your Tesla to get personalised update predictions. Nothing is tracked until you do.</div>` +
+        `<div class="ge-actions"><button class="btn" id="geAdd" type="button">+ Add your Tesla</button>` +
+        `<button class="btn-ghost" id="geDemo" type="button">Try a demo car</button></div></div>`;
+      $("geAdd").onclick = () => { $("addForm").hidden = false; $("addVehicleBtn").hidden = true; resetForm(); $("garageList").innerHTML = ""; };
+      $("geDemo").onclick = () => { gstate = Garage.loadDemo(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render(); };
+      return;
+    }
+    $("activeControls").hidden = false;
     $("garageList").innerHTML = gstate.vehicles.map(v => {
       const isA = v.id === gstate.activeId;
       return `<div class="gcar ${isA ? "active" : ""}" data-id="${v.id}">` +
         `<div class="gcar-main"><div class="gcar-name">${esc(v.nickname || v.model)}</div>` +
         `<div class="gcar-sub">${v.year} ${esc(v.model)}${v.generation ? " " + v.generation : ""} · ${v.hardware} · ${esc(v.market)}</div>` +
         `<div class="gcar-ver">on ${esc(v.installedVersion)}</div></div>` +
-        (gstate.vehicles.length > 1 ? `<button class="gcar-x" data-del="${v.id}" title="Remove">×</button>` : "") +
+        `<button class="gcar-x" data-del="${v.id}" title="Remove this vehicle">×</button>` +
         `</div>`;
     }).join("");
 
@@ -123,6 +154,8 @@
   }
 
   function renderActiveControls() {
+    if (!av()) { $("activeControls").hidden = true; return; }
+    $("activeControls").hidden = false;
     const v = av();
     $("carBadge").textContent = v.hardware + (v.hardware === "AI4" ? " · HW4" : v.hardware === "AI3" ? " · HW3" : "");
     $("carModel").textContent = `${v.year} ${v.model}` + (v.generation ? ` · ${v.generation}` : "");
@@ -144,8 +177,6 @@
       setEarlyLabel(); ui.guessDays = null; clearGuess(); render();
     };
 
-    const ch = $("channelSel"); ch.value = v.updateChannel || "standard";
-    ch.onchange = () => { gstate = Garage.update(v.id, { updateChannel: ch.value }); ui.guessDays = null; clearGuess(); setEarlyLabel(); render(); };
     const ea = $("earlyAccessChk"); ea.checked = !!v.earlyAccess;
     ea.onchange = () => { gstate = Garage.update(v.id, { earlyAccess: ea.checked }); ui.guessDays = null; clearGuess(); setEarlyLabel(); render(); };
 
@@ -208,7 +239,7 @@
   // ---------------- add vehicle + VIN ----------------
   function wireAddForm() {
     $("addVehicleBtn").onclick = () => { $("addForm").hidden = false; $("addVehicleBtn").hidden = true; resetForm(); };
-    $("cancelVehicleBtn").onclick = () => { $("addForm").hidden = true; $("addVehicleBtn").hidden = false; };
+    $("cancelVehicleBtn").onclick = () => { $("addForm").hidden = true; $("addVehicleBtn").hidden = false; renderGarage(); };
 
     $("f_market").innerHTML = Object.keys(WEN.regionLag).map(m => `<option ${m === "Australia" ? "selected" : ""}>${m}</option>`).join("");
     $("f_ver").innerHTML = WEN.versions.map(x => `<option>${x.version}</option>`).join("");
@@ -322,15 +353,15 @@
   }
   const MODE_LABEL = { rolling: "Rolling out", early: "Early/staged rollout", gated: "Awaiting approval", current: "On newest", capped: "Hardware-capped" };
   function renderFSD() {
-    const c = car();
-    const region = WEN.regions[c.market] || {};
-    const f = region.fsd ? region.fsd[c.hardware] : null;
+    const c = av() ? car() : null;
+    const region = c ? (WEN.regions[c.market] || {}) : {};
+    const f = (c && region.fsd) ? region.fsd[c.hardware] : null;
     $("fsdStatus").textContent = f ? (MODE_LABEL[f.mode] || f.mode) : "—";
     $("fsdUsBuild").textContent = f ? f.current : "—";
-    const fp = Predict.predictNextFSD(c, today);
-    $("fsdApproval").textContent = (fp.capped || fp.unavailable) ? "—" : Predict.fmtDate(fp.medianDate).replace(/^\w+, /, "");
+    if (c) { const fp = Predict.predictNextFSD(c, today); $("fsdApproval").textContent = (fp.capped || fp.unavailable) ? "—" : Predict.fmtDate(fp.medianDate).replace(/^\w+, /, ""); }
+    else $("fsdApproval").textContent = "—";
 
-    // region × hardware matrix
+    // region × hardware matrix (highlights the active car's region if any)
     const rows = Object.keys(WEN.regions).map(rname => {
       const r = WEN.regions[rname];
       const cell = (hw) => {
@@ -339,7 +370,7 @@
         const next = x.next ? `<span class="mx-next">→ ${esc(x.next)}</span>` : `<span class="mx-capped">capped</span>`;
         return `<td><div class="mx-cur">${esc(x.current)}</div><div class="mx-mode mode-${x.mode}">${MODE_LABEL[x.mode] || x.mode}</div>${next}</td>`;
       };
-      const isActive = rname === c.market;
+      const isActive = c && rname === c.market;
       return `<tr class="${isActive ? "mx-active" : ""}"><td class="mx-region">${esc(rname)}${isActive ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;
     }).join("");
     $("fsdMatrix").innerHTML =
@@ -362,7 +393,7 @@
     return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${bars}</svg>`;
   }
   function renderTable() {
-    const mine = av().installedVersion;
+    const mine = av() ? av().installedVersion : null;
     $("fwBody").innerHTML = WEN.versions.map(v => {
       const isMine = v.version === mine;
       return `<tr class="${isMine ? "mine" : ""}">` +

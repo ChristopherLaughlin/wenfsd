@@ -18,10 +18,11 @@ const WEN = (function () {
     earlyAccess: false,              // Tesla Early Access Program → updates first
   };
 
-  // How much the controllable settings shift your effective rollout percentile.
-  // Grounded in Tesla's own guidance: Advanced "gets you new releases sooner".
-  const channelShift = { advanced: -0.16, standard: +0.10 };
-  const earlyAccessShift = -0.22;
+  // Controllable factors that shift your effective rollout percentile.
+  // NOTE: real-world owner reports say the Advanced vs Standard update toggle makes
+  // little measurable difference to *timing*, so we don't model it. The Early Access
+  // Program (EAP), however, demonstrably puts you in the first wave.
+  const earlyAccessShift = -0.30;
 
   // ---- OS version distribution (drives rollout curves + release cadence) ----
   const versions = [
@@ -108,5 +109,5 @@ const WEN = (function () {
   function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
   return { today, carPreset, versions, regions, regionLag, fsdMilestones, feedSeeds, stats,
-           channelShift, earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor };
+           earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor };
 })();
