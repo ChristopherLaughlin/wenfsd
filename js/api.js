@@ -29,6 +29,15 @@
     try { health = await getJSON("/api/healthz"); } catch { return; }
     if (!health || !health.ok) return;
 
+    // --- PRIORITY: pull the owner's linked vehicles into the garage FIRST, so nothing else
+    // (a render glitch, a slow fetch) can ever block it ---
+    try {
+      const r = await fetch("/api/me/vehicles", { headers: { Accept: "application/json" }, credentials: "same-origin" });
+      let vehicles = [];
+      if (r.ok) { const d = await r.json(); vehicles = d.vehicles || []; }
+      if (window.WENFSD && window.WENFSD.setLinkState) window.WENFSD.setLinkState({ status: r.status, vehicles });
+    } catch (e) { /* ignore */ }
+
     // --- REAL fleet firmware (from our own DB only — never the sample/merged data) ---
     // Only flips to "live" (and shows the fleet sections) when real crowdsourced data exists.
     try {
@@ -66,15 +75,7 @@
       }
     } catch (e) { /* keep */ }
 
-    if (window.WENFSD && window.WENFSD.rerender) window.WENFSD.rerender();
-
-    // --- pull the signed-in owner's Tesla-linked vehicles into the garage ---
-    try {
-      const r = await fetch("/api/me/vehicles", { headers: { Accept: "application/json" }, credentials: "same-origin" });
-      let vehicles = [];
-      if (r.ok) { const d = await r.json(); vehicles = d.vehicles || []; }
-      if (window.WENFSD && window.WENFSD.setLinkState) window.WENFSD.setLinkState({ status: r.status, vehicles });
-    } catch (e) { /* ignore */ }
+    try { if (window.WENFSD && window.WENFSD.rerender) window.WENFSD.rerender(); } catch (e) { console.warn("[wenFSD] rerender failed:", e && e.message); }
 
     console.info("[wenFSD] hydrated from live API (source: " + (health.mock ? "mock backend" : "database") + ")");
   }

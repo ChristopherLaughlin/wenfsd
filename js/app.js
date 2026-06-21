@@ -646,7 +646,11 @@
         });
       }
     });
-    renderGarage(); renderActiveControls(); render();
+    // render defensively — the car is already saved to the garage, so a render hiccup
+    // in one section never prevents it appearing.
+    try { renderGarage(); } catch (e) { console.warn(e); }
+    try { renderActiveControls(); } catch (e) { console.warn(e); }
+    try { render(); } catch (e) { console.warn(e); }
   }
 
   // Visible Tesla-connection status (so the link state is never a mystery).
