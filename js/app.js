@@ -488,15 +488,27 @@
     if (el) { el.classList.toggle("is-sample", !live); el.title = live ? "Live, aggregated from connected cars + trackers" : "Illustrative sample data — connect a backend / your Tesla for live figures"; }
     const fwSub = document.querySelector("#fwSub");
     if (fwSub) fwSub.textContent = live ? "live distribution" : "sample distribution";
-    // hide the fabricated fleet sections unless we actually have real fleet data
-    document.querySelectorAll(".fleet-card").forEach(el => { el.style.display = live ? "" : "none"; });
+    // fleet sections: always visible, but badged "modelled estimate" until real data backs them
+    document.querySelectorAll(".fleet-card").forEach(card => {
+      card.style.display = "";
+      card.classList.toggle("estimate-mode", !live);
+      let badge = card.querySelector(":scope > .est-badge");
+      if (!live) {
+        if (!badge) {
+          badge = document.createElement("div");
+          badge.className = "est-badge";
+          badge.innerHTML = `⚠️ Modelled estimate — not live fleet data. <span>Firms up as real cars connect &amp; trackers are aggregated.</span>`;
+          card.insertBefore(badge, card.firstChild);
+        }
+      } else if (badge) { badge.remove(); }
+    });
     const banner = $("sampleBanner");
     if (banner) {
       banner.hidden = false;
       banner.className = live ? "sample-banner sb-live" : "sample-banner";
       banner.innerHTML = live
-        ? `✓ Showing live fleet data aggregated from connected cars.`
-        : `Showing <strong>only your real data</strong>. Fleet-wide views (firmware distribution, rollout timing, release notes) stay hidden until enough real cars connect — wenFSD doesn't display invented fleet figures. Your prediction below is a transparent <em>model</em> estimate from your real version &amp; hardware.`;
+        ? `✓ Showing live fleet data aggregated from connected cars + public trackers.`
+        : `Showing <strong>your real car data</strong> plus <em>modelled estimates</em> for the fleet-wide views below — each one clearly badged. Estimates become live figures as real Teslas connect and we aggregate the public trackers. No figure is presented as observed unless it is.`;
     }
   }
 

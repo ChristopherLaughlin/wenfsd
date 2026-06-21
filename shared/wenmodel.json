@@ -1,29 +1,195 @@
 {
   "_comment": "Canonical wenFSD data model. The server loads this directly; the client (js/data.js) is checked against it by server/test/parity.test.js so the two can't silently drift.",
   "today": "2026-06-21",
-  "earlyAccessShift": -0.30,
+  "earlyAccessShift": -0.3,
   "versions": [
-    { "version": "2026.20.3", "firstSeen": "2026-06-17", "fleetPct": 9.8, "status": "rolling", "branch": "standard", "k": 0.34, "t0": "2026-06-27", "fsdBuild": { "AI4": "v14.3.4", "AI3": "v12.6.4" } },
-    { "version": "2026.20", "firstSeen": "2026-06-10", "fleetPct": 6.1, "status": "tapering", "branch": "standard", "k": 0.31, "t0": "2026-06-20", "fsdBuild": { "AI4": "v14.3.2", "AI3": "v12.6.4" } },
-    { "version": "2026.14.6.11", "firstSeen": "2026-06-05", "fleetPct": 24.4, "status": "mature", "branch": "standard", "k": 0.36, "t0": "2026-06-12", "fsdBuild": { "AI4": "v14.3.4", "AI3": "v12.6.4" } },
-    { "version": "2026.14.6", "firstSeen": "2026-05-22", "fleetPct": 35.7, "status": "mature", "branch": "standard", "k": 0.33, "t0": "2026-06-01", "fsdBuild": { "AI4": "v13.2.9", "AI3": "v12.6.4" } },
-    { "version": "2026.14.2", "firstSeen": "2026-05-08", "fleetPct": 11.3, "status": "legacy", "branch": "standard", "k": 0.30, "t0": "2026-05-18", "fsdBuild": { "AI4": "v13.2.8", "AI3": "v12.6.3" } }
+    {
+      "version": "2026.20.3",
+      "firstSeen": "2026-06-17",
+      "fleetPct": 9.8,
+      "status": "rolling",
+      "branch": "standard",
+      "k": 0.34,
+      "t0": "2026-06-27",
+      "fsdBuild": {
+        "AI4": "v14.3.4",
+        "AI3": "v12.6.4"
+      }
+    },
+    {
+      "version": "2026.20",
+      "firstSeen": "2026-06-10",
+      "fleetPct": 6.1,
+      "status": "tapering",
+      "branch": "standard",
+      "k": 0.31,
+      "t0": "2026-06-20",
+      "fsdBuild": {
+        "AI4": "v14.3.2",
+        "AI3": "v12.6.4"
+      }
+    },
+    {
+      "version": "2026.14.6.11",
+      "firstSeen": "2026-06-05",
+      "fleetPct": 24.4,
+      "status": "mature",
+      "branch": "standard",
+      "k": 0.36,
+      "t0": "2026-06-12",
+      "fsdBuild": {
+        "AI4": "v14.3.4",
+        "AI3": "v12.6.4"
+      }
+    },
+    {
+      "version": "2026.14.6",
+      "firstSeen": "2026-05-22",
+      "fleetPct": 35.7,
+      "status": "mature",
+      "branch": "standard",
+      "k": 0.33,
+      "t0": "2026-06-01",
+      "fsdBuild": {
+        "AI4": "v13.2.9",
+        "AI3": "v12.6.4"
+      }
+    },
+    {
+      "version": "2026.14.2",
+      "firstSeen": "2026-05-08",
+      "fleetPct": 11.3,
+      "status": "legacy",
+      "branch": "standard",
+      "k": 0.3,
+      "t0": "2026-05-18",
+      "fsdBuild": {
+        "AI4": "v13.2.8",
+        "AI3": "v12.6.3"
+      }
+    }
   ],
   "regions": {
-    "United States": { "osLagDays": 0, "drive": "LHD", "fsd": {
-      "AI4": { "current": "v14.3.4", "next": "v14.4.x", "mode": "current", "k": 0.16, "cadenceDays": 28 },
-      "AI3": { "current": "v12.6.4", "next": "v14 (lite)", "mode": "rolling", "k": 0.10, "t0": "2026-07-05" } } },
-    "Canada": { "osLagDays": 3, "drive": "LHD", "fsd": {
-      "AI4": { "current": "v14.3.2", "next": "v14.3.4", "mode": "rolling", "k": 0.18, "t0": "2026-06-26" },
-      "AI3": { "current": "v12.6.4", "next": "v14 (lite)", "mode": "gated", "approval": { "earliestDays": 10, "modeDays": 35, "latestDays": 80 }, "k": 0.10 } } },
-    "Europe": { "osLagDays": 9, "drive": "LHD", "fsd": {
-      "AI4": { "current": "v13.2.8", "next": "v14.x", "mode": "gated", "approval": { "earliestDays": 25, "modeDays": 90, "latestDays": 220 }, "k": 0.09 },
-      "AI3": { "current": "v12.6.4", "next": null, "mode": "capped" } } },
-    "Australia": { "osLagDays": 12, "drive": "RHD", "fsd": {
-      "AI4": { "current": "v13.2.9", "next": "v14.x", "mode": "early", "firstSeen": "2026-06-09", "fleetPct": 5.4, "k": 0.085, "t0": "2026-07-14", "t0Sigma": 7 },
-      "AI3": { "current": "v12.6.4", "next": "v14 (lite)", "mode": "gated", "approval": { "earliestDays": 5, "modeDays": 30, "latestDays": 75 }, "k": 0.09 } } },
-    "New Zealand": { "osLagDays": 14, "drive": "RHD", "fsd": {
-      "AI4": { "current": "v13.2.9", "next": "v14.x", "mode": "gated", "approval": { "earliestDays": 14, "modeDays": 45, "latestDays": 110 }, "k": 0.08 },
-      "AI3": { "current": "v12.6.4", "next": "v14 (lite)", "mode": "gated", "approval": { "earliestDays": 14, "modeDays": 50, "latestDays": 120 }, "k": 0.08 } } }
+    "United States": {
+      "osLagDays": 0,
+      "drive": "LHD",
+      "fsd": {
+        "AI4": {
+          "current": "v14.3.4",
+          "next": "v14.4.x",
+          "mode": "current",
+          "k": 0.16,
+          "cadenceDays": 28
+        },
+        "AI3": {
+          "current": "v12.6.4",
+          "next": "v14 (lite)",
+          "mode": "rolling",
+          "k": 0.1,
+          "t0": "2026-07-05"
+        }
+      }
+    },
+    "Canada": {
+      "osLagDays": 3,
+      "drive": "LHD",
+      "fsd": {
+        "AI4": {
+          "current": "v14.3.2",
+          "next": "v14.3.4",
+          "mode": "rolling",
+          "k": 0.18,
+          "t0": "2026-06-26"
+        },
+        "AI3": {
+          "current": "v12.6.4",
+          "next": "v14 (lite)",
+          "mode": "gated",
+          "approval": {
+            "earliestDays": 10,
+            "modeDays": 35,
+            "latestDays": 80
+          },
+          "k": 0.1
+        }
+      }
+    },
+    "Europe": {
+      "osLagDays": 9,
+      "drive": "LHD",
+      "fsd": {
+        "AI4": {
+          "current": "v13.2.8",
+          "next": "v14.x",
+          "mode": "gated",
+          "approval": {
+            "earliestDays": 25,
+            "modeDays": 90,
+            "latestDays": 220
+          },
+          "k": 0.09
+        },
+        "AI3": {
+          "current": "v12.6.4",
+          "next": null,
+          "mode": "capped"
+        }
+      }
+    },
+    "Australia": {
+      "osLagDays": 12,
+      "drive": "RHD",
+      "fsd": {
+        "AI4": {
+          "current": "v13.2.9",
+          "next": "v14.x",
+          "mode": "early",
+          "firstSeen": "2026-06-09",
+          "fleetPct": 18,
+          "k": 0.11,
+          "t0": "2026-06-23",
+          "t0Sigma": 6
+        },
+        "AI3": {
+          "current": "v12.6.4",
+          "next": "v14 (lite)",
+          "mode": "gated",
+          "approval": {
+            "earliestDays": 5,
+            "modeDays": 30,
+            "latestDays": 75
+          },
+          "k": 0.09
+        }
+      }
+    },
+    "New Zealand": {
+      "osLagDays": 14,
+      "drive": "RHD",
+      "fsd": {
+        "AI4": {
+          "current": "v13.2.9",
+          "next": "v14.x",
+          "mode": "gated",
+          "approval": {
+            "earliestDays": 14,
+            "modeDays": 45,
+            "latestDays": 110
+          },
+          "k": 0.08
+        },
+        "AI3": {
+          "current": "v12.6.4",
+          "next": "v14 (lite)",
+          "mode": "gated",
+          "approval": {
+            "earliestDays": 14,
+            "modeDays": 50,
+            "latestDays": 120
+          },
+          "k": 0.08
+        }
+      }
+    }
   }
 }
