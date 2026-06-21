@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>wenFSD — predict your next Tesla update</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path d="M3 13l4-4 4 4 5-6 5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="20" cy="13" r="1.6" fill="currentColor"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">wen<span>FSD</span></div>
+      <div class="brand-sub">Tesla update rollout intelligence · Australia</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="today">Today<br/><strong id="todayLabel">—</strong></div>
+    <div class="live"><span class="dot"></span>live fleet</div>
+  </div>
+</header>
+
+<main>
+  <!-- HERO PREDICTION -->
+  <section class="hero card">
+    <div class="hero-left">
+      <div class="seg" id="targetSeg">
+        <button class="seg-btn active" data-target="standard">Next software update</button>
+        <button class="seg-btn" data-target="fsd">Next FSD version</button>
+      </div>
+      <div class="hero-head">
+        <div class="hero-eyebrow" id="heroEyebrow">Predicted arrival on your car</div>
+        <div class="hero-date" id="heroDate">—</div>
+        <div class="hero-window" id="heroWindow">—</div>
+      </div>
+      <div class="hero-countdown" id="heroCountdown"></div>
+      <div class="confidence-row" id="confRow"></div>
+      <p class="hero-note" id="heroNote"></p>
+    </div>
+    <div class="hero-right">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 180 180" class="ring">
+          <circle cx="90" cy="90" r="78" class="ring-bg"/>
+          <circle cx="90" cy="90" r="78" class="ring-fg" id="ringFg"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num" id="ringDays">—</div>
+          <div class="ring-lbl">days, most likely</div>
+        </div>
+      </div>
+      <div class="prob-mini" id="probMini"></div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <!-- YOUR GARAGE -->
+    <section class="card" id="garageCard">
+      <div class="card-h-row">
+        <h2 class="card-h">Your garage</h2>
+        <button class="btn-sm" id="addVehicleBtn">+ Add vehicle</button>
+      </div>
+      <div class="garage-list" id="garageList"></div>
+
+      <!-- add-vehicle form (hidden until +Add) -->
+      <div class="add-form" id="addForm" hidden>
+        <label class="field">
+          <span>VIN <em>— auto-detects model, year &amp; hardware</em></span>
+          <div class="vin-row">
+            <input id="vinInput" placeholder="e.g. LRWYGDEK8TC000123" maxlength="17" autocomplete="off" spellcheck="false"/>
+            <button class="btn-sm" id="vinDecodeBtn" type="button">Decode</button>
+          </div>
+          <div id="vinResult" class="vin-result"></div>
+        </label>
+        <div class="form-grid">
+          <label class="field"><span>Nickname</span><input id="f_nick" placeholder="My Model Y"/></label>
+          <label class="field"><span>Model</span>
+            <select id="f_model"><option>Model Y</option><option>Model 3</option><option>Model S</option><option>Model X</option><option>Cybertruck</option></select></label>
+          <label class="field"><span>Year</span><input id="f_year" type="number" min="2012" max="2027" value="2026"/></label>
+          <label class="field"><span>Hardware</span>
+            <select id="f_hw"><option>AI4</option><option>AI3</option><option>AI2.5</option></select></label>
+          <label class="field"><span>Market</span><select id="f_market"></select></label>
+          <label class="field"><span>Current version</span><select id="f_ver"></select></label>
+        </div>
+        <div class="form-actions">
+          <button class="btn" id="saveVehicleBtn" type="button">Save vehicle</button>
+          <button class="btn-ghost" id="cancelVehicleBtn" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <!-- active vehicle controls -->
+      <div id="activeControls">
+        <div class="car-id">
+          <div class="car-badge" id="carBadge">AI4 · HW4</div>
+          <div>
+            <div class="car-model" id="carModel">2026 Model Y · Juniper</div>
+            <div class="car-meta" id="carMeta">Australia · RHD</div>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Market / region</span>
+          <select id="marketSel"></select>
+        </label>
+
+        <label class="field">
+          <span>Currently installed version</span>
+          <select id="versionSel"></select>
+        </label>
+
+        <label class="field">
+          <span>How early do you usually get updates? <em id="earlyVal">average</em></span>
+          <input type="range" id="earlySlider" min="3" max="97" value="42" />
+          <div class="slider-ends"><small>first wave</small><small>last wave</small></div>
+        </label>
+        <p class="hint" id="earlyHint">This is your <strong>rollout percentile</strong> — where your car historically lands in each wave. Log your real update history below and wenFSD estimates it for you.</p>
+
+        <!-- update history -> real earliness estimate -->
+        <div class="history">
+          <div class="history-h">
+            <span>Your update history</span>
+            <button class="btn-sm" id="addHistBtn" type="button">+ log update</button>
+          </div>
+          <div class="hist-form" id="histForm" hidden>
+            <select id="h_ver"></select>
+            <input type="date" id="h_date"/>
+            <button class="btn-sm" id="h_add" type="button">Add</button>
+          </div>
+          <ul class="hist-list" id="histList"></ul>
+          <div id="earlyEstimate" class="early-est"></div>
+        </div>
+
+        <!-- data sharing / auto-track -->
+        <div class="consent">
+          <button class="btn connect-btn" id="connectTeslaBtn" type="button">🔗 Connect Tesla account — auto-track</button>
+          <label class="switch-row">
+            <input type="checkbox" id="optInToggle"/>
+            <span>Contribute this car's anonymised version data to wenFSD fleet stats</span>
+          </label>
+          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only) so wenFSD reads your software version automatically — no manual logging. Opting in improves predictions for everyone. You can disconnect or opt out anytime.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROLLOUT CURVE -->
+    <section class="card">
+      <h2 class="card-h">Rollout S-curve <span class="card-sub" id="curveVer"></span></h2>
+      <div id="curveChart" class="chart-wrap"></div>
+      <div class="legend">
+        <span><i class="sw sw-area"></i>fleet adopting</span>
+        <span><i class="sw sw-band"></i>80% confidence window</span>
+        <span><i class="sw sw-marker"></i>your predicted position</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <!-- DISTRIBUTION -->
+    <section class="card">
+      <h2 class="card-h">When exactly? <span class="card-sub">probability by day</span></h2>
+      <div id="distChart" class="chart-wrap"></div>
+      <div class="legend">
+        <span><i class="sw sw-median"></i>model's best guess</span>
+        <span><i class="sw sw-guess"></i>your guess</span>
+      </div>
+    </section>
+
+    <!-- GUESS GAME -->
+    <section class="card guess-card">
+      <h2 class="card-h">Make your guess 🎯</h2>
+      <p class="hint">Pick the day you think your car updates. wenFSD scores it against the full probability model.</p>
+      <label class="field">
+        <span>Your predicted date</span>
+        <input type="date" id="guessDate" />
+      </label>
+      <button class="btn" id="guessBtn">Score my guess</button>
+      <div id="guessResult" class="guess-result"></div>
+      <div class="consensus">
+        <div class="consensus-h">Community consensus</div>
+        <div id="consensusBar" class="consensus-bar"></div>
+        <div id="consensusTxt" class="consensus-txt"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FSD AUSTRALIA REGULATORY TRACKER -->
+  <section class="card" id="fsdCard">
+    <h2 class="card-h">FSD versions by region &amp; hardware</h2>
+    <p class="hint">FSD is a <strong>separate track</strong> from the OS version, and rollout depends on both <strong>region</strong> (regulatory approval) and <strong>hardware</strong> (HW3/AI3 is capped; HW4/AI4 gets the latest). The stats below reflect <em>your</em> car's region &amp; hardware.</p>
+    <div class="fsd-grid">
+      <div class="fsd-stat"><div class="fsd-num" id="fsdStatus">—</div><div class="fsd-lbl">FSD status (your region/HW)</div></div>
+      <div class="fsd-stat"><div class="fsd-num" id="fsdUsBuild">—</div><div class="fsd-lbl">your current FSD</div></div>
+      <div class="fsd-stat"><div class="fsd-num" id="fsdApproval">—</div><div class="fsd-lbl">next FSD — est. arrival</div></div>
+    </div>
+    <div class="mx-wrap" id="fsdMatrix"></div>
+    <div class="tl-head">Australia FSD timeline</div>
+    <ol class="timeline" id="fsdTimeline"></ol>
+  </section>
+
+  <!-- FIRMWARE TRACKER TABLE -->
+  <section class="card">
+    <h2 class="card-h">AU fleet firmware tracker <span class="card-sub">live distribution</span></h2>
+    <div class="table-wrap">
+      <table class="fw-table">
+        <thead>
+          <tr><th>Version</th><th>Status</th><th>AU fleet</th><th>First seen</th><th>FSD build (AI4)</th><th>Notes</th></tr>
+        </thead>
+        <tbody id="fwBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <!-- LIVE FEED -->
+    <section class="card">
+      <h2 class="card-h">Live update feed <span class="card-sub" id="feedSub"></span></h2>
+      <ul class="feed" id="feed"></ul>
+    </section>
+
+    <!-- METHODOLOGY -->
+    <section class="card">
+      <h2 class="card-h">Why wenFSD beats the trackers</h2>
+      <ul class="why">
+        <li><strong>Teslascope / TeslaFi / Tessie</strong> show what's rolling out across the fleet. They never tell <em>you</em> when <em>your</em> car is next.</li>
+        <li><strong>wenFSD</strong> fits a logistic rollout curve, places your VIN by its historical percentile, adds AU regional lag, and runs a Monte&nbsp;Carlo for a real date <strong>distribution</strong> + confidence band.</li>
+        <li><strong>FSD is modelled separately</strong> — as an active but <em>staged</em> AU rollout (wider band than normal updates), since Tesla expands FSD in batches with pauses.</li>
+        <li><strong>You can guess</strong>, get scored against the model, and compare to the community.</li>
+      </ul>
+      <div class="stats-strip" id="statsStrip"></div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    wenFSD is an independent modelling demo. Predictions are probabilistic estimates, not Tesla commitments. Fleet figures seeded from public mid-2026 tracker snapshots. Not affiliated with Tesla, Teslascope, TeslaFi, or Tessie.
+  </footer>
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/vin.js"></script>
+<script src="js/garage.js"></script>
+<script src="js/predict.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+<script src="js/api.js"></script>
+</body>
+</html>

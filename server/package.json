@@ -1,0 +1,21 @@
+{
+  "name": "wenfsd-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "wenFSD backend — Tesla Fleet API OAuth, vehicle polling, fleet aggregation + prediction API",
+  "type": "module",
+  "engines": { "node": ">=18.17" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "poll": "node src/poller.js --once",
+    "migrate": "node src/migrate.js"
+  },
+  "dependencies": {
+    "cookie-session": "^2.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.12.0"
+  }
+}
