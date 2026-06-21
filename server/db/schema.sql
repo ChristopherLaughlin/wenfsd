@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   drive             TEXT,                     -- RHD / LHD
   current_version   TEXT,                     -- latest car_version we've seen
   earliness         DOUBLE PRECISION,         -- estimated rollout percentile 0..1
+  early_access      BOOLEAN NOT NULL DEFAULT false, -- Tesla Early Access Program member
   opted_in          BOOLEAN NOT NULL DEFAULT true,  -- contribute to aggregate fleet stats
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
