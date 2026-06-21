@@ -25,15 +25,23 @@ python3 -m http.server 8080
 
 ## What it does
 
-| Feature | wenFSD | Teslascope / TeslaFi / Tessie |
+| Feature | wenFSD | Teslascope / TeslaFi / Tessie / FleetCtrl / TeslaUpdates |
 |---|---|---|
 | Fleet firmware distribution (% on each version) | ✅ | ✅ |
-| Live update feed | ✅ | ✅ |
-| **Predicts when *your* car updates** | ✅ | ❌ |
+| Live update feed · 7-day velocity sparklines | ✅ | ✅ |
+| Release notes per build | ✅ | ✅ (FleetCtrl) |
+| Per-region / per-hardware breakdown | ✅ | partial |
+| **Aggregates ALL of them** (fleet-weighted merge) | ✅ | ❌ |
+| **Predicts when *your* car updates** (OS *and* FSD) | ✅ | ❌ |
 | **Confidence interval / date distribution** | ✅ | ❌ |
-| **Per-VIN rollout-percentile model** | ✅ | ❌ |
-| **FSD regulatory-gate model (Australia)** | ✅ | ❌ |
+| **Per-VIN rollout-percentile model** (+ Early Access) | ✅ | ❌ |
+| **FSD = next-version, region + hardware aware** | ✅ | ❌ |
+| **Actionable "make it sooner" tips** | ✅ | ❌ |
 | **Guess-the-date game with scoring** | ✅ | ❌ |
+
+Start with an **empty garage**; add vehicles by VIN (decoded) and remove any of them. The
+model accounts for your region's rollout lag, your hardware (HW3 capped / HW4 latest), and
+the **Early Access Program** (the one update setting that genuinely moves your place in line).
 
 ## How the prediction works
 

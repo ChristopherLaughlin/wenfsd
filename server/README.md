@@ -78,12 +78,23 @@ Run one cycle manually with `npm run poll`.
 | Endpoint | What it returns |
 |---|---|
 | `GET /api/fleet/firmware` | version distribution (version, fleet %, first seen, fitted t0/k) |
+| `GET /api/fleet/firmware?merged=1` | fleet-weighted consensus merged across all external trackers (+ release notes) |
+| `GET /api/sources` | status of each external tracker source (Teslascope/TeslaFi/Tessie/TeslaUpdates/FleetCtrl) |
 | `GET /api/fleet/feed` | recent version-change events |
 | `GET /api/stats` | fleet totals |
 | `GET /api/me/vehicles` | the signed-in owner's linked vehicles |
 | `GET /api/predict?vin=…&target=standard\|fsd` | prediction (median date, 80% window, within-7/14/30) |
 | `GET /auth/login` → `…/callback` | Tesla OAuth link flow |
 | `GET /healthz` | liveness + mock flag |
+
+## External tracker ingestion
+We don't have a large fleet of our own yet, and owners won't leave their existing tracker —
+so wenFSD **aggregates** the public trackers. `src/sources/*` has one adapter per tracker
+(Teslascope, TeslaFi, Tessie, Tesla Updates, FleetCtrl); `src/sources/index.js` merges them
+**fleet-weighted** (Tessie's ~630k cars outweigh TeslaFi's ~13k), unions release notes, and
+records which sources contributed. Run `npm run sources` (add `--live` once adapters are
+wired to the real endpoints — respect each site's ToS/robots.txt). A cron refreshes a few
+times a day in real mode.
 
 ## How prediction uses real data
 1. The poller logs a `version_snapshots` row whenever a car's `car_version` changes.
