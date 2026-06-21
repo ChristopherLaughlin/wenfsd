@@ -39,8 +39,22 @@
       ? `Showing the <strong>next FSD release</strong> (e.g. v13 → v14) — the self-driving software, on its own track. Tap <em>Next software update</em> for your next firmware build.`
       : `Showing your <strong>next OS build</strong> (the 2026.x.x firmware number). Tap <em>Next FSD version</em> for the next Full Self-Driving release.`;
   }
+  // when your next OS update and next FSD version resolve to the SAME build, say so loudly —
+  // that's why the two tabs land on the same date (FSD ships inside the OS build).
+  function renderBundleBanner() {
+    const el = $("bundleBanner"); if (!el) return;
+    const v = av(); if (!v) { el.hidden = true; return; }
+    let os, fsd; try { os = Predict.predictNextOS(car(), today); fsd = Predict.predictNextFSD(car(), today); } catch (e) { el.hidden = true; return; }
+    const bundled = os && fsd && !fsd.capped && !fsd.unavailable && fsd.bundledWith &&
+      (fsd.bundledWith === os.targetLabel || +new Date(fsd.medianDate) === +new Date(os.medianDate));
+    if (!bundled) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = `📦 <strong>They're the same drop:</strong> your next software update (<strong>${esc(os.targetLabel)}</strong>) is what brings <strong>${esc(fsd.targetLabel)}</strong> — FSD ships <em>inside</em> the OS build, so both tabs land on the same date.`;
+  }
+
   function render() {
     setSegHint();
+    renderBundleBanner();
     const a0 = av();
     setTopConnect(!!(a0 && a0.connected), !!(a0 && a0.connected && a0.optedIn));
     if (!av()) { renderEmptyState(); return; }
@@ -68,7 +82,13 @@
     $("heroWindow").textContent = "";
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
-    if ($("heroFlavor")) $("heroFlavor").innerHTML = `😤 You've asked "wen FSD" one too many times. We built you a calculator. Add your Tesla.`;
+    if ($("heroFlavor")) $("heroFlavor").innerHTML = flavorPick("empty", [
+      `😤 You've asked "wen FSD" one too many times. We built you a calculator. Add your Tesla.`,
+      `🔮 Step right up. Add your Tesla and we'll tell you "two weeks" — but with actual math.`,
+      `🚗 Add your car. Yes, the whole VIN. No, we won't sell it to anyone. (We can't even afford to.)`,
+      `📡 Your Tesla is out there, asking "wen FSD" into the void. Connect it and let's get answers.`,
+      `🍿 Add a vehicle and find out if you're "first wave" or "suffering in silence on {nope}".`.replace("{nope}", "an ancient build"),
+    ]);
     $("heroNote").innerHTML = "Add your car by VIN (we'll decode the model, year &amp; hardware) and wenFSD predicts your next software update and next FSD version — with confidence bands. No vehicles are tracked until you add one. <em>(The answer is always two weeks. But these two weeks are data-driven.)</em>";
     $("predictTips").innerHTML = "";
     $("curveChart").innerHTML = svgEmpty("Add a vehicle to see its rollout curve");
@@ -99,19 +119,37 @@
   }
 
   // ---- regional humour (the wenFSD meme = "wen FSD? two weeks, trust me bro") ----
+  // Picks are RANDOM but cached per page-load → stable while you click around, fresh on refresh.
+  const _flavorCache = {};
+  function flavorPick(key, arr) {
+    if (!arr || !arr.length) return "";
+    if (!(key in _flavorCache)) _flavorCache[key] = arr[Math.floor(Math.random() * arr.length)];
+    return _flavorCache[key];
+  }
+  const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter."];
   const REGION_FLAVOR = {
-    "Australia": { flag: "🇦🇺", soon: "Two weeks. Trust me, mate. 🦘", quips: ["Strewth — still on {ver}? She'll be right.", "Crack a tinnie, it's only a fortnight away. Trust me, bruz.", "Your car's more behind than a tradie on a Friday arvo.", "No worries — wen FSD is basically here. *kangaroo noises*"] },
-    "New Zealand": { flag: "🇳🇿", soon: "Two weeks. Trust me, bro. 🥝", quips: ["Still on {ver}? Sweet as, it's coming.", "Chur, won't be long now, bro.", "Yeah nah yeah, it's basically rolling out."] },
-    "United States": { flag: "🇺🇸", soon: "Two weeks. Trust me bro. 🦅", quips: ["Still on {ver}? That's downright un-American.", "Freedom units of patience required.", "Hang tight, it's coming faster than you can say 'full self-driving (supervised)'."] },
-    "Canada": { flag: "🇨🇦", soon: "Two weeks. Trust me, bud. 🍁", quips: ["Still on {ver}, eh? Sorry aboot that.", "Patience, bud — it's coming, for sure for sure.", "Give'r, it'll be here before the next Tims run."] },
-    "Europe": { flag: "🇪🇺", soon: "Two weeks*. (*pending homologation) 📋", quips: ["Still on {ver}? Blame the regulators.", "Approval pending since approximately forever.", "It's coming — once seventeen agencies sign off."] },
+    "Australia": { flag: "🇦🇺",
+      soon: ["Two weeks. Trust me, mate. 🦘", "She'll be right — a fortnight, tops.", "Basically here. Crack a tinnie. 🍺", "Soon-ish, bruz. Trust."],
+      quips: ["Strewth — still on {ver}? She'll be right.", "Your car's more behind than a tradie on a Friday arvo.", "No dramas, wen FSD is basically here. *distant kangaroo noises*", "Still on {ver}? Yeah-nah, the update's comin', mate.", "Hooroo to {ver} — eventually.", "Tell 'em they're dreamin'… then check again tomorrow.", "Carn, Tesla. We're not getting any younger down here.", "It's coming faster than a magpie in September. 🐦"] },
+    "New Zealand": { flag: "🇳🇿",
+      soon: ["Two weeks. Trust me, bro. 🥝", "Sweet as, basically rolling out.", "Yeah-nah-yeah, real soon.", "Chur, won't be long now."],
+      quips: ["Still on {ver}? Sweet as, it's coming.", "Yeah nah yeah, it's basically rolling out, bro.", "Chur — won't be long now, eh.", "Still on {ver}? Hard. Hang in there, bro.", "She's a good keen update. Coming. Promise.", "Choice. Now we wait. Choice."] },
+    "United States": { flag: "🇺🇸",
+      soon: ["Two weeks. Trust me bro. 🦅", "It's coming. Probably this OTA. 🫡", "Soon™. Very soon™.", "Faster than you can say 'supervised'."],
+      quips: ["Still on {ver}? That's downright un-American. 🦅", "Freedom units of patience required.", "Refresh harder. That always works.", "Still on {ver}? Elon tweeted, so… any minute now.", "It's coming faster than you can say 'Full Self-Driving (Supervised, terms apply)'.", "Manifest the update. Believe.", "Your neighbor has it. Of course they do."] },
+    "Canada": { flag: "🇨🇦",
+      soon: ["Two weeks. Trust me, bud. 🍁", "It'll be here before the next Tims run. ☕", "For sure for sure, soon.", "Give'r — almost there."],
+      quips: ["Still on {ver}, eh? Sorry aboot that.", "Patience, bud — it's coming, for sure for sure.", "It'll be here before the next double-double. ☕", "Still on {ver}? Beauty. Hang tight, bud.", "Take off, {ver}. Eventually, eh.", "It's coming, dontcha know."] },
+    "Europe": { flag: "🇪🇺",
+      soon: ["Two weeks*. (*pending homologation) 📋", "Soon — once 17 agencies sign off. 🇪🇺", "Approval imminent. Allegedly.", "Bald. (That's 'soon' in German. Cope.)"],
+      quips: ["Still on {ver}? Blame the regulators. 📋", "Approval pending since approximately forever.", "It's coming — after a public consultation period.", "Still on {ver}? The paperwork is, how you say, in progress.", "Coming soon to a TÜV-approved vehicle near you.", "GDPR-compliant patience required."] },
   };
   function flavorFor(market) { return REGION_FLAVOR[market] || REGION_FLAVOR["United States"]; }
   function heroFlavorLine(pred) {
     const v = av(); if (!v) return "";
     const fl = flavorFor(v.market), d = pred.daysToMedian;
-    if (d != null && d >= 8 && d <= 18) return `${fl.flag} ${fl.soon}`;               // the meme zone
-    const q = fl.quips[Math.abs(WEN.verKey(v.installedVersion || "0")) % fl.quips.length].replace("{ver}", esc(v.installedVersion || "your build"));
+    if (d != null && d >= 8 && d <= 18) return `${fl.flag} ${flavorPick("soon:" + v.market, fl.soon.concat(MEME))}`;   // the meme zone
+    const q = flavorPick("quip:" + v.market, fl.quips).replace("{ver}", esc(v.installedVersion || "your build"));
     return `${fl.flag} ${q}`;
   }
 
