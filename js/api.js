@@ -77,6 +77,7 @@
             t0: isoT0(row.firstSeen),
             fsdBuild: row.fsdBuild || { AI4: "—", AI3: "—" },
             notes: "",
+            recentInstalls: row.recentInstalls != null ? row.recentInstalls : null,
             sources: row.sources || [],
           }));
         }
@@ -90,6 +91,15 @@
         window.WENFSD.setSources(sc.sources, sc.mode === "live");
       }
     } catch (e) { /* keep default attribution */ }
+
+    // --- REAL release notes (scraped per-version from Teslascope) ---
+    try {
+      const rn = await getJSON("/api/release-notes?live=1");
+      if (rn && rn.mode === "live" && rn.notes && Object.keys(rn.notes).length) {
+        WEN.releaseNotes = rn.notes;          // replace seed notes with the real ones
+        WEN.releaseNotesSource = "live";
+      }
+    } catch (e) { /* keep seed notes (badged as modelled) */ }
 
     // --- real fleet stats (DB counts) ---
     try {

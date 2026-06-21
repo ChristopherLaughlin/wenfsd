@@ -5,7 +5,7 @@ import { query, hasDb } from "../db.js";
 import { predictNextOS, predictNextFSD } from "../predict.js";
 import * as W from "../wendata.js";
 import { SEED_VERSIONS, SEED_FEED, SEED_STATS } from "../seed.js";
-import { merge, fetchAll, sourceStatus } from "../sources/index.js";
+import { merge, fetchAll, sourceStatus, fetchReleaseNotes } from "../sources/index.js";
 
 export const apiRouter = Router();
 
@@ -35,6 +35,13 @@ apiRouter.get("/fleet/firmware", ah(async (req, res) => {
   if (config.mockMode || !hasDb()) return res.json({ source: "mock", mode: "sample", versions: SEED_VERSIONS });
   const r = await query(`SELECT version, branch, first_seen, install_count, fleet_pct, fit_t0 AS t0, fit_k AS k FROM firmware_versions ORDER BY first_seen DESC NULLS LAST LIMIT 40`);
   res.json({ source: "db", mode: "live", versions: r.rows });
+}));
+
+apiRouter.get("/release-notes", ah(async (req, res) => {
+  const live = req.query.live === "1" && config.allowLiveSources;
+  // notes change rarely once published → cache 6h
+  const notes = await cached("notes:" + live, 6 * 60 * 60_000, () => fetchReleaseNotes({ live }));
+  res.json({ mode: live ? "live" : "sample", notes });
 }));
 
 apiRouter.get("/sources", ah(async (req, res) => {

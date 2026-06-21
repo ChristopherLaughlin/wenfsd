@@ -78,3 +78,47 @@ async function fetchLive() {
 
   return [...byVer.values()].filter(r => r.fleetPct != null || r.firstSeen);
 }
+
+// ---- per-version REAL release notes ----
+// Teslascope publishes the actual Tesla release notes per version at /software/<version>
+// as "Features" cards (current update's features are visible; prior-update ones carry
+// style="display:none"). We parse the visible title + description for each.
+const clean = (s) => s.replace(/<[^>]+>/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&#39;|&apos;/g, "'").replace(/\s+/g, " ").trim();
+function guessTag(t) {
+  const s = t.toLowerCase();
+  if (/fsd|full self|autopilot|autosteer|smart summon|actually smart/.test(s)) return "FSD";
+  if (/safety|blind spot|collision|emergency|airbag/.test(s)) return "Safety";
+  if (/dashcam|sentry|camera|recording/.test(s)) return "Dashcam";
+  if (/charg|supercharg|trip planner|route|navigat/.test(s)) return "Nav";
+  if (/fix|bug|stability|reliab|resolved/.test(s)) return "Fix";
+  if (/ui|display|theme|layout|interface|visual|light|sound|music|app|keyboard|grok|paint/.test(s)) return "UI";
+  return "UI";
+}
+
+export async function fetchNotes(version) {
+  if (!isVer(version)) return [];
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  let html;
+  try {
+    const res = await fetch(`https://teslascope.com/software/${encodeURIComponent(version)}`, { headers: { "User-Agent": UA, Accept: "text/html" }, signal: ctrl.signal });
+    if (!res.ok) throw new Error("teslascope notes HTTP " + res.status);
+    html = await res.text();
+  } finally { clearTimeout(timer); }
+
+  const items = [];
+  const cardRe = /id="release-note-feature-\d+"([\s\S]*?)(?=id="release-note-feature-\d+"|<\/section>|<footer)/g;
+  let m;
+  while ((m = cardRe.exec(html))) {
+    const card = m[1];
+    if (/display:\s*none/i.test(card.slice(0, 240))) continue;   // prior-update feature → skip
+    const tm = card.match(/<h[3456][^>]*>([\s\S]*?)<\/h[3456]>/);
+    const pm = card.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+    const title = tm ? clean(tm[1]) : "";
+    const body = pm ? clean(pm[1]) : "";
+    if (!title || title.length > 80) continue;
+    items.push({ tag: guessTag(title + " " + body), text: body ? `${title} — ${body}` : title });
+    if (items.length >= 30) break;
+  }
+  return items;
+}

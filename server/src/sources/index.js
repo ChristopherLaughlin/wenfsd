@@ -7,7 +7,7 @@
 // notes, and record which sources contributed. Wire each adapter's fetchLive() to the
 // real source (respecting each site's ToS / robots.txt / partner terms) before launch.
 import { teslafi } from "./teslafi.js";
-import { teslascope } from "./teslascope.js";
+import { teslascope, fetchNotes } from "./teslascope.js";
 import { tessie } from "./tessie.js";
 import { teslaupdates } from "./teslaupdates.js";
 import { fleetctrl } from "./fleetctrl.js";
@@ -33,8 +33,9 @@ export async function merge({ live = false } = {}) {
     if (!ok) continue;
     for (const r of rows) {
       let m = byVer.get(r.version);
-      if (!m) { m = { version: r.version, firstSeen: r.firstSeen || null, branch: r.branch || "standard", _w: 0, _pct: 0, sources: [], fsdBuild: {}, status: null, regions: new Set(), notes: [] }; byVer.set(r.version, m); }
+      if (!m) { m = { version: r.version, firstSeen: r.firstSeen || null, branch: r.branch || "standard", _w: 0, _pct: 0, recentInstalls: 0, sources: [], fsdBuild: {}, status: null, regions: new Set(), notes: [] }; byVer.set(r.version, m); }
       if (r.fleetPct != null && source.fleet > 0) { m._pct += r.fleetPct * source.fleet; m._w += source.fleet; }
+      if (r.recentInstalls != null) m.recentInstalls += r.recentInstalls;
       if (r.firstSeen && (!m.firstSeen || r.firstSeen < m.firstSeen)) m.firstSeen = r.firstSeen;
       if (r.status && !m.status) m.status = r.status;
       if (r.fsd) Object.assign(m.fsdBuild, r.fsd);
@@ -46,6 +47,7 @@ export async function merge({ live = false } = {}) {
   const merged = [...byVer.values()].map(m => ({
     version: m.version,
     fleetPct: m._w > 0 ? Math.round((m._pct / m._w) * 10) / 10 : null,
+    recentInstalls: m.recentInstalls || null,
     firstSeen: m.firstSeen,
     branch: m.branch,
     status: m.status,
@@ -73,6 +75,28 @@ export async function refreshAll(db, { live = false } = {}) {
     }
   }
   return merged;
+}
+
+// Real release notes for the most recent versions (Teslascope). Bounded to `limit` versions
+// to keep request volume low; callers cache heavily (notes change rarely once published).
+export async function fetchReleaseNotes({ live = false, limit = 6 } = {}) {
+  if (!live) return {};
+  const merged = await merge({ live: true });
+  const recent = merged.slice(0, limit);
+  const out = {};
+  await Promise.allSettled(recent.map(async (v) => {
+    const items = await fetchNotes(v.version);
+    if (items && items.length) {
+      out[v.version] = {
+        date: v.firstSeen || null,
+        regions: v.regions || [],
+        fsd: v.fsdBuild && v.fsdBuild.AI4 ? v.fsdBuild.AI4 : null,
+        source: "Teslascope",
+        items,
+      };
+    }
+  }));
+  return out;
 }
 
 export function sourceStatus(fetched) {

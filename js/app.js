@@ -491,7 +491,10 @@
     // fleet sections: always visible. Firmware/feed become REAL once live (tracker-aggregated);
     // the FSD-by-region matrix, OS-lag panel and release-note text stay modelled either way, so
     // they keep an honest "regional timing is modelled" badge even in live mode.
-    const ALWAYS_MODELLED = new Set(["fsdCard", "regionCard", "releaseNotesCard"]);
+    // release notes become REAL when scraped live; the FSD-by-region & OS-lag panels are
+    // always modelled (their regional *timing* is always our estimate).
+    const ALWAYS_MODELLED = new Set(["fsdCard", "regionCard"]);
+    if (WEN.releaseNotesSource !== "live") ALWAYS_MODELLED.add("releaseNotesCard");
     document.querySelectorAll(".fleet-card").forEach(card => {
       card.style.display = "";
       const modelled = ALWAYS_MODELLED.has(card.id);
@@ -591,7 +594,8 @@
         `<td><span class="status status-${v.status}">${v.status}</span></td>` +
         `<td>${v.fleetPct != null ? `<div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div>` : `<span class="mut-i">not reported</span>`}</td>` +
         `<td>${v.fleetPct != null ? sparkSVG(v) : "—"}</td>` +
-        `<td>${v.firstSeen ? shortDate(v.firstSeen) : "—"}</td><td>${(v.fsdBuild && v.fsdBuild.AI4) || "—"}</td><td class="notes">${v.notes || ""}</td></tr>`;
+        `<td>${v.firstSeen ? shortDate(v.firstSeen) : "—"}</td><td>${(v.fsdBuild && v.fsdBuild.AI4) || "—"}</td>` +
+        `<td class="notes">${v.recentInstalls ? `<span class="fw-active">🔥 ${Number(v.recentInstalls).toLocaleString()} installs this week</span>` : (v.notes || "")}</td></tr>`;
     }).join("");
     $("fwBody").querySelectorAll(".fw-verlink").forEach(el => {
       el.onclick = () => {
