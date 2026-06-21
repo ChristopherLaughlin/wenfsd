@@ -3,7 +3,7 @@
 import { config } from "./config.js";
 import { query, hasDb } from "./db.js";
 import * as tesla from "./tesla.js";
-import { fitLogistic } from "./predict.js";
+import { fitLogistic, predictNextOS } from "./predict.js";
 import { encrypt, decrypt } from "./crypto.js";
 
 export async function pollOnce() {
@@ -43,9 +43,15 @@ export async function pollOnce() {
           polled++;
           if (version && version !== c.current_version) {
             changed++;
+            // SCORE the open prediction that was made while the car was on its old version —
+            // the update just landed, so we now know if it fell inside the predicted window.
+            if (c.current_version) await scorePrediction(c.id, c.current_version);
             await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [c.id, version, c.market, c.hardware]);
             await query(`UPDATE vehicles SET current_version=$1 WHERE id=$2`, [version, c.id]);
+            c.current_version = version;
           }
+          // RECORD a prediction for the car's current version (one open bet per car-version).
+          if (c.current_version) await ensurePrediction(c);
         } catch (e) { if (e.code !== 408) console.warn(`[poller] ${c.vin}:`, e.message); }
       }
     } catch (e) { console.warn(`[poller] user ${userId}:`, e.message); }
@@ -53,6 +59,36 @@ export async function pollOnce() {
   await recomputeAggregates();
   console.log(`[poller] polled=${polled} changed=${changed} skipped(asleep)=${skipped}`);
   return { polled, changed, skipped };
+}
+
+// Record an open prediction for this car's CURRENT version, if one doesn't already exist.
+// Uses the same engine the dashboard uses, so the hit-rate reflects real product accuracy.
+async function ensurePrediction(c) {
+  try {
+    const car = {
+      market: c.market || "Australia", hardware: c.hardware || "AI4",
+      installedVersion: c.current_version,
+      earliness: c.earliness != null ? c.earliness : 0.5, earlyAccess: !!c.early_access,
+    };
+    const p = predictNextOS(car);
+    if (!p || !p.medianDate) return;
+    await query(
+      `INSERT INTO predictions(vehicle_id, from_version, target_label, median_date, p10_date, p90_date)
+       VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(vehicle_id, from_version) DO NOTHING`,
+      [c.id, c.current_version, p.targetLabel || null, p.medianDate, p.p10Date, p.p90Date]);
+  } catch (e) { console.warn(`[poller] ensurePrediction ${c.vin}:`, e.message); }
+}
+
+// Score the open prediction once the car has moved off `fromVersion`: did the update land
+// inside the predicted 80% window, and how far off was the median?
+async function scorePrediction(vehicleId, fromVersion) {
+  await query(
+    `UPDATE predictions
+        SET scored=true, actual_date=CURRENT_DATE,
+            error_days=(CURRENT_DATE - median_date),
+            hit=(CURRENT_DATE BETWEEN p10_date AND p90_date)
+      WHERE vehicle_id=$1 AND from_version=$2 AND NOT scored`,
+    [vehicleId, fromVersion]);
 }
 
 // Recompute per-version install counts, fleet %, and the fitted logistic (t0, k).

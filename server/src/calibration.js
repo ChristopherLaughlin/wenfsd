@@ -11,6 +11,7 @@
 //   4) an explicit note that per-car accuracy is validated against connected cars, not faked.
 import { merge } from "./sources/index.js";
 import { fetchDailySeries } from "./sources/teslafi.js";
+import { query, hasDb } from "./db.js";
 
 function daysBetween(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / 86400000); }
 function median(xs) { if (!xs.length) return null; const s = xs.slice().sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
@@ -55,8 +56,30 @@ function velocity(series) {
   return { medianDaysQ1toQ3: median(spans), sampleVersions: spans.length, examples: examples.slice(0, 5) };
 }
 
+// REAL per-car prediction accuracy from scored predictions (the connected-car back-test).
+// Empty until cars actually update after we've made a prediction — then it fills automatically.
+async function accuracy() {
+  if (!hasDb()) return null;
+  try {
+    const r = await query(
+      `SELECT count(*) FILTER (WHERE scored)::int AS scored,
+              count(*) FILTER (WHERE hit)::int AS hits,
+              count(*) FILTER (WHERE NOT scored)::int AS open,
+              percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(error_days)) FILTER (WHERE scored) AS median_abs_err
+         FROM predictions`);
+    const row = r.rows[0] || {};
+    const scored = +row.scored || 0;
+    return {
+      scored, open: +row.open || 0,
+      hitRate: scored ? Math.round((+row.hits / scored) * 100) : null,
+      medianAbsErrorDays: row.median_abs_err != null ? Math.round(row.median_abs_err) : null,
+    };
+  } catch { return null; }
+}
+
 export async function computeCalibration({ live = false } = {}) {
-  if (!live) return { mode: "sample" };
+  const acc = await accuracy();
+  if (!live) return { mode: "sample", accuracy: acc };
   const [merged, daily] = await Promise.all([
     merge({ live: true }).catch(() => []),
     fetchDailySeries().catch(() => ({ series: [] })),
@@ -68,6 +91,9 @@ export async function computeCalibration({ live = false } = {}) {
     cadence: cadence(merged),
     velocity: velocity(daily.series || []),
     coverage: { versions: merged.length, versionsWithShare: withPct, sources, sourceCount: sources.length },
-    honesty: "Confidence bands are modelled (logistic rollout + Monte-Carlo). Per-car prediction accuracy is validated against opted-in connected cars as the fleet grows — wenFSD publishes its real hit-rate here rather than a fabricated one.",
+    accuracy: acc,
+    honesty: (acc && acc.scored)
+      ? `Prediction accuracy below is REAL: ${acc.scored} connected-car prediction${acc.scored === 1 ? "" : "s"} scored against what actually happened. Bands are modelled (logistic + Monte-Carlo); this hit-rate is measured, not fabricated.`
+      : "Confidence bands are modelled (logistic rollout + Monte-Carlo). Per-car prediction accuracy is validated against opted-in connected cars as the fleet grows — wenFSD publishes its real hit-rate here rather than a fabricated one." + (acc && acc.open ? ` (${acc.open} prediction${acc.open === 1 ? "" : "s"} currently open, awaiting the next update.)` : ""),
   };
 }

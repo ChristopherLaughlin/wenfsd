@@ -64,3 +64,24 @@ CREATE TABLE IF NOT EXISTS firmware_versions (
   fit_k         DOUBLE PRECISION,             -- fitted steepness
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Per-car PREDICTIONS, recorded at the time they're made, then SCORED against reality when
+-- the car actually updates. This is the real back-test: did the next update land inside the
+-- predicted window? Drives the connected-car hit-rate shown on the calibration panel.
+CREATE TABLE IF NOT EXISTS predictions (
+  id            BIGSERIAL PRIMARY KEY,
+  vehicle_id    BIGINT REFERENCES vehicles(id) ON DELETE CASCADE,
+  from_version  TEXT NOT NULL,                -- version the car was on when we predicted
+  target_label  TEXT,                         -- predicted next version
+  made_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  median_date   DATE,                         -- predicted median arrival
+  p10_date      DATE,                         -- 80% window lower bound
+  p90_date      DATE,                         -- 80% window upper bound
+  scored        BOOLEAN NOT NULL DEFAULT false,
+  actual_date   DATE,                         -- when the update actually arrived
+  error_days    INT,                          -- actual - median (signed)
+  hit           BOOLEAN,                      -- did actual fall within [p10, p90]?
+  UNIQUE(vehicle_id, from_version)            -- one open prediction per car-version
+);
+CREATE INDEX IF NOT EXISTS idx_pred_vehicle ON predictions(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_pred_scored ON predictions(scored);

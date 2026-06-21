@@ -477,6 +477,7 @@
     $("fsdMatrix").innerHTML =
       `<table class="mx-table"><thead><tr><th>Region</th><th>HW4 / AI4</th><th>HW3 / AI3</th></tr></thead><tbody>${rows}</tbody></table>`;
 
+    const tlHead = $("fsdTlHead"); if (tlHead) tlHead.textContent = c ? `${c.market} FSD timeline` : "Global FSD rollout timeline";
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
@@ -523,17 +524,22 @@
   function renderCalibration(cal) {
     const el = $("calibrationBody");
     if (!el) return;
-    if (!cal || cal.mode !== "live") {
-      el.innerHTML = `<p class="cal-note">Calibration appears once live sources are enabled. It back-tests the engine against real release history from the public trackers — cadence, rollout velocity and coverage. No fabricated accuracy figure is shown: per-car hit-rate is published only once enough connected cars provide ground truth.</p>`;
+    const acc = cal && cal.accuracy;
+    const haveLive = cal && cal.mode === "live";
+    const haveAcc = acc && acc.scored > 0;
+    if (!haveLive && !haveAcc) {
+      const openNote = acc && acc.open ? ` <strong>${acc.open} prediction${acc.open === 1 ? "" : "s"}</strong> currently open, awaiting the next update.` : "";
+      el.innerHTML = `<p class="cal-note">Calibration appears once live sources are enabled. It back-tests the engine against real release history from the public trackers — cadence, rollout velocity and coverage. No fabricated accuracy figure is shown: per-car hit-rate is published only once enough connected cars provide ground truth.${openNote}</p>`;
       return;
     }
     const c = cal.cadence, v = cal.velocity, cov = cal.coverage, tiles = [];
+    if (haveAcc) tiles.push(["Prediction accuracy", `${acc.hitRate}% in-window`, `${acc.scored} connected-car prediction${acc.scored === 1 ? "" : "s"} scored vs reality${acc.medianAbsErrorDays != null ? ` · median miss ±${acc.medianAbsErrorDays}d` : ""}`, true]);
     if (c) tiles.push(["Release cadence", `~${c.medianDays}d`, `median between OS branches · ${c.meanDays}±${c.sdDays}d mean · from ${c.branches} real branches`]);
     if (v) tiles.push(["Rollout velocity", `~${v.medianDaysQ1toQ3}d`, `installs go 25%→75% once a version reaches cars · ${v.sampleVersions} rollouts (TeslaFi daily data)`]);
     if (cov) tiles.push(["Coverage", `${cov.versions} versions`, `${cov.versionsWithShare} with fleet share · ${cov.sourceCount} live sources`]);
     el.innerHTML =
       `<div class="cal-grid">` +
-      tiles.map(([h, big, sub]) => `<div class="cal-tile"><div class="cal-h">${esc(h)}</div><div class="cal-big">${esc(big)}</div><div class="cal-sub">${esc(sub)}</div></div>`).join("") +
+      tiles.map(([h, big, sub, hot]) => `<div class="cal-tile${hot ? " cal-hot" : ""}"><div class="cal-h">${esc(h)}</div><div class="cal-big">${esc(big)}</div><div class="cal-sub">${esc(sub)}</div></div>`).join("") +
       `</div>` +
       (cov && cov.sources && cov.sources.length ? `<div class="cal-src">Validated against real history from: <strong>${cov.sources.map(esc).join(" · ")}</strong></div>` : "") +
       `<div class="cal-honesty">✓ ${esc(cal.honesty || "")}</div>`;
