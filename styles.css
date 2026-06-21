@@ -77,6 +77,12 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .chip-lbl{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
 .chip.hi .chip-pct{color:var(--green)} .chip.mid .chip-pct{color:var(--amber)} .chip.lo .chip-pct{color:var(--mut)}
 .hero-note{font-size:12.5px;color:var(--mut);margin:12px 0 0;max-width:48ch}
+.predict-tips{margin-top:14px;max-width:52ch}
+.tips-list{display:flex;flex-direction:column;gap:6px}
+.tip{font-size:12.5px;color:var(--txt);background:#0c1019;border:1px solid var(--line2);border-radius:9px;padding:8px 11px}
+.tip strong{color:var(--cyan)}
+.basis{font-size:11px;color:var(--mut2);margin-top:9px;line-height:1.5}
+.basis strong{color:var(--mut)}
 .hero-note strong{color:var(--txt)}
 
 .hero-right{display:flex;flex-direction:column;align-items:center;gap:14px}

@@ -59,6 +59,7 @@
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = ""; $("probMini").innerHTML = "";
     $("heroNote").innerHTML = "Add your car by VIN (we'll decode the model, year &amp; hardware) and wenFSD predicts your next software update and next FSD version — with confidence bands. No vehicles are tracked until you add one.";
+    $("predictTips").innerHTML = "";
     $("curveChart").innerHTML = svgEmpty("Add a vehicle to see its rollout curve");
     $("distChart").innerHTML = svgEmpty("Add a vehicle to see the probability distribution");
     $("guessResult").classList.remove("show"); $("guessResult").innerHTML = "";
@@ -78,6 +79,7 @@
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = ""; $("probMini").innerHTML = "";
     $("heroNote").innerHTML = `Currently on <strong>${esc(pred.current || "—")}</strong>. ${esc(pred.note || "")}`;
+    $("predictTips").innerHTML = "";
     $("distChart").innerHTML = ""; $("curveChart").innerHTML = "";
     $("guessResult").classList.remove("show"); $("guessResult").innerHTML = "";
     renderTable();
@@ -104,6 +106,25 @@
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,7))}</span><b>${w7}%</b></div>` +
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,30))}</span><b>${w30}%</b></div>`;
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
+    renderTips(pred);
+  }
+
+  // actionable "what would make this sooner" tips + confidence basis
+  function renderTips(pred) {
+    const v = av(), tips = [];
+    if (!v.earlyAccess && v.earlinessSource !== "history") {
+      const c2 = Object.assign(car(), { earlinessPercentile: effEarliness(Object.assign({}, v, { earlyAccess: true })) });
+      const p2 = ui.target === "fsd" ? Predict.predictNextFSD(c2, today) : Predict.predictNextOS(c2, today);
+      const delta = Math.round(pred.daysToMedian - (p2.daysToMedian != null ? p2.daysToMedian : pred.daysToMedian));
+      if (delta >= 1) tips.push(`🔓 <strong>Join Tesla's Early Access Program</strong> — about <strong>${delta} day${delta > 1 ? "s" : ""} sooner</strong>`);
+    }
+    if (v.earlinessSource !== "history") tips.push(`📊 <strong>Log your update history</strong> — turns a typical-owner estimate into a personalised one`);
+    if (!v.optedIn) tips.push(`🔗 <strong>Connect your Tesla</strong> (read-only) to auto-track and sharpen everyone's predictions`);
+    const conf = v.earlinessSource === "history" ? "high — from your real update history"
+      : v.earlyAccess ? "medium — typical-owner prior + your Early Access setting" : "medium — typical-owner prior";
+    $("predictTips").innerHTML =
+      (tips.length ? `<div class="tips-list">${tips.map(t => `<div class="tip">${t}</div>`).join("")}</div>` : "") +
+      `<div class="basis">Confidence: <strong>${conf}</strong> · logistic rollout + Monte&nbsp;Carlo · aggregated from 5 trackers</div>`;
   }
 
   function countdownHTML(d) {
