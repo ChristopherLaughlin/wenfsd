@@ -8,13 +8,24 @@
 
   function av() { return Garage.active(gstate); }
 
+  // effective rollout percentile = base + controllable factors (update channel, Early Access).
+  // If earliness came from real logged history, it already reflects those — don't double-count.
+  function effEarliness(v) {
+    let e = v.earliness;
+    if (v.earlinessSource !== "history") {
+      e += (WEN.channelShift[v.updateChannel] || 0);
+      if (v.earlyAccess) e += WEN.earlyAccessShift;
+    }
+    return Math.min(0.97, Math.max(0.03, e));
+  }
+
   // map active garage vehicle -> shape the predictor expects
   function car() {
     const v = av();
     return {
       model: v.model, year: v.year, hardware: v.hardware,
       market: v.market, drive: v.drive,
-      earlinessPercentile: v.earliness, installedVersion: v.installedVersion,
+      earlinessPercentile: effEarliness(v), installedVersion: v.installedVersion,
       fsdVersion: v.fsdVersion,
     };
   }
@@ -70,7 +81,7 @@
     $("probMini").innerHTML =
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,7))}</span><b>${w7}%</b></div>` +
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,30))}</span><b>${w30}%</b></div>`;
-    $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(av().earliness)}</strong> rollout position.</span>`;
+    $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().updateChannel === "advanced" || av().earlyAccess ? " (incl. your update settings)" : ""}.</span>`;
   }
 
   function countdownHTML(d) {
@@ -133,13 +144,22 @@
       setEarlyLabel(); ui.guessDays = null; clearGuess(); render();
     };
 
+    const ch = $("channelSel"); ch.value = v.updateChannel || "standard";
+    ch.onchange = () => { gstate = Garage.update(v.id, { updateChannel: ch.value }); ui.guessDays = null; clearGuess(); setEarlyLabel(); render(); };
+    const ea = $("earlyAccessChk"); ea.checked = !!v.earlyAccess;
+    ea.onchange = () => { gstate = Garage.update(v.id, { earlyAccess: ea.checked }); ui.guessDays = null; clearGuess(); setEarlyLabel(); render(); };
+
     const opt = $("optInToggle");
     opt.checked = !!v.optedIn;
     opt.onchange = () => { gstate = Garage.update(v.id, { optedIn: opt.checked }); };
 
     renderHistory();
   }
-  function setEarlyLabel() { $("earlyVal").textContent = pctLabel(av().earliness); }
+  function setEarlyLabel() {
+    const v = av(), base = v.earliness, eff = effEarliness(v);
+    const shifted = Math.abs(eff - base) > 0.005 && v.earlinessSource !== "history";
+    $("earlyVal").textContent = shifted ? `${pctLabel(eff)} (after settings)` : pctLabel(eff);
+  }
 
   // ---- update history -> estimated earliness ----
   function renderHistory() {
@@ -214,7 +234,9 @@
         drive: region.drive || "RHD",
         installedVersion: $("f_ver").value,
         fsdVersion: fsdInfo ? fsdInfo.current : "—",
-        earliness: 0.5, earlinessSource: "default", optedIn: false, history: [],
+        earliness: 0.5, earlinessSource: "default",
+        updateChannel: "standard", earlyAccess: false,
+        optedIn: false, history: [],
       };
       gstate = Garage.add(veh);
       $("addForm").hidden = true; $("addVehicleBtn").hidden = false;
@@ -326,6 +348,19 @@
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
+  // 7-day install-velocity sparkline, derived from the version's logistic (mirrors the
+  // "install calendar" the real trackers show — but generated from the model).
+  function sparkSVG(v) {
+    const t0Days = Predict.daysBetween(today, v.t0), L = 0.95, fleet = WEN.stats.auCars;
+    const vals = []; let max = 0;
+    for (let d = -6; d <= 0; d++) {
+      const inst = Math.max(0, (Predict.adoption(d - t0Days, v.k, L) - Predict.adoption(d - 1 - t0Days, v.k, L)) * fleet);
+      vals.push(inst); if (inst > max) max = inst;
+    }
+    const w = 60, h = 18, bw = w / 7;
+    const bars = vals.map((inst, i) => { const bh = max > 0 ? Math.max(1, (inst / max) * h) : 1; return `<rect x="${(i * bw + 1).toFixed(1)}" y="${(h - bh).toFixed(1)}" width="${(bw - 1.5).toFixed(1)}" height="${bh.toFixed(1)}" rx="1"/>`; }).join("");
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${bars}</svg>`;
+  }
   function renderTable() {
     const mine = av().installedVersion;
     $("fwBody").innerHTML = WEN.versions.map(v => {
@@ -334,6 +369,7 @@
         `<td><strong>${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}</td>` +
         `<td><span class="status status-${v.status}">${v.status}</span></td>` +
         `<td><div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div></td>` +
+        `<td>${sparkSVG(v)}</td>` +
         `<td>${shortDate(v.firstSeen)}</td><td>${v.fsdBuild.AI4}</td><td class="notes">${v.notes}</td></tr>`;
     }).join("");
   }

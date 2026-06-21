@@ -14,7 +14,14 @@ const WEN = (function () {
     earlinessPercentile: 0.42,
     installedVersion: "2026.14.6",   // OS version
     fsdVersion: "v13.2.9",           // FSD stack currently on the car (AU HW4 = v13)
+    updateChannel: "standard",       // 'advanced' pulls releases sooner (real Tesla setting)
+    earlyAccess: false,              // Tesla Early Access Program → updates first
   };
+
+  // How much the controllable settings shift your effective rollout percentile.
+  // Grounded in Tesla's own guidance: Advanced "gets you new releases sooner".
+  const channelShift = { advanced: -0.16, standard: +0.10 };
+  const earlyAccessShift = -0.22;
 
   // ---- OS version distribution (drives rollout curves + release cadence) ----
   const versions = [
@@ -97,6 +104,9 @@ const WEN = (function () {
   }
   function verKey(v) { const p = parseOS(v); return p ? p.year * 1e9 + p.week * 1e6 + p.p1 * 1e3 + p.p2 : 0; }
   function cmpOS(a, b) { return verKey(a) - verKey(b); }
+  // FSD major from a string like "v13.2.9", "v14.x", "v14 (lite)" -> 13 / 14
+  function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
-  return { today, carPreset, versions, regions, regionLag, fsdMilestones, feedSeeds, stats, parseOS, verKey, cmpOS };
+  return { today, carPreset, versions, regions, regionLag, fsdMilestones, feedSeeds, stats,
+           channelShift, earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor };
 })();

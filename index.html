@@ -123,6 +123,18 @@
         </label>
         <p class="hint" id="earlyHint">This is your <strong>rollout percentile</strong> — where your car historically lands in each wave. Log your real update history below and wenFSD estimates it for you.</p>
 
+        <div class="channel-row">
+          <label class="field channel-field">
+            <span>Update channel</span>
+            <select id="channelSel">
+              <option value="standard">Standard</option>
+              <option value="advanced">Advanced — pulls sooner</option>
+            </select>
+          </label>
+          <label class="switch-row inline"><input type="checkbox" id="earlyAccessChk"/> <span>Early Access Program</span></label>
+        </div>
+        <p class="hint">Tesla's <strong>Advanced</strong> update setting (Controls → Software) and the <strong>Early Access Program</strong> genuinely get you releases sooner — wenFSD shifts your effective percentile to match.</p>
+
         <!-- update history -> real earliness estimate -->
         <div class="history">
           <div class="history-h">
@@ -211,7 +223,7 @@
     <div class="table-wrap">
       <table class="fw-table">
         <thead>
-          <tr><th>Version</th><th>Status</th><th>AU fleet</th><th>First seen</th><th>FSD build (AI4)</th><th>Notes</th></tr>
+          <tr><th>Version</th><th>Status</th><th>AU fleet</th><th>7-day velocity</th><th>First seen</th><th>FSD build (AI4)</th><th>Notes</th></tr>
         </thead>
         <tbody id="fwBody"></tbody>
       </table>
@@ -229,9 +241,10 @@
     <section class="card">
       <h2 class="card-h">Why wenFSD beats the trackers</h2>
       <ul class="why">
-        <li><strong>Teslascope / TeslaFi / Tessie</strong> show what's rolling out across the fleet. They never tell <em>you</em> when <em>your</em> car is next.</li>
-        <li><strong>wenFSD</strong> fits a logistic rollout curve, places your VIN by its historical percentile, adds AU regional lag, and runs a Monte&nbsp;Carlo for a real date <strong>distribution</strong> + confidence band.</li>
-        <li><strong>FSD is modelled separately</strong> — as an active but <em>staged</em> AU rollout (wider band than normal updates), since Tesla expands FSD in batches with pauses.</li>
+        <li><strong>Teslascope · TeslaFi · Tessie · fleetctrl · teslaupdates</strong> are all <em>observational</em> — install counts, % of fleet, daily velocity, status. None tell <em>you</em> when <em>your</em> car is next.</li>
+        <li><strong>wenFSD predicts</strong>: a logistic S-curve (matching Tesla's staged, VIN-based A/B rollout), placed by your rollout percentile, then Monte&nbsp;Carlo → a real date <strong>distribution</strong> + 80% band.</li>
+        <li><strong>It models what actually moves your spot in line</strong>: your Advanced/Standard update channel &amp; Early Access, your hardware (HW3 capped, HW4 latest), your region's regulatory status, and Tesla's measured ~monthly cadence.</li>
+        <li><strong>Two tracks, tied together</strong>: next OS build and next FSD version — and since FSD ships <em>inside</em> OS builds, FSD can't arrive before the build that carries it.</li>
         <li><strong>You can guess</strong>, get scored against the model, and compare to the community.</li>
       </ul>
       <div class="stats-strip" id="statsStrip"></div>

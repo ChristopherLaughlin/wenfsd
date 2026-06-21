@@ -33,6 +33,8 @@ const Garage = (function () {
       fsdVersion: WEN.carPreset.fsdVersion,
       earliness: WEN.carPreset.earlinessPercentile,
       earlinessSource: "default",
+      updateChannel: WEN.carPreset.updateChannel,
+      earlyAccess: WEN.carPreset.earlyAccess,
       optedIn: false,
       history: [],
     };

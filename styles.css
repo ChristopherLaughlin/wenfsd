@@ -280,6 +280,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .mx-na{color:var(--mut2);text-align:center}
 .tl-head{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin:6px 0 12px}
 
+/* update channel */
+.channel-row{display:flex;gap:14px;align-items:center}
+.channel-field{flex:1;margin:14px 0}
+.switch-row.inline{margin:0;align-items:center;white-space:nowrap}
+.spark{display:block;opacity:.9}
+.spark rect{fill:var(--acc2)}
+
 /* consent + connect */
 .consent{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
 .connect-btn{width:100%;background:linear-gradient(135deg,#1a8cff,#0a5bd0);box-shadow:0 4px 14px rgba(26,140,255,.3)}

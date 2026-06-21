@@ -46,7 +46,10 @@ const Predict = (function () {
       }
       const k = Math.max(0.04, opts.k + gauss(r) * (opts.k * 0.15));
       let p = opts.earliness + gauss(r) * 0.10; p = Math.min(0.97, Math.max(0.03, p));
-      samples.push(t0 + logit(p) / k);
+      let t = t0 + logit(p) / k;
+      // a feature can't arrive before the OS build that carries it (FSD floor)
+      if (opts.floorDays != null) t = Math.max(t, opts.floorDays);
+      samples.push(t);
     }
     const out = summarize(samples, opts.today, { k: opts.k, L, t0Base: opts.approval ? null : opts.t0Days });
     if (approvals.length) { approvals.sort((a, b) => a - b); out.approval = { p10: quantile(approvals, 0.1), median: quantile(approvals, 0.5), p90: quantile(approvals, 0.9) }; }
@@ -115,6 +118,18 @@ const Predict = (function () {
     return out;
   }
 
+  function regionDelta(car) { const r = WEN.regions[car.market]; return (r ? r.osLagDays : AU_LAG) - AU_LAG; }
+  // earliest distributed OS build whose bundled FSD build (for this hardware) is >= nextMajor
+  function carrierBuild(car, nextMajor) {
+    if (!nextMajor) return null;
+    const carriers = WEN.versions.filter(v => {
+      if (!(v.status === "rolling" || v.status === "tapering" || v.status === "mature")) return false;
+      const fb = v.fsdBuild && v.fsdBuild[car.hardware];
+      return fb && WEN.fsdMajor(fb) >= nextMajor;
+    }).sort((a, b) => WEN.verKey(a.version) - WEN.verKey(b.version));
+    return carriers[0] || null;
+  }
+
   // ---- NEXT FSD VERSION ----
   function predictNextFSD(car, today) {
     const region = WEN.regions[car.market];
@@ -122,15 +137,21 @@ const Predict = (function () {
     if (!f) return { unavailable: true, current: car.fsdVersion || "—", note: `No FSD data for ${car.hardware} in ${car.market}.` };
     if (f.mode === "capped") return { capped: true, current: f.current, note: `${car.hardware} is capped at ${f.current} — Tesla has stated this hardware can't run newer FSD.` };
 
+    // FSD ships bundled in OS builds — find the OS build that first carries the next major
+    const nextMajor = WEN.fsdMajor(f.next);
+    const carrier = carrierBuild(car, nextMajor);
+    const carrierFloor = carrier ? Math.max(0, daysBetween(today, carrier.t0) + regionDelta(car) - 4) : null;
+    const carrierNote = carrier ? ` It ships in OS build ${carrier.version}+, so you can't get it before that build reaches you.` : "";
+
     let out, note;
     if (f.mode === "rolling" || f.mode === "early") {
       const t0Days = daysBetween(today, f.t0);
       const t0Sigma = f.t0Sigma || (f.mode === "early" ? 7 : 3);
-      out = mcPredict({ t0Days, k: f.k, L: 0.9, earliness: car.earlinessPercentile, t0Sigma, today, seedStr: "FSD" + f.next + car.market + car.earlinessPercentile });
+      out = mcPredict({ t0Days, k: f.k, L: 0.9, earliness: car.earlinessPercentile, t0Sigma, floorDays: carrierFloor, today, seedStr: "FSD" + f.next + car.market + car.earlinessPercentile });
       out._t0Days = t0Days; out._k = f.k;
-      note = f.mode === "early"
+      note = (f.mode === "early"
         ? `${f.next} is in early/staged rollout in ${car.market}${f.firstSeen ? " (started " + shortFsd(f.firstSeen) + ", ~" + (f.fleetPct || "?") + "% so far)" : ""}. Wider band than a normal update.`
-        : `${f.next} is actively rolling out to ${car.hardware} cars in ${car.market}.`;
+        : `${f.next} is actively rolling out to ${car.hardware} cars in ${car.market}.`) + carrierNote;
     } else if (f.mode === "gated") {
       out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness: car.earlinessPercentile, today, seedStr: "FSDg" + f.next + car.market + car.earlinessPercentile });
       const a = out.approval;
