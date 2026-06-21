@@ -32,17 +32,17 @@ export const config = {
   allowLiveSources: bool(process.env.ALLOW_LIVE_SOURCES, false), // explicit opt-in to fetch external trackers
 };
 
-export function assertRealModeReady() {
-  if (config.mockMode) return;
+// If real mode is requested but its required config is incomplete, DEGRADE to sample
+// mode (and log loudly) instead of crashing — so a missing DB/credential never takes the
+// whole site dark. Returns { degraded, missing }.
+export function ensureModeReady() {
+  if (config.mockMode) return { degraded: false, missing: [] };
   const missing = [];
   if (!config.tesla.clientId) missing.push("TESLA_CLIENT_ID");
   if (!config.tesla.clientSecret) missing.push("TESLA_CLIENT_SECRET");
   if (!config.databaseUrl) missing.push("DATABASE_URL");
-  if (!config.tokenEncKey) missing.push("TOKEN_ENC_KEY (32-byte key to encrypt OAuth tokens)");
-  if (missing.length) throw new Error("Missing required env for real mode: " + missing.join(", ") + ". Set them or run with MOCK_MODE=true.");
-
-  // session secret must be strong in real mode
-  if (!config.sessionSecret || config.sessionSecret === "dev-insecure-secret" || config.sessionSecret.length < 32) {
-    throw new Error("SESSION_SECRET must be set to a strong value (>=32 chars) in real mode.");
-  }
+  if (!config.tokenEncKey) missing.push("TOKEN_ENC_KEY");
+  if (!config.sessionSecret || config.sessionSecret === "dev-insecure-secret" || config.sessionSecret.length < 32) missing.push("SESSION_SECRET(>=32 chars)");
+  if (missing.length) { config.mockMode = true; return { degraded: true, missing }; }
+  return { degraded: false, missing: [] };
 }

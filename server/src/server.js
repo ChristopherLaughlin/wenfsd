@@ -7,12 +7,12 @@ import cron from "node-cron";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { config, assertRealModeReady } from "./config.js";
+import { config, ensureModeReady } from "./config.js";
 import { authRouter } from "./routes/auth.js";
 import { apiRouter } from "./routes/api.js";
 import { pollOnce } from "./poller.js";
 
-assertRealModeReady();
+const modeStatus = ensureModeReady();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "..", "..");
@@ -87,6 +87,10 @@ app.use((err, req, res, next) => {
 app.listen(config.port, async () => {
   console.log(`wenFSD server on :${config.port}  (mock=${config.mockMode})`);
   console.log(`  → http://localhost:${config.port}`);
+  if (modeStatus.degraded) {
+    console.error("  ⚠ MOCK_MODE=false but real-mode config is incomplete: " + modeStatus.missing.join(", "));
+    console.error("  ⚠ Falling back to SAMPLE mode so the site stays up. Set the missing vars to go live.");
+  }
   if (config.mockMode) { console.log("  MOCK_MODE: serving seed data, no Tesla/DB calls."); return; }
   // real mode: ensure the schema exists (idempotent) so you never run a manual migrate
   try {
