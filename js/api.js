@@ -79,6 +79,7 @@
             notes: "",
             recentInstalls: row.recentInstalls != null ? row.recentInstalls : null,
             sources: row.sources || [],
+            regions: Array.isArray(row.regions) ? row.regions : [],
           }));
         }
       }

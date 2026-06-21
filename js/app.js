@@ -48,6 +48,7 @@
     if (pred.capped || pred.unavailable) { renderNoPrediction(pred); return pred; }
 
     renderHero(pred);
+    renderYouBar(pred);
     Charts.rolloutCurve($("curveChart"), pred, today);
     Charts.distribution($("distChart"), pred, today, ui.guessDays);
     renderGuess(pred);
@@ -109,6 +110,23 @@
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
     renderBasis(pred);
     renderTips(pred);
+  }
+
+  // persistent NOW → NEXT context (region-aware) so the progression is always obvious
+  function renderYouBar(pred) {
+    const el = $("youBar"); if (!el) return;
+    const v = av();
+    if (!v || !pred || pred.capped || pred.unavailable) { el.hidden = true; return; }
+    el.hidden = false;
+    const isFSD = ui.target === "fsd";
+    const now = pred.current || v.installedVersion || "—";
+    const next = pred.targetLabel || "next";
+    const eta = pred.daysToMedian != null ? `~${Math.max(0, pred.daysToMedian)}d` : "";
+    el.innerHTML =
+      `<span class="yb-region">📍 ${esc(v.market)}</span>` +
+      `<span class="yb-seg"><span class="yb-lbl">NOW</span><strong class="yb-ver" data-goto-version="${esc(now)}" role="button" tabindex="0">${esc(now)}</strong></span>` +
+      `<span class="yb-arrow">→</span>` +
+      `<span class="yb-seg"><span class="yb-lbl yb-next-lbl">NEXT${isFSD ? " FSD" : ""}</span><strong class="yb-ver yb-next" data-goto-version="${esc(next)}" role="button" tabindex="0">${esc(next)}</strong>${eta ? `<span class="yb-eta">${eta}</span>` : ""}</strong></span>`;
   }
 
   // plain-language breakdown of HOW the date was computed + what it's based on
@@ -592,7 +610,7 @@
     $("fsdMatrix").innerHTML =
       `<table class="mx-table"><thead><tr><th>Region</th><th>HW4 / AI4</th><th>HW3 / AI3</th></tr></thead><tbody>${rows}</tbody></table>`;
 
-    const tlHead = $("fsdTlHead"); if (tlHead) tlHead.textContent = `${rname0} FSD timeline`;
+    const tlHead = $("fsdTlHead"); if (tlHead) tlHead.innerHTML = `${esc(rname0)} FSD timeline <span class="mut-i" style="font-weight:400;font-size:11px">— modelled outlook, not confirmed Tesla dates</span>`;
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
@@ -705,14 +723,48 @@
     renderActiveControls(); renderGarage(); ui.guessDays = null; clearGuess(); render();
   }
   // jump to a version's release note (opening it) or its firmware-table row
-  function gotoVersion(ver) {
-    const d = document.querySelector(`#releaseNotes details[data-ver="${ver}"]`);
-    if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); flash(d); return; }
-    const rows = [...document.querySelectorAll("#fwBody tr")];
-    const row = rows.find(r => r.querySelector("strong") && r.querySelector("strong").textContent.trim().startsWith(ver));
-    if (row) { row.scrollIntoView({ behavior: "smooth", block: "center" }); flash(row); }
-  }
   function flash(el) { el.classList.add("rn-flash"); setTimeout(() => el.classList.remove("rn-flash"), 1200); }
+
+  // expanded detail for any version: distribution, FSD build, regions, activity, notes, and
+  // where it sits relative to YOUR car (NOW/NEXT/ahead/behind).
+  function showVersionDetail(ver) {
+    const body = $("verModalBody"); if (!body) return;
+    const d = (WEN.versions || []).find(x => x.version === ver);
+    const rn = WEN.releaseNotes[ver];
+    const v = av();
+    // relation to the user's current build
+    let rel = "";
+    if (v && v.installedVersion) {
+      if (v.installedVersion === ver) rel = `<span class="vm-rel vm-now">This is your current version</span>`;
+      else {
+        const diff = WEN.verKey(ver) - WEN.verKey(v.installedVersion);
+        const ahead = (WEN.versions || []).filter(x => WEN.verKey(x.version) > WEN.verKey(v.installedVersion) && WEN.verKey(x.version) <= WEN.verKey(ver)).length;
+        rel = diff > 0
+          ? `<span class="vm-rel vm-newer">Newer than your ${esc(v.installedVersion)}${ahead ? ` — ${ahead} build${ahead > 1 ? "s" : ""} ahead` : ""}</span>`
+          : `<span class="vm-rel vm-older">Older than your ${esc(v.installedVersion)}</span>`;
+      }
+    }
+    const stat = (label, val) => `<div class="vm-stat"><span>${esc(label)}</span><b>${val}</b></div>`;
+    const regions = (d && d.regions && d.regions.length) ? d.regions : (rn && rn.regions || []);
+    const notesItems = rn && rn.items ? rn.items.map(it => `<li><span class="rn-tag ${RN_TAG[it.tag] || "rn-feat"}">${esc(it.tag)}</span>${esc(it.text)}</li>`).join("") : "";
+    body.innerHTML =
+      `<h3 id="verModalTitle" class="vm-title">${esc(ver)}${v && v.installedVersion === ver ? ' <span class="tag-you">you</span>' : ''}</h3>` +
+      (rel ? `<div class="vm-rel-row">${rel}</div>` : "") +
+      `<div class="vm-stats">` +
+        stat("Fleet share (global)", d && d.fleetPct != null ? d.fleetPct + "%" : "not reported") +
+        stat("Status", d ? (d.status || "—") : "—") +
+        stat("First seen", d && d.firstSeen ? shortDate(d.firstSeen) : "—") +
+        stat("FSD build (AI4)", d && d.fsdBuild && d.fsdBuild.AI4 && d.fsdBuild.AI4 !== "—" ? d.fsdBuild.AI4 : "—") +
+        (d && d.recentInstalls ? stat("Installs this week", "🔥 " + Number(d.recentInstalls).toLocaleString()) : "") +
+      `</div>` +
+      (regions.length ? `<div class="vm-regions"><span class="vm-k">Seen in:</span> ${regions.map(r => `<span class="rn-region">${esc(r)}</span>`).join("")}</div>` : "") +
+      (d && d.sources && d.sources.length ? `<div class="vm-src">via ${d.sources.map(esc).join(" · ")}</div>` : "") +
+      (notesItems ? `<div class="vm-notes-h">Release notes${rn.source ? ` <span class="mut-i">via ${esc(rn.source)}</span>` : ""}</div><ul class="rn-items">${notesItems}</ul>` : `<p class="vm-nonotes">No release notes captured for this build yet.</p>`);
+    $("verModal").hidden = false;
+    document.body.style.overflow = "hidden";
+    const cl = $("verModalClose"); if (cl) cl.focus();
+  }
+  function closeVersionModal() { const m = $("verModal"); if (m) m.hidden = true; document.body.style.overflow = ""; }
 
   // explore a region's data (FSD card + region highlights) — independent of your car
   function exploreRegion(name) {
@@ -757,11 +809,12 @@
   }
   function renderTable() {
     const mine = av() ? av().installedVersion : null;
+    const nextVer = av() ? (currentPrediction().targetLabel || null) : null;
     $("fwBody").innerHTML = WEN.versions.map(v => {
       const isMine = v.version === mine;
-      const hasNotes = !!WEN.releaseNotes[v.version];
-      return `<tr class="${isMine ? "mine" : ""}">` +
-        `<td>${hasNotes ? `<strong class="fw-verlink" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="See ${esc(v.version)} release notes">${v.version}</strong>` : `<strong>${v.version}</strong>`}${isMine ? ' <span class="tag-you">you</span>' : ''}</td>` +
+      const isNext = nextVer && v.version === nextVer;
+      return `<tr class="${isMine ? "mine" : ""}${isNext ? " fw-next" : ""}">` +
+        `<td><strong class="fw-verlink" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}${isNext ? ' <span class="tag-next">next</span>' : ''}</td>` +
         `<td><span class="status status-${v.status}">${v.status}</span></td>` +
         `<td>${v.fleetPct != null ? `<div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div>` : `<span class="mut-i">not reported</span>`}</td>` +
         `<td>${v.fleetPct != null ? sparkSVG(v) : "—"}</td>` +
@@ -792,14 +845,17 @@
       .sort((a, b) => String(b.firstSeen).localeCompare(String(a.firstSeen)))
       .slice(0, 8);
     if (!rows.length) { feed.innerHTML = `<li class="feed-empty">No recent rollout activity yet.</li>`; $("feedSub").textContent = ""; return; }
+    const mine = av() ? av().installedVersion : null;
+    const nextVer = av() ? (currentPrediction().targetLabel || null) : null;
     feed.innerHTML = rows.map(v => {
       const pct = v.fleetPct != null ? `${v.fleetPct}% of fleet` : null;
       const inst = v.recentInstalls ? `🔥 ${Number(v.recentInstalls).toLocaleString()} installs/wk` : null;
       const fsd = (v.fsdBuild && v.fsdBuild.AI4 && v.fsdBuild.AI4 !== "—") ? `FSD ${v.fsdBuild.AI4}` : null;
       const meta = [pct, inst, fsd].filter(Boolean).join(" · ");
       const src = (v.sources && v.sources.length) ? `via ${v.sources.join(", ")}` : "";
+      const tag = v.version === mine ? ' <span class="tag-you">you</span>' : (nextVer && v.version === nextVer ? ' <span class="tag-next">next</span>' : "");
       return `<li><span class="feed-when">${shortDate(v.firstSeen)}</span>` +
-        `<span class="feed-main"><strong class="feed-relver" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="See ${esc(v.version)} details">${esc(v.version)}</strong>${meta ? ` <span class="feed-meta">${esc(meta)}</span>` : ""}</span>` +
+        `<span class="feed-main"><strong class="feed-relver" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${esc(v.version)}</strong>${tag}${meta ? ` <span class="feed-meta">${esc(meta)}</span>` : ""}</span>` +
         `<span class="feed-ver">${esc(src)}</span></li>`;
     }).join("");
     $("feedSub").textContent = rows.length + " recent releases";
@@ -813,10 +869,16 @@
       const er = e.target.closest("[data-explore-region]");
       if (er) { e.preventDefault(); exploreRegion(er.getAttribute("data-explore-region")); return; }
       const g = e.target.closest("[data-goto-version]");
-      if (g) { e.preventDefault(); gotoVersion(g.getAttribute("data-goto-version")); return; }
+      if (g) { e.preventDefault(); showVersionDetail(g.getAttribute("data-goto-version")); return; }
     }
     document.addEventListener("click", handleActivate);
     document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-goto-version],[data-explore-region]")) handleActivate(e); });
+
+    // version-detail modal close (×, backdrop, Esc)
+    const mClose = $("verModalClose"), mBack = $("verModalBackdrop");
+    if (mClose) mClose.onclick = closeVersionModal;
+    if (mBack) mBack.onclick = closeVersionModal;
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeVersionModal(); });
 
     document.querySelectorAll("#targetSeg .seg-btn").forEach(btn => {
       btn.onclick = () => {

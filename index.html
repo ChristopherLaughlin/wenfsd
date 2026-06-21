@@ -64,6 +64,9 @@
     </div>
   </section>
 
+  <!-- NOW → NEXT context bar -->
+  <div class="you-bar" id="youBar" hidden></div>
+
   <div class="grid2">
     <!-- YOUR GARAGE -->
     <section class="card" id="garageCard">
@@ -282,6 +285,15 @@
     <p class="foot-links"><a href="PRIVACY.md">Privacy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a></p>
   </footer>
 </main>
+
+<!-- version detail modal -->
+<div class="vmodal" id="verModal" hidden>
+  <div class="vmodal-backdrop" id="verModalBackdrop"></div>
+  <div class="vmodal-card" role="dialog" aria-modal="true" aria-labelledby="verModalTitle">
+    <button class="vmodal-close" id="verModalClose" aria-label="Close">×</button>
+    <div id="verModalBody"></div>
+  </div>
+</div>
 
 <script src="js/data.js"></script>
 <script src="js/vin.js"></script>
