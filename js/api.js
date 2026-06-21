@@ -29,77 +29,42 @@
     try { health = await getJSON("/api/healthz"); } catch { return; }
     if (!health || !health.ok) return;
 
-    // --- firmware versions + release notes (fleet-weighted consensus across trackers) ---
+    // --- REAL fleet firmware (from our own DB only — never the sample/merged data) ---
+    // Only flips to "live" (and shows the fleet sections) when real crowdsourced data exists.
     try {
-      const fw = await getJSON("/api/fleet/firmware?merged=1");
+      const fw = await getJSON("/api/fleet/firmware");   // DB-backed, not the sample merge
       const versions = fw.versions;
-      if (fw.mode === "live") WEN.dataMode = "live";
-      if (Array.isArray(versions) && versions.length) {
-        const byVer = new Map(WEN.versions.map(v => [v.version, v]));
-        WEN.versions = versions.map(row => {
-          const prev = byVer.get(row.version) || {};
-          // t0 is the rollout MIDPOINT, not first-seen. Prefer a real fitted t0 from the
-          // backend; otherwise estimate midpoint ≈ first-seen + ~10 days (never first-seen).
-          const fittedT0 = row.t0 ? String(row.t0).slice(0, 10) : null;
-          const estT0 = row.firstSeen ? Predict.isoDay(Predict.addDays(String(row.firstSeen).slice(0, 10), 10)) : null;
-          return Object.assign({
-            notes: prev.notes || "",
-            k: row.k || prev.k || 0.33,
-            t0: fittedT0 || prev.t0 || estT0 || WEN.today,
-          }, {
-            version: row.version,
-            firstSeen: (row.firstSeen ? String(row.firstSeen).slice(0, 10) : prev.firstSeen) || WEN.today,
-            fleetPct: row.fleetPct != null ? row.fleetPct : prev.fleetPct,
-            branch: row.branch || prev.branch || "standard",
-            status: row.status || prev.status || "rolling",
-            fsdBuild: Object.assign({ AI4: "—", AI3: "—" }, prev.fsdBuild, row.fsdBuild || {}),
-          });
-        });
-        // ingest release notes from the merged tracker data
-        for (const row of versions) {
-          if (row.notes && row.notes.length) {
-            WEN.releaseNotes[row.version] = {
-              date: row.firstSeen ? String(row.firstSeen).slice(0, 10) : "",
-              regions: row.regions || [],
-              fsd: row.fsdBuild && row.fsdBuild.AI4 ? row.fsdBuild.AI4 + " (HW4)" : "—",
-              source: (row.sources || []).join(", ") || "trackers",
-              items: row.notes.map(t => ({ tag: guessTag(t), text: t })),
-            };
-          }
-        }
-      }
-    } catch (e) { /* keep seed */ }
-
-    // --- source attribution (live status) ---
-    try {
-      const { sources } = await getJSON("/api/sources");
-      if (Array.isArray(sources) && sources.length && window.WENFSD && window.WENFSD.setSources) {
-        window.WENFSD.setSources(sources, true);
-      }
-    } catch (e) { /* keep default */ }
-
-    // --- fleet stats ---
-    try {
-      const s = await getJSON("/api/stats");
-      WEN.stats = {
-        carsTracked: +s.cars_tracked || WEN.stats.carsTracked,
-        auCars: +s.au_cars || WEN.stats.auCars,
-        updatesLogged: +s.updates_logged || WEN.stats.updatesLogged,
-        versionsTracked: +s.versions_tracked || WEN.stats.versionsTracked,
-        releases2026: WEN.stats.releases2026,
-      };
-    } catch (e) { /* keep seed */ }
-
-    // --- live feed ---
-    try {
-      const { feed } = await getJSON("/api/fleet/feed");
-      if (Array.isArray(feed) && feed.length) {
-        WEN.feedSeeds = feed.map(f => ({
-          region: f.region || "—", model: f.model || "Tesla", hw: f.hw || "AI4",
-          from: f.from || "—", to: f.to || f.version || "—",
+      if (fw.source === "db" && Array.isArray(versions) && versions.length) {
+        WEN.dataMode = "live";
+        WEN.versions = versions.map(row => ({
+          version: row.version,
+          firstSeen: row.first_seen ? String(row.first_seen).slice(0, 10) : WEN.today,
+          fleetPct: row.fleet_pct != null ? row.fleet_pct : null,
+          branch: row.branch || "standard",
+          status: row.status || "rolling",
+          k: row.k || 0.33,
+          t0: row.t0 ? String(row.t0).slice(0, 10) : (row.first_seen ? Predict.isoDay(Predict.addDays(String(row.first_seen).slice(0, 10), 10)) : WEN.today),
+          fsdBuild: { AI4: "—", AI3: "—" },
+          notes: "",
         }));
       }
-    } catch (e) { /* keep seed */ }
+    } catch (e) { /* no real data → stays sample → fleet sections hidden */ }
+
+    // --- real fleet stats (DB counts) ---
+    try {
+      const s = await getJSON("/api/stats");
+      if (s && s.mode === "live") {
+        WEN.stats = { carsTracked: +s.cars_tracked || 0, auCars: +s.au_cars || 0, updatesLogged: +s.updates_logged || 0, versionsTracked: +s.versions_tracked || 0, releases2026: 0 };
+      }
+    } catch (e) { /* keep */ }
+
+    // --- real live feed (DB version-change events) ---
+    try {
+      const fd = await getJSON("/api/fleet/feed");
+      if (fd && fd.source === "db" && Array.isArray(fd.feed) && fd.feed.length) {
+        WEN.feedSeeds = fd.feed.map(f => ({ region: f.region || "—", model: f.model || "Tesla", hw: f.hw || "AI4", from: f.from || "—", to: f.to || f.version || "—" }));
+      }
+    } catch (e) { /* keep */ }
 
     if (window.WENFSD && window.WENFSD.rerender) window.WENFSD.rerender();
 

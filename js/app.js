@@ -461,10 +461,15 @@
     if (el) { el.classList.toggle("is-sample", !live); el.title = live ? "Live, aggregated from connected cars + trackers" : "Illustrative sample data — connect a backend / your Tesla for live figures"; }
     const fwSub = document.querySelector("#fwSub");
     if (fwSub) fwSub.textContent = live ? "live distribution" : "sample distribution";
+    // hide the fabricated fleet sections unless we actually have real fleet data
+    document.querySelectorAll(".fleet-card").forEach(el => { el.style.display = live ? "" : "none"; });
     const banner = $("sampleBanner");
     if (banner) {
-      banner.hidden = live;
-      if (!live) banner.innerHTML = `⚠️ <strong>The fleet-wide figures on this page are sample data</strong> — the firmware tracker, live feed, region stats and release notes are illustrative until enough real cars connect. <strong>Your own car's prediction is real</strong>, computed from your actual software version once you add or connect it.`;
+      banner.hidden = false;
+      banner.className = live ? "sample-banner sb-live" : "sample-banner";
+      banner.innerHTML = live
+        ? `✓ Showing live fleet data aggregated from connected cars.`
+        : `Showing <strong>only your real data</strong>. Fleet-wide views (firmware distribution, rollout timing, release notes) stay hidden until enough real cars connect — wenFSD doesn't display invented fleet figures. Your prediction below is a transparent <em>model</em> estimate from your real version &amp; hardware.`;
     }
   }
 
@@ -554,10 +559,13 @@
     });
   }
   function renderStats() {
-    const s = WEN.stats;
-    const note = WEN.dataMode === "live" ? "" : `<div class="stats-sample">⚠ illustrative sample figures — not live counts</div>`;
-    $("statsStrip").innerHTML = note + [["AU cars", s.auCars.toLocaleString()], ["cars tracked", s.carsTracked.toLocaleString()],
-      ["updates logged", s.updatesLogged.toLocaleString()], ["versions", s.versionsTracked], ["2026 releases", s.releases2026]]
+    if (WEN.dataMode !== "live") {
+      $("statsStrip").innerHTML = `<div class="stats-sample">Fleet totals appear here once real cars connect — wenFSD shows no invented numbers.</div>`;
+      return;
+    }
+    const s = WEN.stats; // real DB-derived counts in live mode
+    $("statsStrip").innerHTML = [["cars tracked", (+s.carsTracked || 0).toLocaleString()], ["AU cars", (+s.auCars || 0).toLocaleString()],
+      ["updates logged", (+s.updatesLogged || 0).toLocaleString()], ["versions", s.versionsTracked || 0]]
       .map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
   }
   function startFeed() {

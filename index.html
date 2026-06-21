@@ -203,7 +203,7 @@
   </div>
 
   <!-- FSD AUSTRALIA REGULATORY TRACKER -->
-  <section class="card" id="fsdCard">
+  <section class="card fleet-card" id="fsdCard">
     <h2 class="card-h">FSD versions by region &amp; hardware</h2>
     <p class="hint">FSD is a <strong>separate track</strong> from the OS version, and rollout depends on both <strong>region</strong> (regulatory approval) and <strong>hardware</strong> (HW3/AI3 is capped; HW4/AI4 gets the latest). The stats below reflect <em>your</em> car's region &amp; hardware.</p>
     <div class="fsd-grid">
@@ -217,21 +217,21 @@
   </section>
 
   <!-- RELEASE NOTES -->
-  <section class="card">
+  <section class="card fleet-card" id="releaseNotesCard">
     <h2 class="card-h">Release notes <span class="card-sub">what's in each build · newest first</span></h2>
     <div id="dataSources" class="data-sources"></div>
     <div id="releaseNotes" class="rn-list"></div>
   </section>
 
   <!-- PER-REGION OS ROLLOUT -->
-  <section class="card">
+  <section class="card fleet-card" id="regionCard">
     <h2 class="card-h">OS rollout by region <span class="card-sub">how far behind the US wave each market runs</span></h2>
     <p class="hint">Tesla seeds new builds in the US first, then expands geographically (partly to surface road-sign / regulation differences). Right-hand-drive markets typically lag. ETA shown is for a <em>typical</em> car (50th percentile) in each region.</p>
     <div id="regionPanel" class="region-panel"></div>
   </section>
 
   <!-- FIRMWARE TRACKER TABLE -->
-  <section class="card">
+  <section class="card fleet-card" id="firmwareCard">
     <h2 class="card-h">AU fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>
     <div class="table-wrap">
       <table class="fw-table">
@@ -245,7 +245,7 @@
 
   <div class="grid2">
     <!-- LIVE FEED -->
-    <section class="card">
+    <section class="card fleet-card" id="feedCard">
       <h2 class="card-h">Live update feed <span class="card-sub" id="feedSub"></span></h2>
       <ul class="feed" id="feed"></ul>
     </section>
