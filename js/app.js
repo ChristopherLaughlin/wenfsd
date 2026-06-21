@@ -625,11 +625,28 @@
     renderGarage(); renderActiveControls(); render();
   }
 
+  // Visible Tesla-connection status (so the link state is never a mystery).
+  function setLinkState(state) {
+    const el = $("linkStatus"); if (!el) return;
+    el.hidden = false;
+    if (state.status === 200 && Array.isArray(state.vehicles) && state.vehicles.length) {
+      el.className = "link-status ls-ok";
+      el.innerHTML = `🔗 <strong>Connected to Tesla</strong> — ${state.vehicles.length} vehicle${state.vehicles.length > 1 ? "s" : ""} linked.`;
+      addConnectedVehicles(state.vehicles);
+    } else if (state.status === 200) {
+      el.className = "link-status ls-warn";
+      el.innerHTML = `Connected to Tesla, but the API returned no vehicles yet. If you just linked, wait a moment and reload.`;
+    } else {
+      el.className = "link-status ls-off";
+      el.innerHTML = `Not connected on this device (or your session expired). Use <strong>Connect Tesla account</strong> below to link your car.`;
+    }
+  }
+
   // Optional live-data bridge: js/api.js calls these after talking to the backend.
   window.WENFSD = {
     rerender() { renderFSD(); renderStats(); renderDataMode(); render(); },
     setSources(list, live) { renderDataSources(list, live); },
-    addConnectedVehicles,
+    addConnectedVehicles, setLinkState,
     get activeVehicle() { return av(); },
   };
 })();
