@@ -45,6 +45,7 @@
     Charts.distribution($("distChart"), pred, today, ui.guessDays);
     renderGuess(pred);
     renderTable();
+    renderRegions();
     return pred;
   }
 
@@ -61,6 +62,7 @@
     $("distChart").innerHTML = svgEmpty("Add a vehicle to see the probability distribution");
     $("guessResult").classList.remove("show"); $("guessResult").innerHTML = "";
     renderTable();
+    renderRegions();
   }
   function svgEmpty(msg) {
     return `<div class="chart-empty">${esc(msg)}</div>`;
@@ -77,6 +79,7 @@
     $("distChart").innerHTML = ""; $("curveChart").innerHTML = "";
     $("guessResult").classList.remove("show"); $("guessResult").innerHTML = "";
     renderTable();
+    renderRegions();
   }
 
   function renderHero(pred) {
@@ -379,6 +382,27 @@
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
+  // ---- per-region OS rollout panel (country breakdown) ----
+  function renderRegions() {
+    const activeMarket = av() ? av().market : null;
+    const base = WEN.regions["United States"].osLagDays;
+    const lags = Object.values(WEN.regions).map(r => r.osLagDays - base);
+    const maxLag = Math.max(1, ...lags);
+    $("regionPanel").innerHTML = Object.keys(WEN.regions).map(name => {
+      const r = WEN.regions[name];
+      const lag = r.osLagDays - base;
+      const p = Predict.predictNextOS({ market: name, hardware: "AI4", installedVersion: "2026.14.6", earlinessPercentile: 0.5 }, today);
+      const isA = name === activeMarket;
+      const barW = (lag / maxLag) * 100;
+      return `<div class="rp-row ${isA ? "rp-active" : ""}">` +
+        `<div class="rp-name">${esc(name)}${isA ? ' <span class="tag-you">you</span>' : ''} <span class="rp-drive">${r.drive}</span></div>` +
+        `<div class="rp-lag">${lag === 0 ? "US baseline" : "+" + lag + "d behind US"}</div>` +
+        `<div class="rp-bar"><span style="width:${Math.max(2, barW)}%"></span></div>` +
+        `<div class="rp-eta">${esc(p.targetLabel)} in <strong>~${Math.max(0, p.daysToMedian)}d</strong></div>` +
+        `</div>`;
+    }).join("");
+  }
+
   // 7-day install-velocity sparkline, derived from the version's logistic (mirrors the
   // "install calendar" the real trackers show — but generated from the model).
   function sparkSVG(v) {
