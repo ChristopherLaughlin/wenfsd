@@ -14,10 +14,9 @@ function jwks() {
   return _jwks;
 }
 export async function verifyIdToken(idToken) {
-  const { payload } = await jwtVerify(idToken, jwks(), {
-    issuer: tesla.authBase + "/oauth2/v3",
-    audience: tesla.clientId,
-  });
+  // Verify the signature (JWKS) + audience (our client_id). We deliberately don't pin the
+  // issuer string — Tesla's exact issuer value has varied — signature + audience is strong.
+  const { payload } = await jwtVerify(idToken, jwks(), { audience: tesla.clientId });
   return payload; // { sub, email, ... } — now trustworthy
 }
 

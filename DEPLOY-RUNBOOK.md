@@ -72,8 +72,8 @@ TOKEN_ENC_KEY=<from step 3>
 TESLA_CLIENT_ID=<from step 2>
 TESLA_CLIENT_SECRET=<from step 2>
 TESLA_REDIRECT_URI=https://wenfsd.info/auth/callback
-TESLA_FLEET_BASE=https://fleet-api.prod.na.vn.cloud.tesla.com
-TESLA_AUDIENCE=https://fleet-api.prod.na.vn.cloud.tesla.com
+TESLA_FLEET_BASE=https://fleet-api.prd.na.vn.cloud.tesla.com
+TESLA_AUDIENCE=https://fleet-api.prd.na.vn.cloud.tesla.com
 # DATABASE_URL is set by the Postgres plugin.
 # Leave ALLOW_LIVE_SOURCES unset (sample tracker data) until you've cleared each site's ToS.
 ```

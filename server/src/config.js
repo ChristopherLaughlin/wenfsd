@@ -14,9 +14,9 @@ export const config = {
     clientSecret: process.env.TESLA_CLIENT_SECRET || "",
     scopes: process.env.TESLA_SCOPES || "openid offline_access vehicle_device_data",
     redirectUri: process.env.TESLA_REDIRECT_URI || "http://localhost:8787/auth/callback",
-    fleetBase: process.env.TESLA_FLEET_BASE || "https://fleet-api.prod.na.vn.cloud.tesla.com",
+    fleetBase: process.env.TESLA_FLEET_BASE || "https://fleet-api.prd.na.vn.cloud.tesla.com",
     authBase: process.env.TESLA_AUTH_BASE || "https://auth.tesla.com",
-    audience: process.env.TESLA_AUDIENCE || "https://fleet-api.prod.na.vn.cloud.tesla.com",
+    audience: process.env.TESLA_AUDIENCE || "https://fleet-api.prd.na.vn.cloud.tesla.com",
     privateKeyPath: process.env.TESLA_PRIVATE_KEY_PATH || "keys/private-key.pem",
     // PEM keys can also come straight from env (preferred on hosts that deploy from git,
     // where keys/*.pem are gitignored). Literal "\n" sequences are unescaped to newlines.
