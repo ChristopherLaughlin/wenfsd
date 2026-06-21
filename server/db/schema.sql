@@ -91,3 +91,22 @@ CREATE TABLE IF NOT EXISTS predictions (
 );
 CREATE INDEX IF NOT EXISTS idx_pred_vehicle ON predictions(vehicle_id);
 CREATE INDEX IF NOT EXISTS idx_pred_scored ON predictions(scored);
+
+-- The "Call your shot" game: an owner's wager on when their next update lands. Settled for
+-- real when the car actually updates → wenPoints (risk × accuracy) feed the leaderboard.
+CREATE TABLE IF NOT EXISTS guesses (
+  id           BIGSERIAL PRIMARY KEY,
+  vehicle_id   BIGINT REFERENCES vehicles(id) ON DELETE CASCADE,
+  from_version TEXT NOT NULL,                 -- version the car was on when the guess was made
+  target_label TEXT,
+  guess_date   DATE NOT NULL,
+  window_days  INT  NOT NULL DEFAULT 5,       -- ± tolerance (nerve level: 10/5/2)
+  mult         NUMERIC NOT NULL DEFAULT 2.5,  -- payout multiplier (1 / 2.5 / 6)
+  made_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  settled      BOOLEAN NOT NULL DEFAULT false,
+  actual_date  DATE,
+  hit          BOOLEAN,
+  points       INT,
+  UNIQUE(vehicle_id, from_version)            -- one live wager per car-version (re-guessable until it settles)
+);
+CREATE INDEX IF NOT EXISTS idx_guess_vehicle ON guesses(vehicle_id);

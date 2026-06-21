@@ -91,6 +91,20 @@ async function scorePrediction(vehicleId, fromVersion) {
     [vehicleId, fromVersion]);
 }
 
+// Settle the owner's open "Call your shot" wager once the update lands: hit if the actual
+// date fell inside their ± window; wenPoints reward accuracy × the nerve multiplier.
+async function settleGuesses(vehicleId, fromVersion) {
+  await query(
+    `UPDATE guesses
+        SET settled=true, actual_date=CURRENT_DATE,
+            hit = (CURRENT_DATE BETWEEN (guess_date - window_days) AND (guess_date + window_days)),
+            points = CASE WHEN CURRENT_DATE BETWEEN (guess_date - window_days) AND (guess_date + window_days)
+              THEN GREATEST(0, ROUND(100 * mult * (1 - ABS(CURRENT_DATE - guess_date)::numeric / NULLIF(window_days,0))))::int
+              ELSE 0 END
+      WHERE vehicle_id=$1 AND from_version=$2 AND NOT settled`,
+    [vehicleId, fromVersion]);
+}
+
 // Apply a freshly-read version to a car: if it changed, score the old prediction + log the
 // snapshot + update; then ensure an open prediction exists for the current version. Shared by
 // the cron poller, the OAuth link flow, and the owner-triggered refresh endpoint.
@@ -98,7 +112,7 @@ export async function applyVersionReading(c, version) {
   let changed = false;
   if (version && version !== c.current_version) {
     changed = true;
-    if (c.current_version) await scorePrediction(c.id, c.current_version);
+    if (c.current_version) { await scorePrediction(c.id, c.current_version); await settleGuesses(c.id, c.current_version); }
     await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [c.id, version, c.market, c.hardware]);
     await query(`UPDATE vehicles SET current_version=$1 WHERE id=$2`, [version, c.id]);
     c.current_version = version;

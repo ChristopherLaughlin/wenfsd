@@ -315,11 +315,12 @@
     body.innerHTML =
       (d.sample ? `<div class="est-badge">⚠️ Sample leaderboard (offline/dev mode). The live board shows only real drivers who opted into sharing.</div>` : "") +
       `<div class="lb-grid">` +
+        board("wenPoints 🪙", "🏆", d.points, p => `${p.pts.toLocaleString()}${p.hits ? ` · ${p.hits}✓` : ""}`) +
         board("Furthest ahead", "🚀", d.ahead, p => esc(p.version)) +
         board("Earliest in line", "⚡", d.earliest, p => `${p.pct}th pct`) +
         board("Most overdue", "🐌", d.overdue, p => esc(p.version)) +
       `</div>` +
-      `<p class="lb-foot">Only drivers who opted into public sharing appear here · TMC handles are self-claimed (unverified) · 🪙 wenPoints board arrives with guess settlement.</p>`;
+      `<p class="lb-foot">Only drivers who opted into public sharing appear here · TMC handles are self-claimed (unverified) · 🪙 wenPoints come from settled "Call your shot" wagers.</p>`;
   }
 
   // top-bar connection control — visible from the very top, the first thing users act on
@@ -613,13 +614,26 @@
         `<div class="shot-call">You're calling <strong>${esc(target)}</strong> by <strong>${esc(dateNice)}</strong>.</div>` +
         `<div class="shot-stats"><div><b>${odds}%</b><span>house odds you nail the ±${risk.window}-day window</span></div><div><b>🪙 ${potential}</b><span>wenPoints if you're right</span></div></div>` +
         `<div class="shot-verdict">${guessVerdict(risk, odds, g, pred)}</div>` +
-        `<div class="shot-stake">📸 Lock it in, screenshot it, hold yourself to it. The model's odds are the house — your job is to beat them.</div>` +
+        `<div class="shot-stake" id="shotStake">${v && v.connected ? "🔒 Hit “Lock in” to stake this for real — it auto-settles when your car updates, and pays out wenPoints to the leaderboard." : "📸 Lock it in, screenshot it, hold yourself to it. Connect your Tesla to stake it for real + earn wenPoints."}</div>` +
         `<div class="shot-actions"><button class="btn-sm" id="copyBrag" type="button">🔗 Copy brag</button><button class="btn-sm" id="shareTmc" type="button">💬 Take it to TMC</button></div>` +
       `</div>`;
     $("guessResult").classList.add("show");
     Charts.distribution($("distChart"), pred, today, ui.guessDays);
     $("copyBrag").onclick = () => copyText(blurb, $("copyBrag"));
     $("shareTmc").onclick = () => { copyText(blurb, $("shareTmc")); window.open("https://teslamotorsclub.com/tmc/", "_blank", "noopener"); };
+  }
+  // "Lock in" → render the card AND, for a connected car, stake the wager server-side (settles
+  // automatically when the car updates → real wenPoints).
+  function lockInGuess(pred) {
+    showGuessResult(pred);
+    const v = av(), guessStr = $("guessDate").value;
+    if (!v || !v.connected || !/^https?:$/.test(location.protocol) || !guessStr) return;
+    const risk = RISK[ui.guessRisk] || RISK.bold, st = $("shotStake");
+    if (st) st.textContent = "Staking…";
+    fetch("/api/me/guess", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+      body: JSON.stringify({ guessDate: guessStr, windowDays: risk.window, mult: risk.mult, target: pred.targetLabel || null }) })
+      .then(r => r.json()).then(d => { if (st) st.textContent = d && d.staked ? "🔒 Staked! Settles automatically when your car updates — then it pays out wenPoints." : "🔒 Saved."; })
+      .catch(() => { if (st) st.textContent = "⚠ Couldn't stake it (you can still screenshot your call)."; });
   }
   function guessVerdict(risk, odds, g, pred) {
     const off = Math.round(g - pred.daysToMedian);
@@ -973,7 +987,7 @@
         if (ui.target === "fsd") $("fsdCard").scrollIntoView({ behavior: "smooth", block: "nearest" });
       };
     });
-    $("guessBtn").onclick = () => showGuessResult(currentPrediction());
+    $("guessBtn").onclick = () => lockInGuess(currentPrediction());
     window.addEventListener("resize", debounce(() => render(), 150));
   }
   function debounce(fn, ms) { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; }
