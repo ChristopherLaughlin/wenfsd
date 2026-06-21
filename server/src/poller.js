@@ -63,7 +63,9 @@ export async function pollOnce() {
 
 // Record an open prediction for this car's CURRENT version, if one doesn't already exist.
 // Uses the same engine the dashboard uses, so the hit-rate reflects real product accuracy.
-async function ensurePrediction(c) {
+// Exported so the OAuth link flow can capture a prediction immediately (awake cars), instead
+// of waiting for the poller's next scheduled awake-poll.
+export async function ensurePrediction(c) {
   try {
     const car = {
       market: c.market || "Australia", hardware: c.hardware || "AI4",

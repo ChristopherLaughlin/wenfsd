@@ -5,6 +5,7 @@ import * as tesla from "../tesla.js";
 import { query, hasDb } from "../db.js";
 import { encrypt } from "../crypto.js";
 import { decodeVIN } from "../vin.js";
+import { ensurePrediction } from "../poller.js";
 
 export const authRouter = Router();
 
@@ -69,8 +70,13 @@ authRouter.get("/callback", async (req, res, next) => {
         try {
           const version = await tesla.getVehicleVersion(tokens.access_token, v.vin);
           if (version) {
-            const row = await query(`UPDATE vehicles SET current_version=$1 WHERE vin=$2 RETURNING id, market, hardware`, [version, v.vin]);
-            if (row.rows[0]) await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [row.rows[0].id, version, row.rows[0].market, row.rows[0].hardware]);
+            const row = await query(`UPDATE vehicles SET current_version=$1 WHERE vin=$2 RETURNING id, market, hardware, earliness, early_access`, [version, v.vin]);
+            if (row.rows[0]) {
+              const r = row.rows[0];
+              await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [r.id, version, r.market, r.hardware]);
+              // capture a prediction right now so the per-car hit-rate starts working immediately
+              await ensurePrediction({ id: r.id, vin: v.vin, market: r.market, hardware: r.hardware, current_version: version, earliness: r.earliness, early_access: r.early_access });
+            }
           }
         } catch (_) { /* asleep/unavailable — the poller will pick it up later */ }
       }
