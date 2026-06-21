@@ -17,15 +17,17 @@ authRouter.get("/login", (req, res) => {
 });
 
 authRouter.get("/callback", async (req, res, next) => {
+  let step = "start";
   try {
     const { code, state } = req.query;
     if (!code || !state || state !== req.session.oauthState) return res.status(400).send("Invalid OAuth state.");
     req.session.oauthState = null; // single-use
 
+    step = "exchange-code";
     const tokens = await tesla.exchangeCode(code, req.session.pkce);
     req.session.pkce = null;
 
-    // verify the id_token signature before trusting the identity
+    step = "verify-id-token";
     const claims = await tesla.verifyIdToken(tokens.id_token);
     const sub = claims.sub;
     if (!sub) return res.status(400).send("Could not verify identity.");
@@ -33,20 +35,21 @@ authRouter.get("/callback", async (req, res, next) => {
 
     let userId = 1;
     if (hasDb()) {
+      step = "save-user";
       const u = await query(
         `INSERT INTO users(tesla_sub, email) VALUES($1,$2)
          ON CONFLICT(tesla_sub) DO UPDATE SET email=EXCLUDED.email RETURNING id`, [sub, claims.email || null]);
       userId = u.rows[0].id;
+      step = "save-tokens";
       await query(
         `INSERT INTO oauth_tokens(user_id, access_token, refresh_token, expires_at)
          VALUES($1,$2,$3,$4)
          ON CONFLICT(user_id) DO UPDATE SET access_token=$2, refresh_token=$3, expires_at=$4, updated_at=now()`,
         [userId, encrypt(tokens.access_token), encrypt(tokens.refresh_token), expiresAt]);
 
-      // upsert vehicles, decoding the VIN to populate model/year/hardware/market.
-      // opted_in stays at its column default (false) — contributing to fleet stats is
-      // an explicit choice the owner makes later in the UI.
+      step = "list-vehicles";
       const vehicles = await tesla.listVehicles(tokens.access_token);
+      step = "save-vehicles";
       for (const v of vehicles) {
         const d = decodeVIN(v.vin);
         await query(
@@ -60,7 +63,11 @@ authRouter.get("/callback", async (req, res, next) => {
     }
     req.session.userId = userId;
     res.redirect("/?linked=1");
-  } catch (e) { next(e); }
+  } catch (e) {
+    // surface the failing step to the owner so setup issues are diagnosable
+    console.error(`OAuth callback failed at [${step}]:`, (e && e.stack) || e);
+    res.status(500).send(`Connect failed at step "${step}": ${(e && e.message) || e}`);
+  }
 });
 
 authRouter.post("/logout", (req, res) => { req.session = null; res.json({ ok: true }); });
