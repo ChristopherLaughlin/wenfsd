@@ -31,5 +31,6 @@ export function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? 
 export function effEarliness(vehicle) {
   let e = vehicle.earliness != null ? vehicle.earliness : 0.5;
   if (vehicle.earlinessSource !== "history" && vehicle.earlyAccess) e += earlyAccessShift;
+  if (vehicle.earlinessSource !== "history" && vehicle.newCar) e -= 0.12;
   return Math.min(0.97, Math.max(0.03, e));
 }

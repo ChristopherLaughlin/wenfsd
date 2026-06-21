@@ -139,42 +139,56 @@ const Predict = (function () {
     if (!f) return { unavailable: true, current: car.fsdVersion || "—", note: `No FSD data for ${car.hardware} in ${car.market}.` };
     if (f.mode === "capped") return { capped: true, current: f.current, note: `${car.hardware} is capped at ${f.current} — Tesla has stated this hardware can't run newer FSD.` };
 
-    // FSD ships bundled in OS builds — find the OS build that first carries the next major
     const nextMajor = WEN.fsdMajor(f.next);
-    const carrier = carrierBuild(car, nextMajor);
-    const carrierFloor = carrier ? Math.max(0, daysBetween(today, carrier.t0) + regionDelta(car) - 4) : null;
-    const carrierNote = carrier ? ` It ships in OS build ${carrier.version}+, so you can't get it before that build reaches you.` : "";
 
-    let out, note;
-    if (f.mode === "rolling" || f.mode === "early") {
-      // Major FSD version jumps go to NEW DELIVERIES first; the existing fleet gets a separate,
-      // later OTA wave. So an existing owner is NOT "early in line" — they're in the slower wave.
-      const existingWave = f.newDeliveryFirst && !car.newCar;
-      const t0Days = daysBetween(today, f.t0) + (existingWave ? (f.existingFleetDelayDays || 45) : 0);
-      const t0Sigma = existingWave ? (f.existingFleetSigma || 21) : (f.t0Sigma || (f.mode === "early" ? 7 : 3));
-      out = mcPredict({ t0Days, k: f.k, L: 0.9, earliness: car.earlinessPercentile, t0Sigma, floorDays: carrierFloor, today, seedStr: "FSD" + f.next + car.market + car.earlinessPercentile + (existingWave ? "x" : "n") });
-      out._t0Days = t0Days; out._k = f.k; out.wave = f.newDeliveryFirst ? (car.newCar ? "new" : "existing") : null;
-      if (f.newDeliveryFirst && existingWave) {
-        note = `${f.next} is reaching ${car.market} on new ${car.hardware} deliveries first. Your existing car joins a separate, later OTA wave — that's why recent buyers may already have it while you don't. Wide band.` + carrierNote;
-      } else if (f.newDeliveryFirst && car.newCar) {
-        note = `${f.next} is shipping on new ${car.market} deliveries now — as a recent delivery you're in the first wave.` + carrierNote;
-      } else {
-        note = (f.mode === "early"
-          ? `${f.next} is in early/staged rollout in ${car.market}${f.firstSeen ? " (started " + shortFsd(f.firstSeen) + ", ~" + (f.fleetPct || "?") + "% so far)" : ""}. Wider band than a normal update.`
-          : `${f.next} is actively rolling out to ${car.hardware} cars in ${car.market}.`) + carrierNote;
-      }
-    } else if (f.mode === "gated") {
-      out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness: car.earlinessPercentile, today, seedStr: "FSDg" + f.next + car.market + car.earlinessPercentile });
-      const a = out.approval;
-      note = `${f.next} isn't approved for ${car.market} yet. Likely regulatory window ${shortFsd(addDays(today, a.p10))}–${shortFsd(addDays(today, a.p90))}, then your car joins the wave.`;
-    } else { // 'current' — on newest FSD, project next point from FSD cadence
-      const cad = f.cadenceDays || 35;
-      const t0Days = cad;
-      out = mcPredict({ t0Days, k: f.k || 0.15, L: 0.9, earliness: car.earlinessPercentile, t0Sigma: cad * 0.45, today, seedStr: "FSDc" + car.market + car.earlinessPercentile });
+    // 'current' — already on the newest FSD → project the next point from FSD cadence.
+    if (f.mode === "current") {
+      const cad = f.cadenceDays || 35, t0Days = cad;
+      const out = mcPredict({ t0Days, k: f.k || 0.15, L: 0.9, earliness: car.earlinessPercentile, t0Sigma: cad * 0.45, today, seedStr: "FSDc" + car.market + car.earlinessPercentile });
       out._t0Days = t0Days; out._k = f.k || 0.15;
-      note = `You're on the newest FSD (${f.current}). Projected next drop (${f.next}) from the ~${cad}-day FSD cadence.`;
+      out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd";
+      out.note = `You're on the newest FSD (${f.current}). Projected next drop (${f.next}) from the ~${cad}-day FSD cadence.`;
+      return out;
     }
-    out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd"; out.note = note;
+
+    // ── FSD ships BUNDLED inside OS builds ─────────────────────────────────────────────────
+    // The next FSD major version arrives exactly when you receive an OS build that carries it.
+    // So its timing is NOT a separate schedule — it's the OS prediction for that carrier build.
+    // This is why "next software update" and "next FSD version" must be consistent.
+    const myKey = WEN.verKey(car.installedVersion || "0");
+    const distributed = WEN.versions.filter(v => v.status === "rolling" || v.status === "tapering" || v.status === "mature");
+    const nextBuild = distributed.filter(v => WEN.verKey(v.version) > myKey).sort((a, b) => WEN.verKey(b.version) - WEN.verKey(a.version))[0];
+    const carrier = carrierBuild(car, nextMajor); // earliest distributed build whose FSD >= nextMajor
+
+    if (nextBuild && nextBuild.fsdBuild && WEN.fsdMajor(nextBuild.fsdBuild[car.hardware]) >= nextMajor) {
+      // your NEXT software update already carries the new FSD → they arrive together
+      const os = predictNextOS(car, today);
+      os.targetLabel = f.next; os.current = f.current; os.mode = f.mode; os.branch = "fsd"; os.bundledWith = nextBuild.version;
+      os.note = `${f.next} ships inside OS build ${nextBuild.version} — which is your next software update — so they arrive together. FSD is bundled in the OS build, not on a separate schedule.`;
+      return os;
+    }
+    if (f.mode === "gated") {
+      const out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness: car.earlinessPercentile, today, seedStr: "FSDg" + f.next + car.market + car.earlinessPercentile });
+      const a = out.approval;
+      out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd";
+      out.note = `${f.next} isn't approved for ${car.market} yet. Likely regulatory window ${shortFsd(addDays(today, a.p10))}–${shortFsd(addDays(today, a.p90))}, then it ships in an OS build.`;
+      return out;
+    }
+    if (carrier) {
+      // your next update doesn't carry it yet → you get it when build `carrier`+ reaches you
+      const t0Days = daysBetween(today, carrier.t0) + regionDelta(car);
+      const out = mcPredict({ t0Days, k: carrier.k || 0.33, L: 0.95, earliness: car.earlinessPercentile, today, seedStr: "FSDcar" + f.next + car.market + car.earlinessPercentile });
+      out._t0Days = t0Days; out._k = carrier.k || 0.33;
+      out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd"; out.bundledWith = carrier.version;
+      out.note = `${f.next} ships in OS build ${carrier.version}+, newer than your next expected update — you'll get FSD ${f.next} when that build reaches you.`;
+      return out;
+    }
+    // no carrier known (rare) → fall back to the region's FSD timeline
+    const t0Days = f.t0 ? daysBetween(today, f.t0) : 30;
+    const out = mcPredict({ t0Days, k: f.k || 0.1, L: 0.9, earliness: car.earlinessPercentile, t0Sigma: f.t0Sigma || 12, today, seedStr: "FSDfb" + car.market });
+    out._t0Days = t0Days; out._k = f.k || 0.1;
+    out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd";
+    out.note = `${f.next} rollout for ${car.market} (estimated).`;
     return out;
   }
 

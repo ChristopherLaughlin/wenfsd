@@ -93,24 +93,34 @@ export function predictNextFSD(car, opts = {}) {
   if (f.mode === "capped") return { capped: true, current: f.current };
 
   const nextMajor = W.fsdMajor(f.next);
-  const carrier = carrierBuild(car.hardware, nextMajor, versions);
-  const carrierFloor = carrier ? Math.max(0, daysBetween(today, carrier.t0) + regionDelta(car.market) - 4) : null;
 
-  let out, wave = null;
-  if (f.mode === "rolling" || f.mode === "early") {
-    // major FSD version jumps reach new deliveries first; the existing fleet gets a later wave
-    const existingWave = f.newDeliveryFirst && !car.newCar;
-    if (f.newDeliveryFirst) wave = car.newCar ? "new" : "existing";
-    const t0Days = daysBetween(today, f.t0) + (existingWave ? (f.existingFleetDelayDays || 45) : 0);
-    const t0Sigma = existingWave ? (f.existingFleetSigma || 21) : (f.t0Sigma || (f.mode === "early" ? 7 : 3));
-    out = mcPredict({ t0Days, k: f.k, L: 0.9, earliness, t0Sigma, floorDays: carrierFloor, today, seedStr: "FSD" + f.next + car.market + earliness + (existingWave ? "x" : "n") });
-  } else if (f.mode === "gated") {
+  if (f.mode === "current") {
+    const out = mcPredict({ t0Days: f.cadenceDays || 35, k: f.k || 0.15, L: 0.9, earliness, t0Sigma: (f.cadenceDays || 35) * 0.45, today, seedStr: "FSDc" + car.market + earliness });
+    out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
+    return out;
+  }
+
+  // FSD ships bundled in OS builds → its arrival = the OS prediction for the build that carries
+  // it. Keeps next-OS-update and next-FSD consistent (see client predict.js for the rationale).
+  const carrier = carrierBuild(car.hardware, nextMajor, versions);
+  const myKey = W.verKey(car.installedVersion || "0");
+  const nextBuild = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature")).sort((a, b) => W.verKey(b.version) - W.verKey(a.version))[0];
+
+  if (nextBuild && nextBuild.fsdBuild && W.fsdMajor(nextBuild.fsdBuild[car.hardware]) >= nextMajor) {
+    const os = predictNextOS(car, opts);
+    os.targetLabel = f.next; os.current = f.current; os.mode = f.mode; os.branch = "fsd"; os.bundledWith = nextBuild.version;
+    return os;
+  }
+  let out;
+  if (f.mode === "gated") {
     out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness, today, seedStr: "FSDg" + f.next + car.market + earliness });
-  } else { // current
-    out = mcPredict({ t0Days: f.cadenceDays || 35, k: f.k || 0.15, L: 0.9, earliness, t0Sigma: (f.cadenceDays || 35) * 0.45, today, seedStr: "FSDc" + car.market + earliness });
+  } else if (carrier) {
+    out = mcPredict({ t0Days: daysBetween(today, carrier.t0) + regionDelta(car.market), k: carrier.k || 0.33, L: 0.95, earliness, today, seedStr: "FSDcar" + f.next + car.market + earliness });
+  } else {
+    out = mcPredict({ t0Days: f.t0 ? daysBetween(today, f.t0) : 30, k: f.k || 0.1, L: 0.9, earliness, t0Sigma: f.t0Sigma || 12, today, seedStr: "FSDfb" + car.market });
   }
   out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
-  out.carrierBuild = carrier ? carrier.version : null; out.wave = wave;
+  out.carrierBuild = carrier ? carrier.version : null;
   return out;
 }
 

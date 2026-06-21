@@ -13,6 +13,7 @@
   function effEarliness(v) {
     let e = v.earliness;
     if (v.earlinessSource !== "history" && v.earlyAccess) e += WEN.earlyAccessShift;
+    if (v.earlinessSource !== "history" && v.newCar) e -= 0.12; // recent deliveries trend earlier in the queue
     return Math.min(0.97, Math.max(0.03, e));
   }
 
@@ -150,11 +151,8 @@
     $("predBasisBody").innerHTML =
       `<p><strong>What:</strong> when <strong>${esc(pred.targetLabel || (isFSD ? "the next FSD version" : "the next update"))}</strong> reaches <strong>${esc(v.nickname || "your car")}</strong>${pred.current ? ` (currently on ${esc(pred.current)})` : ""}.</p>` +
       `<ol class="basis-steps">` +
-        `<li><strong>Your position:</strong> ${pred.wave === "existing"
-          ? `for a <strong>major new FSD version</strong>, Tesla ships it to new deliveries first — your existing car waits for the separate, later OTA wave. (Tick “recent delivery” in your garage if you just took delivery.)`
-          : pred.wave === "new"
-          ? `you marked your car a <strong>recent delivery</strong>, so you're in the first wave for this new FSD version.`
-          : `we place your car at its <strong>${pct}</strong> rollout position${v.earlyAccess ? " (incl. Early Access)" : ""} — where your car has historically landed within each update wave.`}</li>` +
+        `<li><strong>Your position:</strong> we place your car at its <strong>${pct}</strong> rollout position${v.earlyAccess ? " (incl. Early Access)" : ""} — where your car has historically landed within each update wave.</li>` +
+        (pred.bundledWith ? `<li><strong>Bundled:</strong> FSD ships <em>inside</em> OS build <strong>${esc(pred.bundledWith)}</strong>, so your next FSD version and your next software update arrive <strong>together</strong> — not on separate schedules.</li>` : "") +
         `<li><strong>The model:</strong> Tesla pushes each version as an S-curve across the fleet. We fit a logistic curve and read off your spot, then run Monte-Carlo for the 80% window.</li>` +
         `<li><strong>The timing anchor:</strong> ${anchor}</li>` +
       `</ol>` +

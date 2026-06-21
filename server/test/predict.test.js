@@ -46,11 +46,14 @@ test("within-window probabilities are monotonic and in [0,1]", () => {
   assert.ok(w30 >= w7);
 });
 
-test("predictNextFSD returns the next FSD version + carrier build for AU/HW4", () => {
-  const p = predictNextFSD(auAI4);
-  assert.equal(p.targetLabel, "v14.x");
-  assert.equal(p.branch, "fsd");
-  assert.equal(p.carrierBuild, "2026.14.6.11");
+test("predictNextFSD bundles with the OS build that carries it (consistent dates)", () => {
+  const fsd = predictNextFSD(auAI4);
+  const os = predictNextOS(auAI4);
+  assert.equal(fsd.targetLabel, "v14.x");
+  assert.equal(fsd.branch, "fsd");
+  // FSD ships INSIDE an OS build → it must arrive with the next OS update, same median date.
+  assert.equal(fsd.bundledWith, os.targetLabel);
+  assert.equal(+new Date(fsd.medianDate), +new Date(os.medianDate));
 });
 
 test("FSD is capped on hardware-limited config (Europe/AI3)", () => {
