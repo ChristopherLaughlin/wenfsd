@@ -131,7 +131,7 @@
         `<div class="ge-sub">Add your Tesla to get personalised update predictions. Nothing is tracked until you do.</div>` +
         `<div class="ge-actions"><button class="btn" id="geAdd" type="button">+ Add your Tesla</button>` +
         `<button class="btn-ghost" id="geDemo" type="button">Try a demo car</button></div></div>`;
-      $("geAdd").onclick = () => { $("addForm").hidden = false; $("addVehicleBtn").hidden = true; resetForm(); $("garageList").innerHTML = ""; };
+      $("geAdd").onclick = () => { $("addForm").hidden = false; $("addVehicleBtn").hidden = true; resetForm(); $("garageList").innerHTML = ""; $("vinInput").focus(); };
       $("geDemo").onclick = () => { gstate = Garage.loadDemo(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render(); };
       return;
     }
@@ -244,7 +244,7 @@
 
   // ---------------- add vehicle + VIN ----------------
   function wireAddForm() {
-    $("addVehicleBtn").onclick = () => { $("addForm").hidden = false; $("addVehicleBtn").hidden = true; resetForm(); };
+    $("addVehicleBtn").onclick = () => { $("addForm").hidden = false; $("addVehicleBtn").hidden = true; resetForm(); $("vinInput").focus(); };
     $("cancelVehicleBtn").onclick = () => { $("addForm").hidden = true; $("addVehicleBtn").hidden = false; renderGarage(); };
 
     $("f_market").innerHTML = Object.keys(WEN.regionLag).map(m => `<option ${m === "Australia" ? "selected" : ""}>${m}</option>`).join("");
