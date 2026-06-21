@@ -106,7 +106,9 @@ export function predictNextFSD(car, opts = {}) {
   const myKey = W.verKey(car.installedVersion || "0");
   const nextBuild = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature")).sort((a, b) => W.verKey(b.version) - W.verKey(a.version))[0];
 
-  if (nextBuild && nextBuild.fsdBuild && W.fsdMajor(nextBuild.fsdBuild[car.hardware]) >= nextMajor) {
+  const _fb = nextBuild && nextBuild.fsdBuild && nextBuild.fsdBuild[car.hardware];
+  const _fbMajor = (_fb && _fb !== "—") ? W.fsdMajor(_fb) : null;
+  if (nextBuild && (_fbMajor == null || _fbMajor >= nextMajor)) {
     const os = predictNextOS(car, opts);
     os.targetLabel = f.next; os.current = f.current; os.mode = f.mode; os.branch = "fsd"; os.bundledWith = nextBuild.version;
     return os;

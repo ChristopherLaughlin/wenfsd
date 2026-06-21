@@ -160,8 +160,13 @@ const Predict = (function () {
     const nextBuild = distributed.filter(v => WEN.verKey(v.version) > myKey).sort((a, b) => WEN.verKey(b.version) - WEN.verKey(a.version))[0];
     const carrier = carrierBuild(car, nextMajor); // earliest distributed build whose FSD >= nextMajor
 
-    if (nextBuild && nextBuild.fsdBuild && WEN.fsdMajor(nextBuild.fsdBuild[car.hardware]) >= nextMajor) {
-      // your NEXT software update already carries the new FSD → they arrive together
+    // Does your next OS update carry the new FSD? Newest builds generally do; if the build's
+    // FSD is unknown (live tracker data often omits it), assume the newest build carries the
+    // newest FSD — so FSD bundles with your next software update (consistent dates) by default.
+    const _fb = nextBuild && nextBuild.fsdBuild && nextBuild.fsdBuild[car.hardware];
+    const _fbMajor = (_fb && _fb !== "—") ? WEN.fsdMajor(_fb) : null;
+    if (nextBuild && (_fbMajor == null || _fbMajor >= nextMajor)) {
+      // your NEXT software update carries the new FSD → they arrive together
       const os = predictNextOS(car, today);
       os.targetLabel = f.next; os.current = f.current; os.mode = f.mode; os.branch = "fsd"; os.bundledWith = nextBuild.version;
       os.note = `${f.next} ships inside OS build ${nextBuild.version} — which is your next software update — so they arrive together. FSD is bundled in the OS build, not on a separate schedule.`;

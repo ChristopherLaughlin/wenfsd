@@ -64,11 +64,12 @@
   function renderEmptyState() {
     $("curveVer").textContent = "";
     $("heroEyebrow").textContent = "Welcome to wenFSD";
-    $("heroDate").textContent = "Add your Tesla to begin";
+    $("heroDate").textContent = "wen FSD? Let's find out.";
     $("heroWindow").textContent = "";
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
-    $("heroNote").innerHTML = "Add your car by VIN (we'll decode the model, year &amp; hardware) and wenFSD predicts your next software update and next FSD version — with confidence bands. No vehicles are tracked until you add one.";
+    if ($("heroFlavor")) $("heroFlavor").innerHTML = `😤 You've asked "wen FSD" one too many times. We built you a calculator. Add your Tesla.`;
+    $("heroNote").innerHTML = "Add your car by VIN (we'll decode the model, year &amp; hardware) and wenFSD predicts your next software update and next FSD version — with confidence bands. No vehicles are tracked until you add one. <em>(The answer is always two weeks. But these two weeks are data-driven.)</em>";
     $("predictTips").innerHTML = "";
     $("curveChart").innerHTML = svgEmpty("Add a vehicle to see its rollout curve");
     $("distChart").innerHTML = svgEmpty("Add a vehicle to see the probability distribution");
@@ -87,6 +88,7 @@
     $("heroWindow").textContent = pred.capped ? "hardware-limited" : "";
     $("ringDays").textContent = pred.capped ? "—" : "?"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
+    if ($("heroFlavor")) $("heroFlavor").innerHTML = pred.capped ? `🪦 Your hardware tapped out. F in the chat.` : "";
     $("heroNote").innerHTML = `Currently on <strong>${esc(pred.current || "—")}</strong>. ${esc(pred.note || "")}`;
     $("predictTips").innerHTML = "";
     $("distChart").innerHTML = ""; $("curveChart").innerHTML = "";
@@ -96,8 +98,26 @@
     renderReleaseNotes();
   }
 
+  // ---- regional humour (the wenFSD meme = "wen FSD? two weeks, trust me bro") ----
+  const REGION_FLAVOR = {
+    "Australia": { flag: "🇦🇺", soon: "Two weeks. Trust me, mate. 🦘", quips: ["Strewth — still on {ver}? She'll be right.", "Crack a tinnie, it's only a fortnight away. Trust me, bruz.", "Your car's more behind than a tradie on a Friday arvo.", "No worries — wen FSD is basically here. *kangaroo noises*"] },
+    "New Zealand": { flag: "🇳🇿", soon: "Two weeks. Trust me, bro. 🥝", quips: ["Still on {ver}? Sweet as, it's coming.", "Chur, won't be long now, bro.", "Yeah nah yeah, it's basically rolling out."] },
+    "United States": { flag: "🇺🇸", soon: "Two weeks. Trust me bro. 🦅", quips: ["Still on {ver}? That's downright un-American.", "Freedom units of patience required.", "Hang tight, it's coming faster than you can say 'full self-driving (supervised)'."] },
+    "Canada": { flag: "🇨🇦", soon: "Two weeks. Trust me, bud. 🍁", quips: ["Still on {ver}, eh? Sorry aboot that.", "Patience, bud — it's coming, for sure for sure.", "Give'r, it'll be here before the next Tims run."] },
+    "Europe": { flag: "🇪🇺", soon: "Two weeks*. (*pending homologation) 📋", quips: ["Still on {ver}? Blame the regulators.", "Approval pending since approximately forever.", "It's coming — once seventeen agencies sign off."] },
+  };
+  function flavorFor(market) { return REGION_FLAVOR[market] || REGION_FLAVOR["United States"]; }
+  function heroFlavorLine(pred) {
+    const v = av(); if (!v) return "";
+    const fl = flavorFor(v.market), d = pred.daysToMedian;
+    if (d != null && d >= 8 && d <= 18) return `${fl.flag} ${fl.soon}`;               // the meme zone
+    const q = fl.quips[Math.abs(WEN.verKey(v.installedVersion || "0")) % fl.quips.length].replace("{ver}", esc(v.installedVersion || "your build"));
+    return `${fl.flag} ${q}`;
+  }
+
   function renderHero(pred) {
     const isFSD = ui.target === "fsd";
+    $("heroFlavor").innerHTML = heroFlavorLine(pred);
     const what = pred.targetLabel || (isFSD ? "next FSD" : "next update");
     $("heroEyebrow").textContent = `Predicted arrival of ${what} on ${av().nickname || "your car"}`;
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
