@@ -28,12 +28,12 @@ The dashboard's [js/api.js](../js/api.js) will hydrate from `/api/*` and log
 
 ## Going real — the checklist
 
-Real mode needs three things: **a domain** (you have wenfsd.com), a **Tesla developer
+Real mode needs three things: **a domain** (you have wenfsd.info), a **Tesla developer
 app**, and a **Postgres database**. Tesla's approval is the long pole — start it first.
 
 ### 1. Tesla developer app
 1. Sign in at **https://developer.tesla.com** and create an application.
-2. Set the **Allowed Redirect URI** to `https://wenfsd.com/auth/callback`.
+2. Set the **Allowed Redirect URI** to `https://wenfsd.info/auth/callback`.
 3. Request scopes: `openid offline_access vehicle_device_data` (read-only is enough).
 4. Copy your **Client ID** and **Client Secret** into `.env`.
 
@@ -47,11 +47,11 @@ openssl ec -in server/keys/private-key.pem -pubout -out server/keys/public-key.p
 ```
 
 The server already serves it at the required path:
-`https://wenfsd.com/.well-known/appspecific/com.tesla.3p.public-key.pem`.
+`https://wenfsd.info/.well-known/appspecific/com.tesla.3p.public-key.pem`.
 Then register your domain once (with `MOCK_MODE=false` and creds set):
 
 ```js
-// node --input-type=module -e "import('./src/tesla.js').then(t=>t.registerPartnerDomain('wenfsd.com')).then(console.log)"
+// node --input-type=module -e "import('./src/tesla.js').then(t=>t.registerPartnerDomain('wenfsd.info')).then(console.log)"
 ```
 
 ### 3. Database + deploy (Render or Railway)

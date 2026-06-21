@@ -14,7 +14,7 @@ services:
       - key: MOCK_MODE
         value: "false"
       - key: PUBLIC_BASE_URL
-        value: https://wenfsd.com
+        value: https://wenfsd.info
       - key: SESSION_SECRET
         generateValue: true
       - key: TESLA_CLIENT_ID
@@ -22,7 +22,7 @@ services:
       - key: TESLA_CLIENT_SECRET
         sync: false
       - key: TESLA_REDIRECT_URI
-        value: https://wenfsd.com/auth/callback
+        value: https://wenfsd.info/auth/callback
       - key: TESLA_FLEET_BASE
         value: https://fleet-api.prod.na.vn.cloud.tesla.com
       - key: TESLA_AUDIENCE
