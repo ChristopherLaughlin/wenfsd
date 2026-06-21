@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   current_version   TEXT,                     -- latest car_version we've seen
   earliness         DOUBLE PRECISION,         -- estimated rollout percentile 0..1
   early_access      BOOLEAN NOT NULL DEFAULT false, -- Tesla Early Access Program member
-  opted_in          BOOLEAN NOT NULL DEFAULT true,  -- contribute to aggregate fleet stats
+  opted_in          BOOLEAN NOT NULL DEFAULT false, -- contribute to aggregate fleet stats (explicit opt-in)
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_vehicles_user ON vehicles(user_id);

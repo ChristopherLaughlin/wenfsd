@@ -21,7 +21,11 @@ export const config = {
   },
 
   databaseUrl: process.env.DATABASE_URL || "",
-  pollCron: process.env.POLL_CRON || "*/30 * * * *",
+  databaseCa: process.env.DATABASE_CA || "",            // PEM CA cert for verified DB TLS
+  databaseSslInsecure: bool(process.env.DATABASE_SSL_INSECURE, false), // escape hatch (discouraged)
+  pollCron: process.env.POLL_CRON || "0 * * * *",        // hourly (was */30 — too aggressive)
+  tokenEncKey: process.env.TOKEN_ENC_KEY || "",          // 32-byte key (base64/hex) for token encryption
+  allowLiveSources: bool(process.env.ALLOW_LIVE_SOURCES, false), // explicit opt-in to fetch external trackers
 };
 
 export function assertRealModeReady() {
@@ -30,8 +34,11 @@ export function assertRealModeReady() {
   if (!config.tesla.clientId) missing.push("TESLA_CLIENT_ID");
   if (!config.tesla.clientSecret) missing.push("TESLA_CLIENT_SECRET");
   if (!config.databaseUrl) missing.push("DATABASE_URL");
-  if (missing.length) {
-    throw new Error("Missing required env for real mode: " + missing.join(", ") +
-      ". Set them or run with MOCK_MODE=true.");
+  if (!config.tokenEncKey) missing.push("TOKEN_ENC_KEY (32-byte key to encrypt OAuth tokens)");
+  if (missing.length) throw new Error("Missing required env for real mode: " + missing.join(", ") + ". Set them or run with MOCK_MODE=true.");
+
+  // session secret must be strong in real mode
+  if (!config.sessionSecret || config.sessionSecret === "dev-insecure-secret" || config.sessionSecret.length < 32) {
+    throw new Error("SESSION_SECRET must be set to a strong value (>=32 chars) in real mode.");
   }
 }

@@ -1,71 +1,66 @@
-// OAuth routes: owner links their Tesla account → we store tokens + their vehicles.
+// OAuth routes: owner links their Tesla account → we store (encrypted) tokens + vehicles.
 import { Router } from "express";
 import { config } from "../config.js";
 import * as tesla from "../tesla.js";
 import { query, hasDb } from "../db.js";
+import { encrypt } from "../crypto.js";
+import { decodeVIN } from "../vin.js";
 
 export const authRouter = Router();
 
-// Kick off the Tesla OAuth flow
 authRouter.get("/login", (req, res) => {
-  if (config.mockMode) {
-    // No real Tesla in mock mode — simulate a linked session.
-    req.session.userId = 1;
-    req.session.mock = true;
-    return res.redirect("/?linked=mock");
-  }
+  if (config.mockMode) { req.session.userId = 1; req.session.mock = true; return res.redirect("/?linked=mock"); }
   const { verifier, challenge } = tesla.makePkce();
-  const state = tesla.randomState();
   req.session.pkce = verifier;
-  req.session.oauthState = state;
-  res.redirect(tesla.buildAuthUrl({ state, codeChallenge: challenge }));
+  req.session.oauthState = tesla.randomState();
+  res.redirect(tesla.buildAuthUrl({ state: req.session.oauthState, codeChallenge: challenge }));
 });
 
-// Tesla redirects back here with ?code & ?state
-authRouter.get("/callback", async (req, res) => {
+authRouter.get("/callback", async (req, res, next) => {
   try {
     const { code, state } = req.query;
-    if (!code || state !== req.session.oauthState) return res.status(400).send("Invalid OAuth state.");
-    const tokens = await tesla.exchangeCode(code, req.session.pkce);
+    if (!code || !state || state !== req.session.oauthState) return res.status(400).send("Invalid OAuth state.");
+    req.session.oauthState = null; // single-use
 
-    // identify the owner from the id_token 'sub'
-    const sub = decodeJwtSub(tokens.id_token) || "unknown";
+    const tokens = await tesla.exchangeCode(code, req.session.pkce);
+    req.session.pkce = null;
+
+    // verify the id_token signature before trusting the identity
+    const claims = await tesla.verifyIdToken(tokens.id_token);
+    const sub = claims.sub;
+    if (!sub) return res.status(400).send("Could not verify identity.");
     const expiresAt = new Date(Date.now() + (tokens.expires_in || 28800) * 1000);
 
-    let userId = null;
+    let userId = 1;
     if (hasDb()) {
       const u = await query(
-        `INSERT INTO users(tesla_sub) VALUES($1)
-         ON CONFLICT(tesla_sub) DO UPDATE SET tesla_sub=EXCLUDED.tesla_sub RETURNING id`, [sub]);
+        `INSERT INTO users(tesla_sub, email) VALUES($1,$2)
+         ON CONFLICT(tesla_sub) DO UPDATE SET email=EXCLUDED.email RETURNING id`, [sub, claims.email || null]);
       userId = u.rows[0].id;
       await query(
         `INSERT INTO oauth_tokens(user_id, access_token, refresh_token, expires_at)
          VALUES($1,$2,$3,$4)
          ON CONFLICT(user_id) DO UPDATE SET access_token=$2, refresh_token=$3, expires_at=$4, updated_at=now()`,
-        [userId, tokens.access_token, tokens.refresh_token, expiresAt]);
+        [userId, encrypt(tokens.access_token), encrypt(tokens.refresh_token), expiresAt]);
 
-      // pull the owner's vehicles and upsert
+      // upsert vehicles, decoding the VIN to populate model/year/hardware/market.
+      // opted_in stays at its column default (false) — contributing to fleet stats is
+      // an explicit choice the owner makes later in the UI.
       const vehicles = await tesla.listVehicles(tokens.access_token);
       for (const v of vehicles) {
+        const d = decodeVIN(v.vin);
         await query(
-          `INSERT INTO vehicles(user_id, vin, current_version)
-           VALUES($1,$2,$3) ON CONFLICT(vin) DO UPDATE SET user_id=$1`,
-          [userId, v.vin, null]);
+          `INSERT INTO vehicles(user_id, vin, model, model_year, generation, hardware, market, drive)
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+           ON CONFLICT(vin) DO UPDATE SET user_id=$1,
+             model=COALESCE(vehicles.model,$3), model_year=COALESCE(vehicles.model_year,$4),
+             hardware=COALESCE(vehicles.hardware,$6), market=COALESCE(vehicles.market,$7)`,
+          [userId, v.vin, d.model, d.model_year, d.generation || null, d.hardware, d.market, d.drive]);
       }
     }
-    req.session.userId = userId || 1;
+    req.session.userId = userId;
     res.redirect("/?linked=1");
-  } catch (e) {
-    console.error("OAuth callback error:", e);
-    res.status(500).send("OAuth failed: " + e.message);
-  }
+  } catch (e) { next(e); }
 });
 
 authRouter.post("/logout", (req, res) => { req.session = null; res.json({ ok: true }); });
-
-function decodeJwtSub(jwt) {
-  try {
-    const payload = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString("utf8"));
-    return payload.sub;
-  } catch { return null; }
-}

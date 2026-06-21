@@ -2,9 +2,24 @@
 // partner registration, and read-only vehicle data (software version).
 // Docs: https://developer.tesla.com/docs/fleet-api
 import crypto from "node:crypto";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { config } from "./config.js";
 
 const { tesla } = config;
+
+// Verify the id_token's signature against Tesla's JWKS before trusting any claim.
+let _jwks = null;
+function jwks() {
+  if (!_jwks) _jwks = createRemoteJWKSet(new URL(tesla.authBase + "/oauth2/v3/keys"));
+  return _jwks;
+}
+export async function verifyIdToken(idToken) {
+  const { payload } = await jwtVerify(idToken, jwks(), {
+    issuer: tesla.authBase + "/oauth2/v3",
+    audience: tesla.clientId,
+  });
+  return payload; // { sub, email, ... } — now trustworthy
+}
 
 // ---------- PKCE ----------
 export function makePkce() {
