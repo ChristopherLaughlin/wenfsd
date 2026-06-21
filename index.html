@@ -119,6 +119,10 @@
           <span>Currently installed version <em id="verHint"></em></span>
           <input id="versionSel" list="versionOptions" placeholder="type your exact version, e.g. 2026.8.3.10" autocomplete="off" spellcheck="false" aria-label="Currently installed software version"/>
         </label>
+        <div class="refresh-row" id="refreshRow" hidden>
+          <button class="btn-sm" id="refreshCarBtn" type="button">🔄 Wake car &amp; read version</button>
+          <span class="refresh-status" id="refreshStatus"></span>
+        </div>
 
         <label class="field">
           <span>How early do you usually get updates? <em id="earlyVal">average</em></span>

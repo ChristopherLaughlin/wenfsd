@@ -106,6 +106,40 @@ async function fleetGet(accessToken, path) {
   if (!res.ok) throw new Error("Fleet GET " + path + " failed: " + res.status + " " + (await res.text()));
   return res.json();
 }
+async function fleetPost(accessToken, path, body) {
+  const res = await fetch(tesla.fleetBase + path, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  if (res.status === 401) { const e = new Error("unauthorized"); e.code = 401; throw e; }
+  if (!res.ok) throw new Error("Fleet POST " + path + " failed: " + res.status + " " + (await res.text()));
+  return res.json();
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Wake a sleeping car ON THE OWNER'S EXPLICIT REQUEST, then poll until it reports online.
+// wake_up is a standard Fleet API vehicle endpoint (works with the OAuth token; it does NOT
+// require the signed vehicle-command protocol, unlike actuation commands). Bounded so it can't
+// hang the request.
+export async function wakeVehicle(accessToken, vin, { timeoutMs = 30000, intervalMs = 3000 } = {}) {
+  if (config.mockMode) return { state: "online", woke: true };
+  const tag = encodeURIComponent(vin);
+  let last = null;
+  try { last = await fleetPost(accessToken, `/api/1/vehicles/${tag}/wake_up`, {}); } catch (e) { last = { error: e.message }; }
+  if (last?.response?.state === "online") return { state: "online", woke: true };
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await sleep(intervalMs);
+    try {
+      const data = await fleetGet(accessToken, `/api/1/vehicles/${tag}`);
+      const state = data?.response?.state;
+      if (state === "online") return { state, woke: true };
+      last = data;
+    } catch (e) { /* transient — keep polling until the deadline */ }
+  }
+  return { state: last?.response?.state || "asleep", woke: false };
+}
 
 export async function listVehicles(accessToken) {
   if (config.mockMode) {

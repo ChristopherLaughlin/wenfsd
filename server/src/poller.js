@@ -48,16 +48,8 @@ export async function pollOnce() {
         try {
           const version = await tesla.getVehicleVersion(access, c.vin);
           polled++;
-          if (version && version !== c.current_version) {
-            changed++;
-            // SCORE the open prediction that was made while the car was on its old version —
-            // the update just landed, so we now know if it fell inside the predicted window.
-            if (c.current_version) await scorePrediction(c.id, c.current_version);
-            await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [c.id, version, c.market, c.hardware]);
-            await query(`UPDATE vehicles SET current_version=$1 WHERE id=$2`, [version, c.id]);
-            c.current_version = version;
-            await ensurePrediction(c);   // open a fresh prediction for the new version
-          }
+          const r = await applyVersionReading(c, version);   // score-on-change + snapshot + ensure
+          if (r.changed) changed++;
         } catch (e) { if (e.code !== 408) console.warn(`[poller] ${c.vin}:`, e.message); }
       }
     } catch (e) { console.warn(`[poller] user ${userId}:`, e.message); }
@@ -97,6 +89,22 @@ async function scorePrediction(vehicleId, fromVersion) {
             hit=(CURRENT_DATE BETWEEN p10_date AND p90_date)
       WHERE vehicle_id=$1 AND from_version=$2 AND NOT scored`,
     [vehicleId, fromVersion]);
+}
+
+// Apply a freshly-read version to a car: if it changed, score the old prediction + log the
+// snapshot + update; then ensure an open prediction exists for the current version. Shared by
+// the cron poller, the OAuth link flow, and the owner-triggered refresh endpoint.
+export async function applyVersionReading(c, version) {
+  let changed = false;
+  if (version && version !== c.current_version) {
+    changed = true;
+    if (c.current_version) await scorePrediction(c.id, c.current_version);
+    await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [c.id, version, c.market, c.hardware]);
+    await query(`UPDATE vehicles SET current_version=$1 WHERE id=$2`, [version, c.id]);
+    c.current_version = version;
+  }
+  if (c.current_version) await ensurePrediction(c);
+  return { changed, version: c.current_version };
 }
 
 // Recompute per-version install counts, fleet %, and the fitted logistic (t0, k).

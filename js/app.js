@@ -175,6 +175,28 @@
       body: JSON.stringify(patch),
     }).catch(() => {});
   }
+  // owner-triggered: wake the car and read its live software version (updates prediction).
+  function refreshFromCar(v) {
+    if (!/^https?:$/.test(location.protocol)) { alert("Waking your car works on the live site (wenfsd.info)."); return; }
+    if (!v || !v.vin) return;
+    const rb = $("refreshCarBtn"), rs = $("refreshStatus");
+    if (rb) rb.disabled = true;
+    if (rs) { rs.className = "refresh-status busy"; rs.textContent = "Waking your car… this can take up to ~30s"; }
+    fetch(`/api/me/vehicle/${encodeURIComponent(v.vin)}/refresh`, { method: "POST", credentials: "same-origin" })
+      .then(r => r.json().then(d => ({ status: r.status, d })))
+      .then(({ status, d }) => {
+        if (rb) rb.disabled = false;
+        if (d.ok && d.version) {
+          gstate = Garage.update(v.id, { installedVersion: d.version });
+          if (rs) { rs.className = "refresh-status ok"; rs.textContent = `✓ Read ${d.version}${d.changed ? " — new version logged!" : " (unchanged)"}`; }
+          renderActiveControls(); render();
+        } else if (rs) {
+          rs.className = "refresh-status err";
+          rs.textContent = "⚠ " + (d.error || (status === 429 ? "Please wait a minute before trying again." : "Couldn't reach your car."));
+        }
+      })
+      .catch(e => { if (rb) rb.disabled = false; if (rs) { rs.className = "refresh-status err"; rs.textContent = "⚠ " + (e && e.message || "request failed"); } });
+  }
   function disconnectTesla() {
     if (!/^https?:$/.test(location.protocol)) return;
     fetch("/api/me", { method: "DELETE", credentials: "same-origin" }).catch(() => {}).finally(() => {
@@ -292,6 +314,11 @@
     opt.checked = !!v.optedIn;
     opt.onchange = () => { gstate = Garage.update(v.id, { optedIn: opt.checked }); persistConnected(v, { optedIn: opt.checked }); renderConnectState(av()); };
     renderConnectState(v);
+
+    // wake-car-and-read-version (connected cars only)
+    const rr = $("refreshRow"), rb = $("refreshCarBtn"), rs = $("refreshStatus");
+    if (rr) rr.hidden = !v.connected;
+    if (rb) { rb.onclick = () => refreshFromCar(v); if (rs && !rs.textContent) rs.textContent = ""; }
 
     const clr = $("clearDataBtn");
     if (clr) clr.onclick = () => {

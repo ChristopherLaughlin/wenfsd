@@ -7,6 +7,9 @@ import * as W from "../wendata.js";
 import { SEED_VERSIONS, SEED_FEED, SEED_STATS } from "../seed.js";
 import { merge, fetchAll, sourceStatus, fetchReleaseNotes } from "../sources/index.js";
 import { computeCalibration } from "../calibration.js";
+import * as tesla from "../tesla.js";
+import { encrypt, decrypt } from "../crypto.js";
+import { applyVersionReading } from "../poller.js";
 
 export const apiRouter = Router();
 
@@ -110,6 +113,39 @@ apiRouter.patch("/me/vehicle/:vin", ah(async (req, res) => {
   vals.push(req.session.userId, req.params.vin);
   await query(`UPDATE vehicles SET ${sets.join(", ")} WHERE user_id=$${vals.length - 1} AND vin=$${vals.length}`, vals);
   res.json({ ok: true });
+}));
+
+// owner-triggered WAKE + version read. Unlike the poller (which never wakes a car), this is an
+// explicit user action on their own vehicle. Cooldown to avoid draining the battery.
+const lastWake = new Map();
+apiRouter.post("/me/vehicle/:vin/refresh", ah(async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "not linked" });
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true, version: "2026.20.3", state: "online", changed: false });
+  const key = req.session.userId + ":" + req.params.vin, now = Date.now();
+  if (lastWake.get(key) && now - lastWake.get(key) < 60_000) return res.status(429).json({ error: "Just refreshed — wait a minute before waking your car again." });
+
+  const car = (await query(`SELECT id, vin, market, hardware, current_version, earliness, early_access FROM vehicles WHERE user_id=$1 AND vin=$2`, [req.session.userId, req.params.vin])).rows[0];
+  if (!car) return res.status(404).json({ error: "vehicle not found" });
+  const tok = (await query(`SELECT access_token, refresh_token, expires_at FROM oauth_tokens WHERE user_id=$1`, [req.session.userId])).rows[0];
+  if (!tok) return res.status(400).json({ error: "no linked Tesla token" });
+  lastWake.set(key, now);
+
+  let access = decrypt(tok.access_token);
+  if (new Date(tok.expires_at).getTime() - now < 5 * 60_000) {
+    const refreshed = await tesla.refreshAccessToken(decrypt(tok.refresh_token));
+    access = refreshed.access_token;
+    await query(`UPDATE oauth_tokens SET access_token=$1, refresh_token=$2, expires_at=$3, updated_at=now() WHERE user_id=$4`,
+      [encrypt(refreshed.access_token), encrypt(refreshed.refresh_token || decrypt(tok.refresh_token)), new Date(now + (refreshed.expires_in || 28800) * 1000), req.session.userId]);
+  }
+
+  const wake = await tesla.wakeVehicle(access, car.vin);
+  if (!wake.woke) return res.json({ ok: false, state: wake.state, error: "Your car didn't wake in time (deep sleep or no signal). Try again in a minute." });
+  let version;
+  try { version = await tesla.getVehicleVersion(access, car.vin); }
+  catch (e) { return res.json({ ok: false, state: "online", error: "Woke the car, but couldn't read its version: " + e.message }); }
+  if (!version) return res.json({ ok: false, state: "online", error: "Woke the car, but its version was unavailable." });
+  const r = await applyVersionReading(car, version);
+  res.json({ ok: true, state: "online", version, changed: r.changed });
 }));
 
 // delete one of the signed-in user's vehicles (+ its snapshots) — data-deletion right
