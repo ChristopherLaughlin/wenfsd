@@ -29,6 +29,8 @@ body{
     linear-gradient(var(--bg),var(--bg));
 }
 main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18px 60px}
+.sample-banner{background:rgba(255,181,71,.10);border:1px solid rgba(255,181,71,.30);color:var(--amber);font-size:12.5px;line-height:1.55;padding:11px 14px;border-radius:11px;margin:14px 0 0}
+.sample-banner strong{color:#ffd591}
 
 /* top bar */
 .topbar{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:20px 18px 14px;
@@ -357,6 +359,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .ge-sub{font-size:12.5px;color:var(--mut);margin:6px auto 14px;max-width:34ch;line-height:1.5}
 .ge-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .ge-actions .btn{width:auto}
+.ge-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 10px;text-align:left}
+@media(max-width:560px){.ge-options{grid-template-columns:1fr}}
+.ge-opt{background:#0b0e14;border:1px solid var(--line2);border-radius:11px;padding:13px}
+.ge-opt-h{font-weight:700;font-size:13.5px;margin-bottom:4px}
+.ge-opt-d{font-size:11.5px;color:var(--mut);line-height:1.5;margin-bottom:11px;min-height:32px}
+.ge-opt .btn,.ge-opt .btn-ghost{width:100%}
 .chart-empty{display:flex;align-items:center;justify-content:center;height:200px;color:var(--mut2);font-size:13px;border:1px dashed var(--line2);border-radius:12px}
 
 /* update channel */

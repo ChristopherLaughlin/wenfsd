@@ -140,6 +140,15 @@
     return `<div class="chip ${cls}"><div class="chip-pct">${pct}%</div><div class="chip-lbl">within ${label}</div></div>`;
   }
 
+  // Kick off the Tesla OAuth link flow (works when served by the backend).
+  function connectTesla() {
+    if (/^https?:$/.test(location.protocol)) {
+      window.location.href = "/auth/login";
+    } else {
+      alert("Connect Tesla works on the live site (wenfsd.info). In this offline preview, use 'Add by VIN' instead.");
+    }
+  }
+
   // ---------------- garage ----------------
   function renderGarage() {
     if (!gstate.vehicles.length) {
@@ -148,10 +157,18 @@
       $("garageList").innerHTML =
         `<div class="garage-empty">` +
         `<div class="ge-icon">🚗</div>` +
-        `<div class="ge-title">Your garage is empty</div>` +
-        `<div class="ge-sub">Add your Tesla to get personalised update predictions. Nothing is tracked until you do.</div>` +
-        `<div class="ge-actions"><button class="btn" id="geAdd" type="button">+ Add your Tesla</button>` +
-        `<button class="btn-ghost" id="geDemo" type="button">Try a demo car</button></div></div>`;
+        `<div class="ge-title">Add your Tesla to get a prediction</div>` +
+        `<div class="ge-sub">Two ways to track — pick one:</div>` +
+        `<div class="ge-options">` +
+          `<div class="ge-opt"><div class="ge-opt-h">🔗 Connect Tesla account</div>` +
+          `<div class="ge-opt-d">Reads your software version automatically (read-only, never sends commands). Most accurate.</div>` +
+          `<button class="btn" id="geConnect" type="button">Connect Tesla account</button></div>` +
+          `<div class="ge-opt"><div class="ge-opt-h">⌨️ Add by VIN</div>` +
+          `<div class="ge-opt-d">No account needed — enter your VIN and current version yourself.</div>` +
+          `<button class="btn-ghost" id="geAdd" type="button">Add by VIN</button></div>` +
+        `</div>` +
+        `<button class="btn-link" id="geDemo" type="button">or just explore with a demo car</button></div>`;
+      $("geConnect").onclick = connectTesla;
       $("geAdd").onclick = () => { $("addForm").hidden = false; $("addVehicleBtn").hidden = true; resetForm(); $("garageList").innerHTML = ""; $("vinInput").focus(); };
       $("geDemo").onclick = () => { gstate = Garage.loadDemo(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render(); };
       return;
@@ -333,13 +350,7 @@
       renderGarage(); renderActiveControls(); render();
     };
 
-    $("connectTeslaBtn").onclick = () => {
-      if (/^https?:$/.test(location.protocol)) {
-        window.location.href = "/auth/login";   // backend OAuth flow (Tesla, or mock in MOCK_MODE)
-      } else {
-        alert("Connect Tesla works when wenFSD is served by the backend (the hosted app, or the local server on :8787 — run `cd server && npm start`). In this offline file preview, use the manual update-history logger above.");
-      }
-    };
+    $("connectTeslaBtn").onclick = connectTesla;
 
     $("addHistBtn").onclick = () => { $("histForm").hidden = !$("histForm").hidden; };
     $("h_add").onclick = () => {
@@ -450,6 +461,11 @@
     if (el) { el.classList.toggle("is-sample", !live); el.title = live ? "Live, aggregated from connected cars + trackers" : "Illustrative sample data — connect a backend / your Tesla for live figures"; }
     const fwSub = document.querySelector("#fwSub");
     if (fwSub) fwSub.textContent = live ? "live distribution" : "sample distribution";
+    const banner = $("sampleBanner");
+    if (banner) {
+      banner.hidden = live;
+      if (!live) banner.innerHTML = `⚠️ <strong>The fleet-wide figures on this page are sample data</strong> — the firmware tracker, live feed, region stats and release notes are illustrative until enough real cars connect. <strong>Your own car's prediction is real</strong>, computed from your actual software version once you add or connect it.`;
+    }
   }
 
   // ---- data sources attribution (we aggregate the public trackers) ----
