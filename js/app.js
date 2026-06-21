@@ -385,6 +385,19 @@
     $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
       `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
   }
+  // ---- data sources attribution (we aggregate the public trackers) ----
+  const DEFAULT_SOURCES = [
+    { name: "Tessie", ok: true }, { name: "Teslascope", ok: true }, { name: "TeslaFi", ok: true },
+    { name: "Tesla Updates", ok: true }, { name: "FleetCtrl", ok: true },
+  ];
+  function renderDataSources(sources, live) {
+    const list = sources || DEFAULT_SOURCES;
+    $("dataSources").innerHTML =
+      `<span class="ds-label">${live ? "Live data aggregated from" : "Aggregates"}:</span>` +
+      list.map(s => `<span class="ds-pill ${s.ok === false ? "ds-down" : ""}">${esc(s.name)}${s.versions != null ? " · " + s.versions : ""}</span>`).join("") +
+      `<span class="ds-note">wenFSD merges these (fleet-weighted) and adds the prediction layer none of them have.</span>`;
+  }
+
   // ---- release notes (fleetctrl-style changelog) ----
   const RN_TAG = { FSD: "rn-fsd", Dashcam: "rn-feat", Charging: "rn-feat", Sentry: "rn-feat", Nav: "rn-feat", Fix: "rn-fix", Safety: "rn-safety", UI: "rn-ui" };
   function renderReleaseNotes() {
@@ -395,7 +408,7 @@
       const isMine = ver === mine;
       const items = rn.items.map(it => `<li><span class="rn-tag ${RN_TAG[it.tag] || "rn-feat"}">${esc(it.tag)}</span>${esc(it.text)}</li>`).join("");
       const regions = (rn.regions || []).map(r => `<span class="rn-region">${esc(r)}</span>`).join("");
-      return `<details class="rn-item${isMine ? " rn-mine" : ""}"${isMine ? " open" : ""}>` +
+      return `<details class="rn-item${isMine ? " rn-mine" : ""}" data-ver="${esc(ver)}"${isMine ? " open" : ""}>` +
         `<summary><span class="rn-ver">${esc(ver)}</span>${isMine ? ' <span class="tag-you">you</span>' : ''}` +
         `<span class="rn-date">${esc(rn.date)}</span><span class="rn-fsdb">FSD ${esc(rn.fsd || "—")}</span>` +
         `<span class="rn-regions">${regions}</span></summary>` +
@@ -442,13 +455,20 @@
     const mine = av() ? av().installedVersion : null;
     $("fwBody").innerHTML = WEN.versions.map(v => {
       const isMine = v.version === mine;
+      const hasNotes = !!WEN.releaseNotes[v.version];
       return `<tr class="${isMine ? "mine" : ""}">` +
-        `<td><strong>${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}</td>` +
+        `<td><strong class="${hasNotes ? "fw-verlink" : ""}" ${hasNotes ? `data-rn="${esc(v.version)}"` : ""}>${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}</td>` +
         `<td><span class="status status-${v.status}">${v.status}</span></td>` +
         `<td><div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div></td>` +
         `<td>${sparkSVG(v)}</td>` +
         `<td>${shortDate(v.firstSeen)}</td><td>${v.fsdBuild.AI4}</td><td class="notes">${v.notes}</td></tr>`;
     }).join("");
+    $("fwBody").querySelectorAll(".fw-verlink").forEach(el => {
+      el.onclick = () => {
+        const d = document.querySelector(`#releaseNotes details[data-ver="${el.dataset.rn}"]`);
+        if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); d.classList.add("rn-flash"); setTimeout(() => d.classList.remove("rn-flash"), 1200); }
+      };
+    });
   }
   function renderStats() {
     const s = WEN.stats;
@@ -499,6 +519,7 @@
   wireAddForm();
   renderFSD();
   renderStats();
+  renderDataSources();
   startFeed();
   wire();
   render();
@@ -506,6 +527,7 @@
   // Optional live-data bridge: js/api.js calls this after hydrating WEN.* from the backend.
   window.WENFSD = {
     rerender() { renderFSD(); renderStats(); render(); },
+    setSources(list, live) { renderDataSources(list, live); },
     get activeVehicle() { return av(); },
   };
 })();

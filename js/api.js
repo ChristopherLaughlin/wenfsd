@@ -7,6 +7,16 @@
 (function () {
   if (!/^https?:$/.test(location.protocol)) return;   // file:// demo → skip
 
+  function guessTag(text) {
+    const t = String(text).toLowerCase();
+    if (/fsd|full self|autopilot|autosteer/.test(t)) return "FSD";
+    if (/fix|bug|stability|reliab/.test(t)) return "Fix";
+    if (/safety|blind spot|collision/.test(t)) return "Safety";
+    if (/nav|trip|route|charg/.test(t)) return "Nav";
+    if (/ui|interface|display|theme/.test(t)) return "UI";
+    return "Dashcam";
+  }
+
   async function getJSON(path) {
     const r = await fetch(path, { headers: { Accept: "application/json" } });
     if (!r.ok) throw new Error(path + " " + r.status);
@@ -19,28 +29,48 @@
     try { health = await getJSON("/api/healthz"); } catch { return; }
     if (!health || !health.ok) return;
 
-    // --- firmware versions (merge live numbers onto existing display fields) ---
+    // --- firmware versions + release notes (fleet-weighted consensus across trackers) ---
     try {
-      const { versions } = await getJSON("/api/fleet/firmware");
+      const { versions } = await getJSON("/api/fleet/firmware?merged=1");
       if (Array.isArray(versions) && versions.length) {
         const byVer = new Map(WEN.versions.map(v => [v.version, v]));
         WEN.versions = versions.map(row => {
           const prev = byVer.get(row.version) || {};
           return Object.assign({
-            fsdBuild: prev.fsdBuild || { AI4: "—", AI3: "—", HW3: "—" },
             notes: prev.notes || "",
-            status: prev.status || row.status || "rolling",
-            k: prev.k || row.k || 0.33,
-            t0: prev.t0 || (row.t0 ? String(row.t0).slice(0, 10) : WEN.today),
+            k: prev.k || 0.33,
+            t0: prev.t0 || (row.firstSeen ? String(row.firstSeen).slice(0, 10) : WEN.today),
           }, {
             version: row.version,
-            firstSeen: (row.first_seen ? String(row.first_seen).slice(0, 10) : prev.firstSeen) || WEN.today,
-            fleetPct: row.fleet_pct != null ? Math.round(row.fleet_pct * 10) / 10 : prev.fleetPct,
+            firstSeen: (row.firstSeen ? String(row.firstSeen).slice(0, 10) : prev.firstSeen) || WEN.today,
+            fleetPct: row.fleetPct != null ? row.fleetPct : prev.fleetPct,
             branch: row.branch || prev.branch || "standard",
+            status: row.status || prev.status || "rolling",
+            fsdBuild: Object.assign({ AI4: "—", AI3: "—" }, prev.fsdBuild, row.fsdBuild || {}),
           });
         });
+        // ingest release notes from the merged tracker data
+        for (const row of versions) {
+          if (row.notes && row.notes.length) {
+            WEN.releaseNotes[row.version] = {
+              date: row.firstSeen ? String(row.firstSeen).slice(0, 10) : "",
+              regions: row.regions || [],
+              fsd: row.fsdBuild && row.fsdBuild.AI4 ? row.fsdBuild.AI4 + " (HW4)" : "—",
+              source: (row.sources || []).join(", ") || "trackers",
+              items: row.notes.map(t => ({ tag: guessTag(t), text: t })),
+            };
+          }
+        }
       }
     } catch (e) { /* keep seed */ }
+
+    // --- source attribution (live status) ---
+    try {
+      const { sources } = await getJSON("/api/sources");
+      if (Array.isArray(sources) && sources.length && window.WENFSD && window.WENFSD.setSources) {
+        window.WENFSD.setSources(sources, true);
+      }
+    } catch (e) { /* keep default */ }
 
     // --- fleet stats ---
     try {
