@@ -1,20 +1,80 @@
 // Source adapter: Teslascope (https://teslascope.com/software)
-// LIVE strategy: Teslascope offers an API to subscribers/partners — prefer that.
-// Otherwise a user export, or permitted parse of the public /software page.
+// LIVE: parses the PUBLIC /software page, which robots.txt explicitly allows
+// (only /vehicle, /login, /join, /teslapedia/location* are disallowed — /software is open).
+// We send a descriptive User-Agent, fetch at most once per refresh cycle (cron every 6h +
+// 10-min API cache upstream), and attribute Teslascope as the source in the UI.
+// Any parse/transport failure falls back to the sample rows so the app never breaks.
+const PAGE = "https://teslascope.com/software";
+const UA = "wenFSD/1.0 (+https://wenfsd.info; Tesla firmware aggregator; respects robots.txt)";
+
+const SAMPLE = [
+  { version: "2026.20.3", fleetPct: 8.2, firstSeen: "2026-06-17", branch: "standard", fsd: { AI4: "v14.3.4" } },
+  { version: "2026.14.6.11", fleetPct: 24.0, firstSeen: "2026-06-05", branch: "standard", fsd: { AI4: "v14.3.4" } },
+  { version: "2026.14.6", fleetPct: 30.0, firstSeen: "2026-05-22", branch: "standard", fsd: { AI4: "v13.2.9" } },
+  { version: "2026.20", fleetPct: 7.0, firstSeen: "2026-06-10", branch: "standard", fsd: { AI4: "v14.3.2" } },
+];
+
 export const teslascope = {
   name: "Teslascope",
   homepage: "https://teslascope.com/software",
   fleet: 120000,
   hardwareAware: true,
-  regionAware: true,
+  regionAware: false,
   async fetch({ live = false } = {}) {
-    if (live) return fetchLive();
-    return [
-      { version: "2026.20.3", fleetPct: 8.2, firstSeen: "2026-06-17", branch: "standard", fsd: { AI4: "v14.3.4" } },
-      { version: "2026.14.6.11", fleetPct: 24.0, firstSeen: "2026-06-05", branch: "standard", fsd: { AI4: "v14.3.4" } },
-      { version: "2026.14.6", fleetPct: 30.0, firstSeen: "2026-05-22", branch: "standard", fsd: { AI4: "v13.2.9" } },
-      { version: "2026.20", fleetPct: 7.0, firstSeen: "2026-06-10", branch: "standard", fsd: { AI4: "v14.3.2" } },
-    ];
+    if (live) {
+      const rows = await fetchLive();
+      if (rows.length) return rows;
+    }
+    return SAMPLE;
   },
 };
-async function fetchLive() { throw new Error("Teslascope live fetch not wired — prefer their partner API."); }
+
+const MONTHS = { january: "01", february: "02", march: "03", april: "04", may: "05", june: "06", july: "07", august: "08", september: "09", october: "10", november: "11", december: "12" };
+function toIso(s) {
+  const m = /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/.exec(s || "");
+  if (!m) return null;
+  const mo = MONTHS[m[1].toLowerCase()];
+  return mo ? `${m[3]}-${mo}-${String(m[2]).padStart(2, "0")}` : null;
+}
+const isVer = (v) => /^20\d{2}\.\d/.test(v);
+
+async function fetchLive() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  let html;
+  try {
+    const res = await fetch(PAGE, { headers: { "User-Agent": UA, Accept: "text/html" }, signal: ctrl.signal });
+    if (!res.ok) throw new Error("teslascope HTTP " + res.status);
+    html = await res.text();
+  } finally { clearTimeout(timer); }
+
+  const byVer = new Map();
+  const get = (v) => { let m = byVer.get(v); if (!m) { m = { version: v, branch: "standard", fsd: {} }; byVer.set(v, m); } return m; };
+
+  // 1) FSD breakdown table: <td fw-bold><span>AI4 v14.3.4</span></td><td><a .../software/VER>VER</a></td><td text-end>PCT%</td>
+  const rowRe = /<td class="fw-bold">\s*<span[^>]*>([^<]+)<\/span>\s*<\/td>\s*<td>\s*<a[^>]*\/software\/([0-9][0-9.]+)"[^>]*>\s*([0-9][0-9.]+)\s*<\/a>\s*<\/td>\s*<td class="text-end">\s*([0-9.]+)%/g;
+  let m;
+  while ((m = rowRe.exec(html))) {
+    const hwBuild = m[1].trim(), version = m[3].trim(), pct = parseFloat(m[4]);
+    if (!isVer(version)) continue;
+    const row = get(version);
+    if (Number.isFinite(pct) && row.fleetPct == null) row.fleetPct = pct;
+    let pm; const pairRe = /(AI4|AI3|HW4|HW3|AI2\.5)\s+(v[0-9][0-9.]+)/g;
+    while ((pm = pairRe.exec(hwBuild))) {
+      const hw = pm[1].replace("HW4", "AI4").replace("HW3", "AI3");
+      row.fsd[hw] = pm[2];
+    }
+  }
+
+  // 2) "Software Updates" cards: <div col mb-4 update> ... <b>VER</b> ... First noticed:</b> Month D, YYYY
+  const cardRe = /class="col mb-4 update">[\s\S]*?<b>([^<]+)<\/b>[\s\S]*?First noticed:<\/b>\s*([A-Za-z]+\s+\d{1,2},\s*\d{4})/g;
+  while ((m = cardRe.exec(html))) {
+    const version = m[1].trim().replace(/^terminal\//, "");
+    if (!isVer(version)) continue;
+    const iso = toIso(m[2]);
+    const row = get(version);
+    if (iso && (!row.firstSeen || iso < row.firstSeen)) row.firstSeen = iso;
+  }
+
+  return [...byVer.values()].filter(r => r.fleetPct != null || r.firstSeen);
+}

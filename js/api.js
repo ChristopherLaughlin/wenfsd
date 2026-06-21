@@ -38,26 +38,58 @@
       if (window.WENFSD && window.WENFSD.setLinkState) window.WENFSD.setLinkState({ status: r.status, vehicles });
     } catch (e) { /* ignore */ }
 
-    // --- REAL fleet firmware (from our own DB only — never the sample/merged data) ---
-    // Only flips to "live" (and shows the fleet sections) when real crowdsourced data exists.
+    // --- REAL fleet firmware ---
+    // Prefer our own crowdsourced DB. If that's empty (early days), fall back to the LIVE
+    // tracker-aggregated merge (real version distribution scraped from the public trackers).
+    // Either path flips dataMode → "live" and replaces the sample distribution with real data.
+    function isoT0(firstSeen) {
+      const fs = firstSeen ? String(firstSeen).slice(0, 10) : null;
+      return fs ? Predict.isoDay(Predict.addDays(fs, 10)) : WEN.today;
+    }
     try {
-      const fw = await getJSON("/api/fleet/firmware");   // DB-backed, not the sample merge
-      const versions = fw.versions;
-      if (fw.source === "db" && Array.isArray(versions) && versions.length) {
+      const fw = await getJSON("/api/fleet/firmware");   // DB-backed
+      const dbRows = fw.source === "db" && Array.isArray(fw.versions) ? fw.versions : [];
+      if (dbRows.length) {
         WEN.dataMode = "live";
-        WEN.versions = versions.map(row => ({
+        WEN.versions = dbRows.map(row => ({
           version: row.version,
           firstSeen: row.first_seen ? String(row.first_seen).slice(0, 10) : WEN.today,
           fleetPct: row.fleet_pct != null ? row.fleet_pct : null,
           branch: row.branch || "standard",
           status: row.status || "rolling",
           k: row.k || 0.33,
-          t0: row.t0 ? String(row.t0).slice(0, 10) : (row.first_seen ? Predict.isoDay(Predict.addDays(String(row.first_seen).slice(0, 10), 10)) : WEN.today),
+          t0: row.t0 ? String(row.t0).slice(0, 10) : isoT0(row.first_seen),
           fsdBuild: { AI4: "—", AI3: "—" },
           notes: "",
         }));
+      } else {
+        const mg = await getJSON("/api/fleet/firmware?merged=1&live=1");
+        const rows = Array.isArray(mg.versions) ? mg.versions.filter(r => r.fleetPct != null || r.firstSeen) : [];
+        if (mg.mode === "live" && rows.length) {
+          WEN.dataMode = "live";
+          WEN.versions = rows.map(row => ({
+            version: row.version,
+            firstSeen: row.firstSeen ? String(row.firstSeen).slice(0, 10) : null,
+            fleetPct: row.fleetPct != null ? row.fleetPct : null,
+            branch: row.branch || "standard",
+            status: row.status || "rolling",
+            k: 0.33,
+            t0: isoT0(row.firstSeen),
+            fsdBuild: row.fsdBuild || { AI4: "—", AI3: "—" },
+            notes: "",
+            sources: row.sources || [],
+          }));
+        }
       }
-    } catch (e) { /* no real data → stays sample → fleet sections hidden */ }
+    } catch (e) { /* no real data → stays sample */ }
+
+    // --- source attribution strip (who we aggregated + live status) ---
+    try {
+      const sc = await getJSON("/api/sources?live=1");
+      if (sc && Array.isArray(sc.sources) && window.WENFSD && window.WENFSD.setSources) {
+        window.WENFSD.setSources(sc.sources, sc.mode === "live");
+      }
+    } catch (e) { /* keep default attribution */ }
 
     // --- real fleet stats (DB counts) ---
     try {

@@ -488,18 +488,21 @@
     if (el) { el.classList.toggle("is-sample", !live); el.title = live ? "Live, aggregated from connected cars + trackers" : "Illustrative sample data — connect a backend / your Tesla for live figures"; }
     const fwSub = document.querySelector("#fwSub");
     if (fwSub) fwSub.textContent = live ? "live distribution" : "sample distribution";
-    // fleet sections: always visible, but badged "modelled estimate" until real data backs them
+    // fleet sections: always visible. Firmware/feed become REAL once live (tracker-aggregated);
+    // the FSD-by-region matrix, OS-lag panel and release-note text stay modelled either way, so
+    // they keep an honest "regional timing is modelled" badge even in live mode.
+    const ALWAYS_MODELLED = new Set(["fsdCard", "regionCard", "releaseNotesCard"]);
     document.querySelectorAll(".fleet-card").forEach(card => {
       card.style.display = "";
-      card.classList.toggle("estimate-mode", !live);
+      const modelled = ALWAYS_MODELLED.has(card.id);
+      const showBadge = modelled || !live;
+      card.classList.toggle("estimate-mode", showBadge);
       let badge = card.querySelector(":scope > .est-badge");
-      if (!live) {
-        if (!badge) {
-          badge = document.createElement("div");
-          badge.className = "est-badge";
-          badge.innerHTML = `⚠️ Modelled estimate — not live fleet data. <span>Firms up as real cars connect &amp; trackers are aggregated.</span>`;
-          card.insertBefore(badge, card.firstChild);
-        }
+      if (showBadge) {
+        if (!badge) { badge = document.createElement("div"); badge.className = "est-badge"; card.insertBefore(badge, card.firstChild); }
+        badge.innerHTML = modelled
+          ? `⚠️ Regional rollout <strong>timing</strong> is modelled — not observed. Version numbers &amp; FSD builds shown are real where available.`
+          : `⚠️ Modelled estimate — not live fleet data. <span>Firms up as real cars connect &amp; trackers are aggregated.</span>`;
       } else if (badge) { badge.remove(); }
     });
     const banner = $("sampleBanner");
@@ -521,7 +524,7 @@
     const list = sources || DEFAULT_SOURCES;
     $("dataSources").innerHTML =
       `<span class="ds-label">${live ? "Live data aggregated from" : "Aggregates"}:</span>` +
-      list.map(s => `<span class="ds-pill ${s.ok === false ? "ds-down" : ""}">${esc(s.name)}${s.versions != null ? " · " + s.versions : ""}</span>`).join("") +
+      list.map(s => `<span class="ds-pill ${s.ok === false ? "ds-down" : ""}">${esc(s.name)}${s.ok !== false && s.versions ? " · " + s.versions : ""}</span>`).join("") +
       `<span class="ds-note">wenFSD merges these (fleet-weighted) and adds the prediction layer none of them have.</span>`;
   }
 
@@ -586,9 +589,9 @@
       return `<tr class="${isMine ? "mine" : ""}">` +
         `<td><strong class="${hasNotes ? "fw-verlink" : ""}" ${hasNotes ? `data-rn="${esc(v.version)}"` : ""}>${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}</td>` +
         `<td><span class="status status-${v.status}">${v.status}</span></td>` +
-        `<td><div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div></td>` +
-        `<td>${sparkSVG(v)}</td>` +
-        `<td>${shortDate(v.firstSeen)}</td><td>${v.fsdBuild.AI4}</td><td class="notes">${v.notes}</td></tr>`;
+        `<td>${v.fleetPct != null ? `<div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div>` : `<span class="mut-i">not reported</span>`}</td>` +
+        `<td>${v.fleetPct != null ? sparkSVG(v) : "—"}</td>` +
+        `<td>${v.firstSeen ? shortDate(v.firstSeen) : "—"}</td><td>${(v.fsdBuild && v.fsdBuild.AI4) || "—"}</td><td class="notes">${v.notes || ""}</td></tr>`;
     }).join("");
     $("fwBody").querySelectorAll(".fw-verlink").forEach(el => {
       el.onclick = () => {
