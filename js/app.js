@@ -106,7 +106,34 @@
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,7))}</span><b>${w7}%</b></div>` +
       `<div class="pm-row"><span>by ${shortDate(Predict.addDays(today,30))}</span><b>${w30}%</b></div>`;
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
+    renderBasis(pred);
     renderTips(pred);
+  }
+
+  // plain-language breakdown of HOW the date was computed + what it's based on
+  function renderBasis(pred) {
+    const v = av(), isFSD = ui.target === "fsd";
+    const pct = pctLabel(effEarliness(v));
+    const k = pred._k != null ? pred._k : 0.33;
+    const mid = pred._t0Days != null ? Predict.fmtDate(Predict.addDays(today, pred._t0Days)) : null;
+
+    let anchor;
+    if (pred.mode === "gated") {
+      anchor = `<strong>${esc(v.market)}</strong> isn't approved for <strong>${esc(pred.targetLabel)}</strong> yet, so the date is a <em>modelled regulatory window</em> — the least certain kind of estimate.`;
+    } else if (mid) {
+      anchor = `the model centres <strong>${esc(pred.targetLabel)}</strong>'s rollout around <strong>${mid}</strong> (curve steepness k≈${k}). Your rollout position then shifts you earlier or later than that midpoint.`;
+    } else {
+      anchor = `projected from Tesla's measured release cadence between builds.`;
+    }
+
+    $("predBasisBody").innerHTML =
+      `<p><strong>What:</strong> when <strong>${esc(pred.targetLabel || (isFSD ? "the next FSD version" : "the next update"))}</strong> reaches <strong>${esc(v.nickname || "your car")}</strong>${pred.current ? ` (currently on ${esc(pred.current)})` : ""}.</p>` +
+      `<ol class="basis-steps">` +
+        `<li><strong>Your position:</strong> we place your car at its <strong>${pct}</strong> spot in the fleet rollout${v.earlyAccess ? " (incl. Early Access)" : ""}. Earlier cars get each build first.</li>` +
+        `<li><strong>The model:</strong> Tesla pushes each version as an S-curve across the fleet. We fit a logistic curve and read off your spot, then run Monte-Carlo for the 80% window.</li>` +
+        `<li><strong>The timing anchor:</strong> ${anchor}</li>` +
+      `</ol>` +
+      `<p class="basis-warn">⚠️ These run on <strong>assumed</strong> rollout parameters — we don't yet have crowdsourced fleet data, so the anchor dates (the FSD one especially) are educated estimates, not observed data or a Tesla commitment.</p>`;
   }
 
   // actionable "what would make this sooner" tips + confidence basis
