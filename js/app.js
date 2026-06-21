@@ -222,7 +222,7 @@
 
     const ms = $("marketSel");
     ms.innerHTML = Object.keys(WEN.regionLag).map(m => `<option ${m === v.market ? "selected" : ""}>${m}</option>`).join("");
-    ms.onchange = () => { gstate = Garage.update(v.id, { market: ms.value }); renderActiveControls(); renderGarage(); ui.guessDays = null; clearGuess(); render(); };
+    ms.onchange = () => setMarket(ms.value);
 
     populateVersionOptions();
     const vs = $("versionSel");
@@ -459,7 +459,7 @@
         return `<td><div class="mx-cur">${esc(x.current)}</div><div class="mx-mode mode-${x.mode}">${MODE_LABEL[x.mode] || x.mode}</div>${next}</td>`;
       };
       const isActive = c && rname === c.market;
-      return `<tr class="${isActive ? "mx-active" : ""}"><td class="mx-region">${esc(rname)}${isActive ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;
+      return `<tr class="${isActive ? "mx-active" : ""}${c ? " mx-click" : ""}"${c ? ` data-set-market="${esc(rname)}" title="Switch your car to ${esc(rname)}"` : ""}><td class="mx-region">${esc(rname)}${isActive ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;
     }).join("");
     $("fsdMatrix").innerHTML =
       `<table class="mx-table"><thead><tr><th>Region</th><th>HW4 / AI4</th><th>HW3 / AI3</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -534,14 +534,18 @@
 
   // ---- data sources attribution (we aggregate the public trackers) ----
   const DEFAULT_SOURCES = [
-    { name: "Tessie", ok: true }, { name: "Teslascope", ok: true }, { name: "TeslaFi", ok: true },
-    { name: "Tesla Updates", ok: true }, { name: "FleetCtrl", ok: true },
+    { name: "Tessie", homepage: "https://stats.tessie.com/", ok: true }, { name: "Teslascope", homepage: "https://teslascope.com/software", ok: true }, { name: "TeslaFi", homepage: "https://teslafi.com/firmware.php", ok: true },
+    { name: "Tesla Updates", homepage: "https://teslaupdates.org/rollouts", ok: true }, { name: "FleetCtrl", homepage: "https://fleetctrl.app/", ok: true },
   ];
   function renderDataSources(sources, live) {
     const list = sources || DEFAULT_SOURCES;
     $("dataSources").innerHTML =
       `<span class="ds-label">${live ? "Live data aggregated from" : "Aggregates"}:</span>` +
-      list.map(s => `<span class="ds-pill ${s.ok === false ? "ds-down" : ""}">${esc(s.name)}${s.ok !== false && s.versions ? " · " + s.versions : ""}</span>`).join("") +
+      list.map(s => {
+        const inner = `${esc(s.name)}${s.ok !== false && s.versions ? " · " + s.versions : ""}`;
+        const cls = `ds-pill ${s.ok === false ? "ds-down" : ""}`;
+        return s.homepage ? `<a class="${cls}" href="${esc(s.homepage)}" target="_blank" rel="noopener" title="Open ${esc(s.name)}">${inner} ↗</a>` : `<span class="${cls}">${inner}</span>`;
+      }).join("") +
       `<span class="ds-note">wenFSD merges these (fleet-weighted) and adds the prediction layer none of them have.</span>`;
   }
 
@@ -565,8 +569,25 @@
   }
 
   // ---- per-region OS rollout panel (country breakdown) ----
+  // change the active car's market (used by the region dropdown, region rows, FSD matrix)
+  function setMarket(name) {
+    const v = av(); if (!v || !WEN.regions[name] || name === v.market) return;
+    gstate = Garage.update(v.id, { market: name });
+    renderActiveControls(); renderGarage(); ui.guessDays = null; clearGuess(); render();
+  }
+  // jump to a version's release note (opening it) or its firmware-table row
+  function gotoVersion(ver) {
+    const d = document.querySelector(`#releaseNotes details[data-ver="${ver}"]`);
+    if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); flash(d); return; }
+    const rows = [...document.querySelectorAll("#fwBody tr")];
+    const row = rows.find(r => r.querySelector("strong") && r.querySelector("strong").textContent.trim().startsWith(ver));
+    if (row) { row.scrollIntoView({ behavior: "smooth", block: "center" }); flash(row); }
+  }
+  function flash(el) { el.classList.add("rn-flash"); setTimeout(() => el.classList.remove("rn-flash"), 1200); }
+
   function renderRegions() {
     const activeMarket = av() ? av().market : null;
+    const clickable = !!av();
     const base = WEN.regions["United States"].osLagDays;
     const lags = Object.values(WEN.regions).map(r => r.osLagDays - base);
     const maxLag = Math.max(1, ...lags);
@@ -576,7 +597,7 @@
       const p = Predict.predictNextOS({ market: name, hardware: "AI4", installedVersion: "2026.14.6", earlinessPercentile: 0.5 }, today);
       const isA = name === activeMarket;
       const barW = (lag / maxLag) * 100;
-      return `<div class="rp-row ${isA ? "rp-active" : ""}">` +
+      return `<div class="rp-row ${isA ? "rp-active" : ""}${clickable ? " rp-click" : ""}"${clickable ? ` data-set-market="${esc(name)}" title="Switch your car to ${esc(name)}"` : ""}>` +
         `<div class="rp-name">${esc(name)}${isA ? ' <span class="tag-you">you</span>' : ''} <span class="rp-drive">${r.drive}</span></div>` +
         `<div class="rp-lag">${lag === 0 ? "US baseline" : "+" + lag + "d behind US"}</div>` +
         `<div class="rp-bar"><span style="width:${Math.max(2, barW)}%"></span></div>` +
@@ -604,19 +625,13 @@
       const isMine = v.version === mine;
       const hasNotes = !!WEN.releaseNotes[v.version];
       return `<tr class="${isMine ? "mine" : ""}">` +
-        `<td><strong class="${hasNotes ? "fw-verlink" : ""}" ${hasNotes ? `data-rn="${esc(v.version)}"` : ""}>${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}</td>` +
+        `<td>${hasNotes ? `<strong class="fw-verlink" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="See ${esc(v.version)} release notes">${v.version}</strong>` : `<strong>${v.version}</strong>`}${isMine ? ' <span class="tag-you">you</span>' : ''}</td>` +
         `<td><span class="status status-${v.status}">${v.status}</span></td>` +
         `<td>${v.fleetPct != null ? `<div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div>` : `<span class="mut-i">not reported</span>`}</td>` +
         `<td>${v.fleetPct != null ? sparkSVG(v) : "—"}</td>` +
         `<td>${v.firstSeen ? shortDate(v.firstSeen) : "—"}</td><td>${(v.fsdBuild && v.fsdBuild.AI4) || "—"}</td>` +
         `<td class="notes">${v.recentInstalls ? `<span class="fw-active">🔥 ${Number(v.recentInstalls).toLocaleString()} installs this week</span>` : (v.notes || "")}</td></tr>`;
     }).join("");
-    $("fwBody").querySelectorAll(".fw-verlink").forEach(el => {
-      el.onclick = () => {
-        const d = document.querySelector(`#releaseNotes details[data-ver="${el.dataset.rn}"]`);
-        if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); d.classList.add("rn-flash"); setTimeout(() => d.classList.remove("rn-flash"), 1200); }
-      };
-    });
   }
   function renderStats() {
     if (WEN.dataMode !== "live") {
@@ -648,7 +663,7 @@
       const meta = [pct, inst, fsd].filter(Boolean).join(" · ");
       const src = (v.sources && v.sources.length) ? `via ${v.sources.join(", ")}` : "";
       return `<li><span class="feed-when">${shortDate(v.firstSeen)}</span>` +
-        `<span class="feed-main"><strong class="feed-relver">${esc(v.version)}</strong>${meta ? ` <span class="feed-meta">${esc(meta)}</span>` : ""}</span>` +
+        `<span class="feed-main"><strong class="feed-relver" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="See ${esc(v.version)} details">${esc(v.version)}</strong>${meta ? ` <span class="feed-meta">${esc(meta)}</span>` : ""}</span>` +
         `<span class="feed-ver">${esc(src)}</span></li>`;
     }).join("");
     $("feedSub").textContent = rows.length + " recent releases";
@@ -656,6 +671,17 @@
 
   // ---------------- events ----------------
   function wire() {
+    // delegated clicks for dynamically-rendered interactive elements (region rows, FSD
+    // matrix rows, firmware/feed version links) — bound once, survive re-renders.
+    function handleActivate(e) {
+      const m = e.target.closest("[data-set-market]");
+      if (m) { e.preventDefault(); setMarket(m.getAttribute("data-set-market")); return; }
+      const g = e.target.closest("[data-goto-version]");
+      if (g) { e.preventDefault(); gotoVersion(g.getAttribute("data-goto-version")); return; }
+    }
+    document.addEventListener("click", handleActivate);
+    document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-goto-version],[data-set-market]")) handleActivate(e); });
+
     document.querySelectorAll("#targetSeg .seg-btn").forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll("#targetSeg .seg-btn").forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); });
