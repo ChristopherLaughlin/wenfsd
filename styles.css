@@ -35,6 +35,7 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 /* funny connect-your-Tesla nudge */
 .connect-nudge{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 0;padding:13px 16px;border-radius:12px;
   background:linear-gradient(90deg,rgba(230,57,75,.12),rgba(57,212,255,.08));border:1px solid rgba(230,57,75,.35)}
+.connect-nudge[hidden]{display:none}   /* class display:flex would otherwise override the [hidden] attribute */
 .cn-text{display:flex;align-items:center;gap:10px;flex:1;min-width:240px;font-size:13.5px;line-height:1.5;color:var(--txt)}
 .cn-emoji{font-size:20px;flex-shrink:0}
 .cn-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -145,6 +146,7 @@ tr.mx-click:hover td{background:#11161f}
 .why-answer::after{content:" 🔁";font-size:13px;opacity:.5}
 .why-sub{margin:2px 0 10px;font-size:12px;color:var(--mut2);font-style:italic}
 .conn-chip{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;vertical-align:middle;margin-left:8px;border:1px solid}
+.conn-chip[hidden]{display:none}
 .conn-chip.cc-on{color:#5fd1a0;background:rgba(70,180,140,.1);border-color:rgba(70,180,140,.4)}
 .conn-chip.cc-link{color:var(--cyan);background:rgba(90,160,255,.08);border-color:rgba(90,160,255,.35)}
 .conn-chip.cc-off{color:var(--mut2);background:#0c1019;border-color:var(--line)}
@@ -209,6 +211,7 @@ tr.mx-click:hover td{background:#11161f}
 .doom-foot{font-size:11px;color:var(--mut2);font-style:italic}
 /* NOW → NEXT bar */
 .you-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 0;padding:11px 16px;background:linear-gradient(90deg,rgba(90,160,255,.08),rgba(70,180,140,.06));border:1px solid var(--line2);border-radius:12px;font-size:13px}
+.you-bar[hidden]{display:none}
 .yb-region{font-weight:600;color:var(--txt)}
 .yb-seg{display:inline-flex;align-items:center;gap:7px}
 .yb-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--mut2);background:#0b0e14;border:1px solid var(--line);border-radius:5px;padding:2px 6px}
