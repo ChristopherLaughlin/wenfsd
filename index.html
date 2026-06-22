@@ -227,6 +227,14 @@
       <label class="explore-pick">Explore <select id="exploreRegionSel" class="inline-sel" aria-label="Region to explore"></select></label>
     </div>
     <p class="hint">FSD is a <strong>separate track</strong> from the OS version; rollout depends on <strong>region</strong> (regulatory approval) and <strong>hardware</strong> (HW3/AI3 capped; HW4/AI4 latest). Pick any region above to explore its rollout — your own car's prediction stays at the top.</p>
+    <details class="glossary">
+      <summary>🤓 Wait — software vs firmware vs FSD version?</summary>
+      <ul>
+        <li><strong>Software / firmware version</strong> <span class="g-eg">2026.20.3</span> — same thing, two names. Your car's whole operating system, in <code>year.week.point</code> format. "Got an update" = a new one of these.</li>
+        <li><strong>FSD version</strong> <span class="g-eg">v14.3.4</span> — just the Full Self-Driving driving-AI, on its <em>own</em> version line (v12 → v13 → v14).</li>
+        <li><strong>How they relate</strong> — each OS build <em>carries</em> a specific FSD version baked in. So a software update usually brings a new FSD version too — but Tesla numbers them separately, and the big FSD jumps (v13 → v14) only land in certain builds.</li>
+      </ul>
+    </details>
     <div class="fsd-grid" id="fsdGrid"></div>
     <div class="mx-wrap" id="fsdMatrix"></div>
     <div class="tl-head" id="fsdTlHead">FSD rollout timeline</div>

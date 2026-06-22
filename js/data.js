@@ -109,15 +109,16 @@ const WEN = (function () {
   };
 
   // FSD regulatory milestones (Australia headline; shown in the FSD card)
-  // NOTE: this is a MODELLED outlook, not a feed of confirmed Tesla announcements. Dates are
-  // coarse/estimated. We don't claim precise rollout events we can't verify.
+  // Mixed provenance: `kind:"observed"` events are anchored to real tracker first-seen dates /
+  // widely-reported rollouts; `kind:"projected"` events are modelled estimates. The UI shows
+  // the two differently so users know which is which.
   const fsdMilestones = [
-    { date: "2025", label: "FSD v13 (Supervised) live for AU HW4 — first RHD market", done: true },
-    { date: "2026 H1", label: "Early/limited AU v14 testing (estimated)", done: true },
-    { date: "2026 mid", label: "v14 reaching NEW AU HW4 deliveries first — existing fleet waits (modelled)", done: true },
-    { date: "2026 Q3 (est.)", label: "Existing-fleet v14 wave widens across AU HW4", done: false },
-    { date: "2026 H2 (est.)", label: "Broad v14 availability across AU HW4 cars", done: false },
-    { date: "later (est.)", label: "HW3 'v14 lite' (limited city-streets Autosteer), if it ships", done: false },
+    { date: "2025", label: "FSD v13 (Supervised) goes live for AU HW4 — first RHD market", kind: "observed" },
+    { date: "2026-06-05", label: "First AU HW4 cars seen on a v14-carrying build (2026.14.6.x) — tracker first-seen", kind: "observed" },
+    { date: "2026-06-17", label: "2026.20.3 (FSD v14.3.4) appears in the AU fleet — tracker first-seen", kind: "observed" },
+    { date: "2026 Q3 (est.)", label: "Existing-fleet v14 wave widens across AU HW4", kind: "projected" },
+    { date: "2026 H2 (est.)", label: "Broad v14 availability across AU HW4 cars", kind: "projected" },
+    { date: "later (est.)", label: "HW3 'v14 lite' (limited city-streets Autosteer), if it ships", kind: "projected" },
   ];
 
   const feedSeeds = [

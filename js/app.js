@@ -787,9 +787,11 @@
     $("fsdMatrix").innerHTML =
       `<table class="mx-table"><thead><tr><th>Region</th><th>HW4 / AI4</th><th>HW3 / AI3</th></tr></thead><tbody>${rows}</tbody></table>`;
 
-    const tlHead = $("fsdTlHead"); if (tlHead) tlHead.innerHTML = `${esc(rname0)} FSD timeline <span class="mut-i" style="font-weight:400;font-size:11px">— modelled outlook, not confirmed Tesla dates</span>`;
-    $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m =>
-      `<li class="${m.done ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)}</span></li>`).join("");
+    const tlHead = $("fsdTlHead"); if (tlHead) tlHead.innerHTML = `${esc(rname0)} FSD timeline <span class="mut-i" style="font-weight:400;font-size:11px">— <span style="color:#5fd1a0">✓ observed</span> events are real (tracker first-seen / reported rollouts); <span style="color:#e8b15a">~ projected</span> are modelled estimates</span>`;
+    $("fsdTimeline").innerHTML = WEN.fsdMilestones.map(m => {
+      const obs = m.kind === "observed";
+      return `<li class="${obs ? "done" : "pending"}"><span class="tl-dot"></span><span class="tl-date">${esc(m.date)}</span><span class="tl-label">${esc(m.label)} <span class="tl-kind ${obs ? "tl-obs" : "tl-proj"}">${obs ? "✓ observed" : "~ projected"}</span></span></li>`;
+    }).join("");
   }
   // ---- sample-vs-live honesty indicator ----
   function renderDataMode() {
