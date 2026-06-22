@@ -163,6 +163,9 @@
     if ($("fsdPredWindow")) $("fsdPredWindow").textContent = "add a car to see both dates";
     if ($("osPredQuip")) $("osPredQuip").textContent = "";
     if ($("fsdPredQuip")) $("fsdPredQuip").textContent = "";
+    if ($("osDetail")) $("osDetail").hidden = true;
+    if ($("fsdDetail")) $("fsdDetail").hidden = true;
+    if ($("ringCap")) $("ringCap").hidden = true;
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
     if ($("heroFlavor")) $("heroFlavor").innerHTML = flavorPick("empty", [
@@ -195,6 +198,9 @@
     $("heroWindow").textContent = pred.capped ? "hardware-limited" : "";
     if ($("osPredVer")) $("osPredVer").textContent = "";
     if ($("osPredQuip")) $("osPredQuip").textContent = "";
+    if ($("osDetail")) $("osDetail").hidden = true;
+    if ($("fsdDetail")) $("fsdDetail").hidden = true;
+    if ($("ringCap")) $("ringCap").hidden = true;
     renderFsdPred(pred);
     $("ringDays").textContent = pred.capped ? "—" : "?"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
@@ -461,7 +467,7 @@
 
   function renderHero(pred) {
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
-    $("heroEyebrow").textContent = `Your next update${pred.targetLabel ? " — " + pred.targetLabel : ""} on ${av().nickname || "your car"}`;
+    $("heroEyebrow").textContent = `Your next updates — software & FSD · ${av().nickname || "your car"}`;
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
     $("osPredVer").textContent = pred.targetLabel ? "· " + pred.targetLabel : "";
     const hw = $("heroWindow");
@@ -470,6 +476,10 @@
     if ($("osPredQuip")) $("osPredQuip").textContent = osPredQuip();
     renderFsdPred(pred);
     renderFsdSummary(pred);
+    // each detail section is now explicitly grouped under software vs FSD
+    if ($("osDetail")) $("osDetail").hidden = false;
+    if ($("ringCap")) $("ringCap").hidden = false;
+    if ($("fsdDetail")) $("fsdDetail").hidden = !($("fsdSummary").innerHTML || "").trim();
 
     const ring = $("ringFg"), C = 2 * Math.PI * 78, d = pred.daysToMedian;
     const frac = Math.max(0.04, Math.min(1, 1 - Math.min(d, 120) / 120));
