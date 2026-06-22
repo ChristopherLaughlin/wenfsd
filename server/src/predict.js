@@ -80,6 +80,20 @@ export function predictNextOS(car, opts = {}) {
   const bandFactor = Math.min(2.5, Math.max(0.6, +opts.bandFactor || 1));
   const earliness = W.effEarliness(car);
   const delta = regionDelta(car.market);
+  // OBSERVED override: a connected car reporting a pending OTA is reality, not a model guess
+  // (mirrors client predict.js). Tight, high-confidence window; only fires with a real pending read.
+  const pu = car.pendingUpdate;
+  if (pu && pu.version && W.verKey(pu.version) > W.verKey(car.installedVersion || "0")) {
+    const st = String(pu.status || "").toLowerCase();
+    const t0 = st.includes("install") ? 0 : (st.includes("download") || st.includes("schedul")) ? 1 : 3;
+    const out = mcPredict({ t0Days: t0, k: 0.5, L: 0.95, earliness: 0.5, t0Sigma: 1.5, floorDays: 0, today, seedStr: "PU" + pu.version + st });
+    const build = versions.find(v => v.version === pu.version);
+    out.targetLabel = pu.version; out.kind = "confirmed"; out.branch = "os"; out.confirmed = true; out.pendingStatus = pu.status; out.earliness = 0.5;
+    out.fsdCurrent = curFsd(car);
+    out.fsdInBuild = (build && build.fsdBuild && build.fsdBuild[car.hardware]) || null;
+    out.bringsNewFsd = !!(out.fsdInBuild && out.fsdInBuild !== "—" && W.fsdKey(out.fsdInBuild) > W.fsdKey(out.fsdCurrent));
+    return out;
+  }
   const myKey = W.verKey(car.installedVersion || "0");
   const newer = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
   if (newer.length) {

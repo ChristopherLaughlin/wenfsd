@@ -129,6 +129,8 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
   background:rgba(57,212,255,.08);border:1px solid rgba(57,212,255,.22);border-radius:8px;padding:4px 10px}
 .hero-window:empty{display:none}
 .hero-window.hw-stale{color:var(--amber);background:rgba(232,177,90,.10);border-color:rgba(232,177,90,.3)}
+.hero-window.hw-confirmed{color:#7fe0b8;background:rgba(70,180,140,.12);border-color:rgba(70,180,140,.4)}
+.pred-pill.pill-confirmed{color:#7fe0b8;background:rgba(70,180,140,.12);border-color:rgba(70,180,140,.38)}
 /* two-up: software-update date vs FSD-update date — deliberately separated */
 .hero-preds{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
 @media(max-width:560px){.hero-preds{grid-template-columns:1fr}}
