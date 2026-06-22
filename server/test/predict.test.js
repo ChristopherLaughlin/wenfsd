@@ -32,6 +32,23 @@ test("measured history overrides the staleness guard (no false 'stale')", () => 
   assert.ok(!p.stale, "a car with real update history should not be auto-flagged stale");
 });
 
+test("AU/NZ HW3 FSD is 'promised' with NO invented date (never delivered)", () => {
+  for (const market of ["Australia", "New Zealand"]) {
+    const p = predictNextFSD({ market, hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
+    assert.equal(p.promised, true, `${market} HW3 FSD should be promised, not dated`);
+    assert.ok(!p.medianDate, `${market} HW3 FSD must not produce a confident date`);
+    assert.match(p.note || "", /never|no committed|skeptic/i);
+  }
+});
+
+test("US HW3 gets FSD v14 Lite first (a real date), AU/NZ do not", () => {
+  const us = predictNextFSD({ market: "United States", hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
+  assert.ok(!us.promised, "US HW3 should have an actual rollout, not 'promised'");
+  assert.ok(us.medianDate, "US HW3 should produce a date");
+  const au = predictNextFSD({ market: "Australia", hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
+  assert.equal(au.promised, true);
+});
+
 const auAI4 = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.45, earlinessSource: "default", earlyAccess: false };
 
 test("predictNextOS picks the newest distributed build above yours", () => {
@@ -72,9 +89,10 @@ test("predictNextFSD bundles with the OS build that carries it (consistent dates
   assert.equal(+new Date(fsd.medianDate), +new Date(os.medianDate));
 });
 
-test("FSD is capped on hardware-limited config (Europe/AI3)", () => {
+test("EU HW3 FSD is 'promised' (undelivered, no date) — not a fabricated ETA", () => {
   const p = predictNextFSD({ market: "Europe", hardware: "AI3", earliness: 0.45 });
-  assert.equal(p.capped, true);
+  assert.equal(p.promised, true);
+  assert.ok(!p.medianDate);
 });
 
 test("invalid earliness does not produce NaN dates (defensive)", () => {

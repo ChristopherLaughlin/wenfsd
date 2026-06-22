@@ -71,7 +71,7 @@
     const adv = fill(fresh ? rnd(DOOM_ADVICE) : flavorPick("doomAdvice", DOOM_ADVICE));
     el.innerHTML = `<div class="fsum fsum-doom" id="doomBox" role="button" tabindex="0" title="Tap for more bad news">` +
       `<div class="doom-h">💀 FSD on your HW3 ${esc(v.market)} car — ${head}</div>` +
-      `<div class="doom-why">The upfront truth: HW3 (AI3) is compute-capped, ${esc(v.market)} is right-hand-drive, and FSD here needs regulators who move at the speed of a council DA. The trifecta of doom. v14 (Supervised) is built for HW4 — your car will almost certainly never run it. We're not being mean; we're being <em>accurate</em>, which is worse.</div>` +
+      `<div class="doom-why">The upfront truth: HW3 (AI3) can't run the HW4-only v14 (Supervised). Tesla has <em>promised</em> a stripped-down “v14 Lite” for older hardware — but it's rolling out in the <strong>US first</strong>, and ${esc(v.market)} (right-hand-drive, stricter regulators) has been given <strong>no committed date at all</strong>. HW3 owners here were promised FSD years ago and still have none. Realistically: late 2026, 2027, or never. We're not being mean; we're being <em>accurate</em>, which is worse.</div>` +
       `<div class="doom-luck">${luck}</div>` +
       `<div class="doom-adv">${adv}</div>` +
       `<div class="doom-foot">…but hey, <strong>maybe</strong>. Tap for more bad news. 🔁</div>` +
@@ -89,6 +89,7 @@
     if (isDownUnderHW3(v)) { renderDoom(el, v, false); return; }   // 🇦🇺/🇳🇿 + HW3 → the give-up special
     let fsd; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { el.innerHTML = ""; return; }
     if (!fsd || fsd.unavailable) { el.innerHTML = ""; return; }
+    if (fsd.promised) { el.innerHTML = `<div class="fsum fsum-promised">🤷 <strong>FSD ${esc(fsd.targetLabel)} — promised, no timeline.</strong> ${esc(fsd.note || "")}</div>`; return; }
     if (fsd.capped) { el.innerHTML = `<div class="fsum fsum-capped">🪚 <strong>FSD:</strong> ${esc(fsd.current || "your version")} is the end of the line for your ${esc(v.hardware)} hardware — Tesla caps it here.</div>`; return; }
     const bundled = fsd.bundledWith && osPred && (fsd.bundledWith === osPred.targetLabel || +new Date(fsd.medianDate) === +new Date(osPred.medianDate));
     if (bundled) {
@@ -1079,7 +1080,7 @@
     const word = p <= 0.2 ? "very early" : p <= 0.4 ? "earlier than most" : p <= 0.6 ? "average" : p <= 0.8 ? "later than most" : "very late";
     return `${word} (~${pct}th pct)`;
   }
-  const MODE_LABEL = { rolling: "Rolling out", early: "Early/staged rollout", gated: "Awaiting approval", current: "On newest", capped: "Hardware-capped" };
+  const MODE_LABEL = { rolling: "Rolling out", early: "Early/staged rollout", gated: "Awaiting approval", current: "On newest", capped: "Hardware-capped", promised: "Promised · no timeline" };
   function activeFsdRegion() { return ui.exploreRegion || (av() ? av().market : "Australia"); }
 
   function renderFSD() {
@@ -1099,7 +1100,9 @@
     // typical-car ETA for the explored region (existing fleet, 50th pct) — or your car if it's your region
     const etaCar = isYours ? car() : { market: rname0, hardware: hw, fsdVersion: f ? f.current : null, earlinessPercentile: 0.5, earlyAccess: false, newCar: false };
     const fp = f ? Predict.predictNextFSD(etaCar, today) : null;
-    const eta = fp && !fp.capped && !fp.unavailable ? Predict.fmtDate(fp.medianDate).replace(/^\w+, /, "") : (f && (f.mode === "capped" || (fp && fp.capped)) ? "capped" : "—");
+    const eta = (fp && fp.promised) ? "no timeline"
+      : (fp && !fp.capped && !fp.unavailable && fp.medianDate) ? Predict.fmtDate(fp.medianDate).replace(/^\w+, /, "")
+      : (f && (f.mode === "capped" || (fp && fp.capped)) ? "capped" : "—");
     $("fsdGrid").innerHTML =
       `<div class="fsd-stat"><div class="fsd-num">${f ? (MODE_LABEL[f.mode] || f.mode) : "—"}</div><div class="fsd-lbl">FSD status · ${esc(rname0)} ${esc(hw)}</div></div>` +
       `<div class="fsd-stat"><div class="fsd-num">${f ? esc(f.current) : "—"}</div><div class="fsd-lbl">current FSD ${isYours ? "(yours)" : "(typical car)"}</div></div>` +
@@ -1146,8 +1149,10 @@
       const cell = (hw) => {
         const x = r.fsd[hw];
         if (!x) return `<td class="mx-na">—</td>`;
-        const next = x.next ? `<span class="mx-next">→ ${esc(x.next)}</span>` : `<span class="mx-capped">capped</span>`;
-        return `<td><div class="mx-cur">${esc(x.current)}</div><div class="mx-mode mode-${x.mode}">${MODE_LABEL[x.mode] || x.mode}</div>${next}</td>`;
+        const next = x.mode === "promised" ? `<span class="mx-promised">${esc(x.next)} — no date</span>`
+          : x.next ? `<span class="mx-next">→ ${esc(x.next)}</span>` : `<span class="mx-capped">capped</span>`;
+        const cur = (x.current === "none" || !x.current) ? `<span class="mx-none">never delivered</span>` : esc(x.current);
+        return `<td><div class="mx-cur">${cur}</div><div class="mx-mode mode-${x.mode}">${MODE_LABEL[x.mode] || x.mode}</div>${next}</td>`;
       };
       const isShown = rname === rname0, isCar = v && rname === v.market;
       return `<tr class="${isShown ? "mx-active" : ""} mx-click" data-explore-region="${esc(rname)}" role="button" tabindex="0" aria-label="Explore ${esc(rname)} FSD rollout" title="Explore ${esc(rname)}"><td class="mx-region">${esc(rname)}${isCar ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;

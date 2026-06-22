@@ -165,6 +165,12 @@ const Predict = (function () {
     const f = region && region.fsd ? region.fsd[car.hardware] : null;
     if (!f) return { unavailable: true, current: car.fsdVersion || "—", note: `No FSD data for ${car.hardware} in ${car.market}.` };
     if (f.mode === "capped") return { capped: true, current: f.current, note: `${car.hardware} is capped at ${f.current} — Tesla has stated this hardware can't run newer FSD.` };
+    // 'promised' — promised but never delivered, with NO committed timeline. We refuse to invent a
+    // date (the whole point of the site). Return an honest no-ETA result the UI renders as such.
+    if (f.mode === "promised") return {
+      promised: true, current: f.current, targetLabel: f.next, mode: "promised", branch: "fsd",
+      note: f.note || `${f.next} has been promised for ${car.hardware} in ${car.market} but never delivered — Tesla has given no committed timeline.`,
+    };
 
     const nextMajor = WEN.fsdMajor(f.next);
 

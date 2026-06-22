@@ -68,24 +68,31 @@ const WEN = (function () {
   //   next     — the next FSD version it will receive (null if capped)
   //   mode     — 'rolling' (active logistic), 'early' (just started, wide), 'gated'
   //              (regulatory approval window), 'current' (already newest → cadence), 'capped'
+  //              (hardware can't run it), 'promised' (promised but never delivered, NO committed
+  //              timeline — we refuse to invent a date)
   //   t0/k     — logistic rollout params for the next FSD wave (when applicable)
   //   approval — {earliestDays,modeDays,latestDays} for 'gated' regions
+  //   note     — honest plain-language status for 'promised'/'capped'
+  // FSD-on-HW3 reality (mid-2026): FSD (Supervised) v14 ships HW4-only. HW3's only path is the
+  // in-development "v14 Lite" — US FIRST (~end-June 2026); international markets are promised but
+  // Tesla has committed to NO dates (regulatory + RHD validation). AU/NZ HW3 never received FSD
+  // (Supervised) at all and are justifiably skeptical — so we model them as 'promised', not a date.
   const regions = {
     "United States": { osLagDays: 0, drive: "LHD", fsd: {
       AI4: { current: "v14.3.4", next: "v14.4.x", mode: "current", k: 0.16, cadenceDays: 28 },
-      AI3: { current: "v12.6.4", next: "v14 (lite)", mode: "rolling", k: 0.10, t0: "2026-07-05" } } },
+      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "rolling", k: 0.10, t0: "2026-06-30" } } },
     "Canada": { osLagDays: 3, drive: "LHD", fsd: {
       AI4: { current: "v14.3.2", next: "v14.3.4", mode: "rolling", k: 0.18, t0: "2026-06-26" },
-      AI3: { current: "v12.6.4", next: "v14 (lite)", mode: "gated", approval: { earliestDays: 10, modeDays: 35, latestDays: 80 }, k: 0.10 } } },
+      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "v14 Lite rolls out in the US first; international markets follow with no committed date, and Tesla has flagged Canada as possibly delayed." } } },
     "Europe": { osLagDays: 9, drive: "LHD", fsd: {
       AI4: { current: "v13.2.8", next: "v14.x", mode: "gated", approval: { earliestDays: 25, modeDays: 90, latestDays: 220 }, k: 0.09 },
-      AI3: { current: "v12.6.4", next: null, mode: "capped" } } },
+      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) never shipped to HW3 in Europe. v14 Lite is promised internationally, but EU regulators impose the strictest automated-steering limits and Tesla has given no committed date." } } },
     "Australia": { osLagDays: 12, drive: "RHD", fsd: {
       AI4: { current: "v13.2.9", next: "v14.x", mode: "early", firstSeen: "2026-06-09", fleetPct: 18, k: 0.11, t0: "2026-06-23", t0Sigma: 6, newDeliveryFirst: true, existingFleetDelayDays: 55, existingFleetSigma: 21 },
-      AI3: { current: "v12.6.4", next: "v14 (lite)", mode: "gated", approval: { earliestDays: 5, modeDays: 30, latestDays: 75 }, k: 0.09 } } },
+      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in Australia. v14 Lite for older hardware is promised, but it's US-first and right-hand-drive markets need extra validation + regulatory sign-off — Tesla has committed to no date. Owners are right to be skeptical." } } },
     "New Zealand": { osLagDays: 14, drive: "RHD", fsd: {
       AI4: { current: "v13.2.9", next: "v14.x", mode: "gated", approval: { earliestDays: 14, modeDays: 45, latestDays: 110 }, k: 0.08 },
-      AI3: { current: "v12.6.4", next: "v14 (lite)", mode: "gated", approval: { earliestDays: 14, modeDays: 50, latestDays: 120 }, k: 0.08 } } },
+      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in New Zealand. v14 Lite is promised internationally but US-first, with no committed RHD/NZ date. Skepticism warranted." } } },
   };
 
   // Release notes per version (fleetctrl-style changelog). In real mode these are
@@ -133,12 +140,11 @@ const WEN = (function () {
   // widely-reported rollouts; `kind:"projected"` events are modelled estimates. The UI shows
   // the two differently so users know which is which.
   const fsdMilestones = [
-    { date: "2025", label: "FSD v13 (Supervised) goes live for AU HW4 — first RHD market", kind: "observed" },
-    { date: "2026-06-05", label: "First AU HW4 cars seen on a v14-carrying build (2026.14.6.x) — tracker first-seen", kind: "observed" },
-    { date: "2026-06-17", label: "2026.20.3 (FSD v14.3.4) appears in the AU fleet — tracker first-seen", kind: "observed" },
-    { date: "2026 Q3 (est.)", label: "Existing-fleet v14 wave widens across AU HW4", kind: "projected" },
-    { date: "2026 H2 (est.)", label: "Broad v14 availability across AU HW4 cars", kind: "projected" },
-    { date: "later (est.)", label: "HW3 'v14 lite' (limited city-streets Autosteer), if it ships", kind: "projected" },
+    { date: "2025", label: "FSD v13 (Supervised) launches for AU/NZ HW4 — the first RHD markets. HW3 gets nothing.", kind: "observed" },
+    { date: "2026-04-28", label: "After mounting owner pressure, Tesla promises a stripped-down “v14 Lite” for HW3 — internationally, but with no committed dates", kind: "observed" },
+    { date: "2026-06-19", label: "FSD (Supervised) v14 officially rolls out in Australia & New Zealand — HW4 only", kind: "observed" },
+    { date: "2026-06-30 (est.)", label: "FSD v14 Lite for HW3 begins in the US — HW3's first taste of FSD, and the US goes first", kind: "projected" },
+    { date: "AU/NZ HW3 — no date", label: "HW3 in Australia & NZ has never received FSD (Supervised). v14 Lite is promised but US-first and RHD-gated by regulators — realistically late 2026 / 2027 at the earliest, if it ships at all", kind: "projected" },
   ];
 
   // Historical OS-branch first-seen anchors (illustrative in sample mode; the LIVE site back-tests

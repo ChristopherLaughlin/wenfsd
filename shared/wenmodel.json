@@ -112,10 +112,10 @@
         },
         "AI3": {
           "current": "v12.6.4",
-          "next": "v14 (lite)",
+          "next": "v14 Lite",
           "mode": "rolling",
           "k": 0.1,
-          "t0": "2026-07-05"
+          "t0": "2026-06-30"
         }
       }
     },
@@ -132,14 +132,9 @@
         },
         "AI3": {
           "current": "v12.6.4",
-          "next": "v14 (lite)",
-          "mode": "gated",
-          "approval": {
-            "earliestDays": 10,
-            "modeDays": 35,
-            "latestDays": 80
-          },
-          "k": 0.1
+          "next": "v14 Lite",
+          "mode": "promised",
+          "note": "v14 Lite rolls out in the US first; international markets follow with no committed date, and Tesla has flagged Canada as possibly delayed."
         }
       }
     },
@@ -159,9 +154,10 @@
           "k": 0.09
         },
         "AI3": {
-          "current": "v12.6.4",
-          "next": null,
-          "mode": "capped"
+          "current": "none",
+          "next": "v14 Lite",
+          "mode": "promised",
+          "note": "FSD (Supervised) never shipped to HW3 in Europe. v14 Lite is promised internationally, but EU regulators impose the strictest automated-steering limits and Tesla has given no committed date."
         }
       }
     },
@@ -183,15 +179,10 @@
           "existingFleetSigma": 21
         },
         "AI3": {
-          "current": "v12.6.4",
-          "next": "v14 (lite)",
-          "mode": "gated",
-          "approval": {
-            "earliestDays": 5,
-            "modeDays": 30,
-            "latestDays": 75
-          },
-          "k": 0.09
+          "current": "none",
+          "next": "v14 Lite",
+          "mode": "promised",
+          "note": "FSD (Supervised) has never shipped to HW3 in Australia. v14 Lite for older hardware is promised, but it's US-first and right-hand-drive markets need extra validation + regulatory sign-off — Tesla has committed to no date. Owners are right to be skeptical."
         }
       }
     },
@@ -211,15 +202,10 @@
           "k": 0.08
         },
         "AI3": {
-          "current": "v12.6.4",
-          "next": "v14 (lite)",
-          "mode": "gated",
-          "approval": {
-            "earliestDays": 14,
-            "modeDays": 50,
-            "latestDays": 120
-          },
-          "k": 0.08
+          "current": "none",
+          "next": "v14 Lite",
+          "mode": "promised",
+          "note": "FSD (Supervised) has never shipped to HW3 in New Zealand. v14 Lite is promised internationally but US-first, with no committed RHD/NZ date. Skepticism warranted."
         }
       }
     }

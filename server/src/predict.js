@@ -106,6 +106,8 @@ export function predictNextFSD(car, opts = {}) {
   const f = region && region.fsd ? region.fsd[car.hardware] : null;
   if (!f) return { unavailable: true, current: car.fsdVersion || "—" };
   if (f.mode === "capped") return { capped: true, current: f.current };
+  // promised but never delivered, no committed timeline — refuse to invent a date (mirrors client)
+  if (f.mode === "promised") return { promised: true, current: f.current, targetLabel: f.next, mode: "promised", branch: "fsd", note: f.note || null };
 
   const nextMajor = W.fsdMajor(f.next);
 
