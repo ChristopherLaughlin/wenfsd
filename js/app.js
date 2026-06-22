@@ -292,10 +292,54 @@
     const pick = fresh ? rnd(AT_LEAST) : flavorPick("whyAnswer", AT_LEAST);
     el.innerHTML = `It doesn't. <span class="wa-but">But at least <em>${pick}</em></span>`;
   }
-  const TAB_TITLES = ["wenFSD — two weeks, probably", "wenFSD · refreshing won't help (you'll refresh anyway)", "wenFSD — wen, exactly?", "wenFSD · soon™", "wenFSD — trust me bro", "wenFSD · coming right after the robotaxis", "wenFSD — your update is in another castle"];
+  const TAB_TITLES = ["wenFSD — two weeks, probably", "wenFSD · refreshing won't help (you'll refresh anyway)", "wenFSD — wen, exactly?", "wenFSD · soon™", "wenFSD — trust me bro", "wenFSD · coming right after the robotaxis", "wenFSD — your update is in another castle", "wenFSD · still on the same build, huh", "wenFSD — the answer is two weeks", "wenFSD · (Supervised) (heavily)", "wenFSD — manifesting your OTA", "wenFSD · don't refresh. okay, refresh."];
+  // Rotating cheeky kicker line under every data-card header — fresh on each page load, so the
+  // whole site reads differently every refresh. Pure text (emojis fine); {region} is filled in.
+  const KICK = [
+    "Brought to you by hope, spite, and the refresh button.",
+    "Reading this changes nothing. We respect the dedication anyway.",
+    "Scientifically rigorous. Emotionally devastating.",
+    "Now with 100% more cope per scroll.",
+    "Tesla won't tell you this. We will, badly.",
+    "Data so fresh the regulators haven't banned it yet.",
+    "If knowledge is power, this section is a mild AA battery. 🔋",
+    "Spoiler: it's still two weeks away.",
+    "{region}: where updates go to think about it. 🤔",
+    "Somewhere, someone in California already has this. Try not to think about them.",
+    "Elon has not personally approved this section. Or any section.",
+    "We did the maths so you can do the despair.",
+    "Accurate to within one geological epoch. 🪨",
+    "Free, like the FSD trial you forgot to cancel. (This one's actually free.)",
+    "More reliable than Smart Summon, lower bar than you'd think.",
+    "No yokes were harmed. No updates were delivered.",
+    "This won't make it arrive faster. Nothing will. Carry on.",
+    "Peer-reviewed by guys on the forums. 🫡",
+    "Built different. Updated… eventually.",
+    "Stare all you like — the OTA gods remain unmoved.",
+    "Certified RHD-grade disappointment, where applicable. 🚗",
+    "Patience not included. Batteries (and patience) sold separately.",
+    "As seen on a tracker, reinterpreted with feelings.",
+    "{region} edition: same data, more sighing.",
+    "We'd say 'coming soon' but we have standards. Low ones, but standards.",
+  ];
+  function injectKickers() {
+    const region = av() ? av().market : "your region";
+    // distinct line per card this page-load (stride coprime with pool size ⇒ no repeats);
+    // start index is stable per load but re-rolls on refresh, so the page stays fresh.
+    const start = flavorPick("kickStart", KICK.map((_, i) => i));
+    const cards = [...document.querySelectorAll("section.fleet-card, section.guess-card")].filter(c => c.id !== "griefCard");
+    cards.forEach((card, idx) => {
+      const hdr = card.querySelector(":scope > .card-h, :scope > .card-h-row");
+      if (!hdr) return;
+      let k = card.querySelector(":scope > .card-kicker");
+      if (!k) { k = document.createElement("p"); k.className = "card-kicker"; hdr.insertAdjacentElement("afterend", k); }
+      k.textContent = KICK[(start + idx * 7) % KICK.length].replace(/\{region\}/g, region);
+    });
+  }
   function renderHumour() {
     for (const id in SUBS) { const el = $(id); if (el) el.textContent = flavorPick("sub:" + id, SUBS[id]); }
     try { document.title = flavorPick("tabTitle", TAB_TITLES); } catch (e) {}
+    injectKickers();
     rollWhyAnswer(false);
     const wa = $("whyAnswer");
     if (wa && !wa._wired) {

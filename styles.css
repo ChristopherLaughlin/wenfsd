@@ -368,6 +368,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .fsd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 18px}
 @media(max-width:680px){.fsd-grid{grid-template-columns:1fr}}
 .fsd-stat{background:#0b0e14;border:1px solid var(--line);border-radius:12px;padding:14px}
+.card-kicker{margin:-2px 0 12px;font-size:12px;color:var(--mut2);font-style:italic;line-height:1.45}
+.card-h-row + .card-kicker{margin-top:6px}
 .fsd-num{font-size:16px;font-weight:700;color:var(--amber);font-family:var(--mono)}
 .fsd-lbl{font-size:11px;color:var(--mut);margin-top:3px}
 .fsd-compare{font-size:13px;line-height:1.5;margin:-8px 0 16px;padding:11px 14px;border-radius:11px;
