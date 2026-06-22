@@ -27,6 +27,15 @@
       earlinessSource: v.earlinessSource, fsdVersion: v.fsdVersion, earlyAccess: v.earlyAccess, newCar: !!v.newCar,
     };
   }
+  // the FSD version YOUR car is actually on (its own reading, else its region's typical current).
+  // Single source of truth so every "current FSD (yours)" reference agrees with the hero.
+  function carCurrentFsd() {
+    const v = av(); if (!v) return null;
+    const raw = v.fsdVersion;
+    if (raw && !/^(none|—|-|)$/i.test(String(raw).trim())) return raw;
+    const r = WEN.regions[v.market], fdef = r && r.fsd ? r.fsd[v.hardware] : null;
+    return fdef ? fdef.current : null;
+  }
 
   // the headline prediction is always your NEXT UPDATE (the OS build) — FSD rides inside it,
   // and the FSD story is folded into the hero via renderFsdSummary (no confusing toggle).
@@ -525,15 +534,17 @@
     const v = av();
     if (!v || !pred || pred.capped || pred.unavailable) { el.hidden = true; return; }
     el.hidden = false;
-    const isFSD = ui.target === "fsd";
-    const now = pred.current || v.installedVersion || "—";
+    // this bar tracks the SOFTWARE build path (NOW build → NEXT build). FSD rides inside, so we
+    // flag when that next build also carries a new FSD version.
+    const now = v.installedVersion || "—";
     const next = pred.targetLabel || "next";
     const eta = pred.daysToMedian != null ? `~${Math.max(0, pred.daysToMedian)}d` : "";
+    const fsdFlag = pred.bringsNewFsd ? ` <span class="yb-fsd" title="This build also bumps your FSD version">🧠 +FSD</span>` : "";
     el.innerHTML =
       `<span class="yb-region">📍 ${esc(v.market)}</span>` +
-      `<span class="yb-seg"><span class="yb-lbl">NOW</span><strong class="yb-ver" data-goto-version="${esc(now)}" role="button" tabindex="0">${esc(now)}</strong></span>` +
+      `<span class="yb-seg"><span class="yb-lbl">NOW · SOFTWARE</span><strong class="yb-ver" data-goto-version="${esc(now)}" role="button" tabindex="0">${esc(now)}</strong></span>` +
       `<span class="yb-arrow">→</span>` +
-      `<span class="yb-seg"><span class="yb-lbl yb-next-lbl">NEXT${isFSD ? " FSD" : ""}</span><strong class="yb-ver yb-next" data-goto-version="${esc(next)}" role="button" tabindex="0">${esc(next)}</strong>${eta ? `<span class="yb-eta">${eta}</span>` : ""}</strong></span>`;
+      `<span class="yb-seg"><span class="yb-lbl yb-next-lbl">NEXT BUILD</span><strong class="yb-ver yb-next" data-goto-version="${esc(next)}" role="button" tabindex="0">${esc(next)}</strong>${eta ? `<span class="yb-eta">${eta}</span>` : ""}${fsdFlag}</span>`;
   }
 
   // plain-language breakdown of HOW the date was computed + what it's based on
@@ -785,7 +796,11 @@
     $("activeControls").hidden = false;
     $("garageList").innerHTML = gstate.vehicles.map(v => {
       const isA = v.id === gstate.activeId;
-      const verText = v.installedVersion ? "on " + esc(v.installedVersion) : "version unknown — waiting for first Tesla read";
+      // show BOTH tracks the car carries: its software build and its FSD version (the asymmetry)
+      const fhw = ((WEN.regions[v.market] || {}).fsd || {})[v.hardware] || null;
+      const fsdRaw = (v.fsdVersion && !/^(none|—|-|)$/i.test(String(v.fsdVersion).trim())) ? v.fsdVersion : (fhw ? fhw.current : null);
+      const fsdText = (fsdRaw && fsdRaw !== "none") ? "FSD " + esc(fsdRaw) : (fhw && fhw.mode === "capped") ? "FSD capped" : "no FSD";
+      const verText = v.installedVersion ? `software ${esc(v.installedVersion)} · ${fsdText}` : "version unknown — waiting for first Tesla read";
       return `<div class="gcar ${isA ? "active" : ""}" data-id="${v.id}" role="button" tabindex="0" aria-pressed="${isA}" aria-label="Select ${esc(v.nickname || v.model)}">` +
         `<div class="gcar-main"><div class="gcar-name">${esc(v.nickname || v.model)}${v.connected ? ' <span class="gcar-link" title="Connected to your Tesla account">🔗 connected</span>' : ''}</div>` +
         `<div class="gcar-sub">${v.year} ${esc(v.model)}${v.generation ? " " + v.generation : ""} · ${v.hardware} · ${esc(v.market)}</div>` +
@@ -1212,11 +1227,14 @@
     const etaCar = isYours ? car() : { market: rname0, hardware: hw, fsdVersion: f ? f.current : null, earlinessPercentile: 0.5, earlyAccess: false, newCar: false };
     const fp = f ? Predict.predictNextFSD(etaCar, today) : null;
     const eta = (fp && fp.promised) ? "no timeline"
+      : (fp && fp.sameFsd) ? "no change yet"
       : (fp && !fp.capped && !fp.unavailable && fp.medianDate) ? Predict.fmtDate(fp.medianDate).replace(/^\w+, /, "")
       : (f && (f.mode === "capped" || (fp && fp.capped)) ? "capped" : "—");
+    // for YOUR region, show the FSD version your car is actually on (not the region's typical)
+    const curFsdShown = isYours ? (carCurrentFsd() || (f ? f.current : "—")) : (f ? f.current : "—");
     $("fsdGrid").innerHTML =
       `<div class="fsd-stat"><div class="fsd-num">${f ? (MODE_LABEL[f.mode] || f.mode) : "—"}</div><div class="fsd-lbl">FSD status · ${esc(rname0)} ${esc(hw)}</div></div>` +
-      `<div class="fsd-stat"><div class="fsd-num">${f ? esc(f.current) : "—"}</div><div class="fsd-lbl">current FSD ${isYours ? "(yours)" : "(typical car)"}</div></div>` +
+      `<div class="fsd-stat"><div class="fsd-num">${esc(curFsdShown)}</div><div class="fsd-lbl">current FSD ${isYours ? "(yours)" : "(typical car)"}</div></div>` +
       `<div class="fsd-stat"><div class="fsd-num">${esc(eta)}</div><div class="fsd-lbl">next FSD — ${isYours ? "your ETA" : "typical-car ETA"}</div></div>`;
 
     // ---- Explore: a genuine head-to-head vs YOUR region (this is what makes the dropdown useful) ----
@@ -1241,10 +1259,11 @@
         const ahead = lag < 0, same = lag === 0;
         const days = Math.abs(lag);
         const dir = same ? "neck-and-neck with" : ahead ? `~${days} day${days === 1 ? "" : "s"} AHEAD of` : `~${days} day${days === 1 ? "" : "s"} BEHIND`;
-        const fsdSame = homeF && f && homeF.current === f.current;
-        const fsdLine = !homeF || !f ? ""
+        const homeCur = carCurrentFsd() || (homeF ? homeF.current : null);
+        const fsdSame = homeCur && f && homeCur === f.current;
+        const fsdLine = !homeCur || !f ? ""
           : fsdSame ? ` Both of you are on <strong>${esc(f.current)}</strong> — same boat.`
-          : ` They're on <strong>${esc(f.current)}</strong> vs your <strong>${esc(homeF.current)}</strong>.`;
+          : ` They're on <strong>${esc(f.current)}</strong> vs your <strong>${esc(homeCur)}</strong>.`;
         const quip = rnd(ahead
           ? [`Salt levels: rising. 🧂`, `Yes, they got it first. Again.`, `Try not to refresh the changelog out of spite.`, `The grass really is greener (and more autonomous) over there.`]
           : same ? [`Misery loves company. 🫠`, `At least you're suffering together.`, `Synchronised waiting — very Olympic.`]

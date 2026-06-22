@@ -55,7 +55,7 @@
         { "@type": "Question", "name": "Does FSD update separately from the Tesla software update?",
           "acceptedAnswer": { "@type": "Answer", "text": "No. FSD (Supervised) ships bundled inside the OS/software build, so a new FSD version arrives with a software update — it cannot arrive before the build that carries it. wenFSD ties the two together." } },
         { "@type": "Question", "name": "What is the difference between software, firmware, and FSD version?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Software and firmware are the same thing — your car's whole operating system, numbered like 2026.20.3 (year.week.point). FSD version is just the Full Self-Driving AI, on its own line (v12, v13, v14). Each software build carries a specific FSD version inside it." } }
+          "acceptedAnswer": { "@type": "Answer", "text": "Software and firmware are the same thing — your car's whole operating system, numbered like 2026.20.3 (year.week.point). FSD version is just the Full Self-Driving AI, on its own line (v12, v13, v14). Every FSD version ships inside a software build, but most software builds keep the same FSD version (they are maintenance releases) — only some builds carry a new FSD version, which is why wenFSD predicts the next software update and the next FSD version separately." } }
       ]
     }
   ]
@@ -350,7 +350,7 @@
       <ul>
         <li><strong>Software / firmware version</strong> <span class="g-eg">2026.20.3</span> — same thing, two names. Your car's whole operating system, in <code>year.week.point</code> format. "Got an update" = a new one of these.</li>
         <li><strong>FSD version</strong> <span class="g-eg">v14.3.4</span> — just the Full Self-Driving driving-AI, on its <em>own</em> version line (v12 → v13 → v14).</li>
-        <li><strong>How they relate</strong> — each OS build <em>carries</em> a specific FSD version baked in. So a software update usually brings a new FSD version too — but Tesla numbers them separately, and the big FSD jumps (v13 → v14) only land in certain builds.</li>
+        <li><strong>How they relate</strong> — every FSD version ships <em>inside</em> an OS build, but <strong>most OS builds keep the same FSD version</strong> (they're maintenance / bug-fix releases). So a software update only <em>sometimes</em> brings a new FSD version, and the big jumps (v13 → v14) land in just a few specific builds. That's why we predict the two separately.</li>
       </ul>
     </details>
     <div class="fsd-grid" id="fsdGrid"></div>
