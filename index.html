@@ -110,7 +110,7 @@
        Shown while the garage is empty; replaced by the live prediction once a car is added. -->
   <section class="quickstart card" id="quickStart" hidden>
     <div class="qs-head">
-      <h2 class="qs-h">⚡ Get your prediction in 10 seconds</h2>
+      <h2 class="qs-h"><span class="ch-label" id="hdr_qs">⚡ Get your prediction in 10 seconds</span></h2>
       <p class="qs-sub"><strong>No login. No VIN. Nothing leaves your browser.</strong> Just pick your car and your current software version — that's all we need to predict your next software <em>and</em> FSD update.</p>
     </div>
     <div class="qs-grid">
@@ -212,7 +212,7 @@
     <!-- YOUR GARAGE -->
     <section class="card" id="garageCard">
       <div class="card-h-row">
-        <h2 class="card-h">Your garage <span class="conn-chip cc-off" id="connChip" hidden>Not connected</span></h2>
+        <h2 class="card-h"><span class="ch-label" id="hdr_garage">Your garage</span> <span class="conn-chip cc-off" id="connChip" hidden>Not connected</span></h2>
         <button class="btn-sm" id="addVehicleBtn">+ Add vehicle</button>
       </div>
       <div id="linkStatus" class="link-status" hidden></div>
@@ -336,7 +336,7 @@
 
     <!-- ROLLOUT CURVE -->
     <section class="card">
-      <h2 class="card-h">Rollout S-curve <span class="card-sub" id="curveVer"></span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_curve">Rollout S-curve</span> <span class="card-sub" id="curveVer"></span></h2>
       <div id="curveChart" class="chart-wrap"></div>
       <div class="legend">
         <span><i class="sw sw-area"></i>fleet adopting</span>
@@ -349,7 +349,7 @@
   <div class="grid2">
     <!-- DISTRIBUTION -->
     <section class="card">
-      <h2 class="card-h">When exactly? <span class="card-sub" id="whenSub">probability by day</span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_when">When exactly?</span> <span class="card-sub" id="whenSub">probability by day</span></h2>
       <div id="distChart" class="chart-wrap"></div>
       <div class="legend">
         <span><i class="sw sw-median"></i>model's best guess</span>
@@ -359,7 +359,7 @@
 
     <!-- GUESS GAME -->
     <section class="card guess-card">
-      <h2 class="card-h">Call your shot 🎯 <span class="card-sub" id="shotSub">wen, exactly?</span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_shot">Call your shot 🎯</span> <span class="card-sub" id="shotSub">wen, exactly?</span></h2>
       <p class="hint">Bet on the day <strong>your</strong> car updates. Pick your nerve — the bolder the call, the bigger the bragging rights (and the more spectacular the faceplant). It's "two weeks, trust me bro" but with a paper trail. 🎲</p>
       <label class="field">
         <span>Your predicted date</span>
@@ -377,7 +377,7 @@
 
   <!-- THE FIVE STAGES OF wenFSD GRIEF (Kübler-Ross) -->
   <section class="card grief-card" id="griefCard">
-    <h2 class="card-h">The Five Stages of wenFSD Grief <span class="card-sub" id="griefSub">a clinical assessment</span></h2>
+    <h2 class="card-h"><span class="ch-label" id="hdr_grief">The Five Stages of wenFSD Grief</span> <span class="card-sub" id="griefSub">a clinical assessment</span></h2>
     <p class="hint">Waiting for a Tesla update is a recognised form of bereavement. Dr. Elisabeth Kübler-Ross gave us five stages; Tesla gave us a reason to feel all of them. We predict where you are. You tell us where you <em>really</em> are. Then we all grieve together. 🕯️</p>
     <div id="griefBody"></div>
   </section>
@@ -385,7 +385,7 @@
   <!-- FSD AUSTRALIA REGULATORY TRACKER -->
   <section class="card fleet-card" id="fsdCard">
     <div class="card-h-row">
-      <h2 class="card-h">FSD by region &amp; hardware <span class="card-sub" id="fsdRegSub"></span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_fsdreg">FSD by region &amp; hardware</span> <span class="card-sub" id="fsdRegSub"></span></h2>
       <label class="explore-pick">Explore <select id="exploreRegionSel" class="inline-sel" aria-label="Region to explore"></select></label>
     </div>
     <p class="hint">FSD <strong>versions separately</strong> from the OS but always rides <em>inside</em> an OS build — and only <em>some</em> builds carry a new FSD version. Which one you can get depends on <strong>region</strong> (regulators, bless them) and <strong>hardware</strong> (HW3/AI3 = capped, pour one out 🫗; HW4/AI4 = latest and greatest). Pick any region above to explore its rollout and feel things about it — your own car's prediction stays pinned at the top.</p>
@@ -407,7 +407,7 @@
   <!-- RELEASE NOTES -->
   <section class="card fleet-card" id="releaseNotesCard">
     <div class="card-h-row">
-      <h2 class="card-h">Release notes <span class="card-sub">what's in each build · newest first</span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_notes">Release notes</span> <span class="card-sub">what's in each build · newest first</span></h2>
       <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
     </div>
     <p class="hint rn-explain">Two changelogs ship in every build: the <strong>OS / firmware</strong> notes (the in-car “Software” release notes) and the <strong>FSD (Supervised)</strong> notes — FSD rides bundled <em>inside</em> the OS build but versions and documents itself separately (e.g. OS <code>2026.20.3</code> carries <code>FSD v14.3.4</code>). Use the filter to see one or both.</p>
@@ -426,14 +426,14 @@
 
   <!-- PER-REGION OS ROLLOUT -->
   <section class="card fleet-card" id="regionCard">
-    <h2 class="card-h">OS rollout by region <span class="card-sub" id="osRegSub">how far behind the US wave each market runs</span></h2>
+    <h2 class="card-h"><span class="ch-label" id="hdr_osreg">OS rollout by region</span> <span class="card-sub" id="osRegSub">how far behind the US wave each market runs</span></h2>
     <p class="hint">Tesla seeds new builds in the US first, then expands geographically (partly to discover that other countries have different road signs, roundabouts, and feelings about lane markings). Right-hand-drive markets lag, as is tradition. ETA shown is for a <em>typical</em> car (50th percentile) — your mileage, and patience, may vary.</p>
     <div id="regionPanel" class="region-panel"></div>
   </section>
 
   <!-- ROLLOUT PACE -->
   <section class="card fleet-card" id="paceCard">
-    <h2 class="card-h">Rollout pace <span class="card-sub" id="paceScope">how many cars are updating</span></h2>
+    <h2 class="card-h"><span class="ch-label" id="hdr_pace">Rollout pace</span> <span class="card-sub" id="paceScope">how many cars are updating</span></h2>
     <p class="hint">How many vehicles are moving onto a <em>newer</em> build. <strong>Observed</strong> counts are real (tracker install activity + connected cars); the <strong>per-day estimate</strong> is the model's rollout curve scaled to fleet size — Tesla doesn't publish these numbers, so the future pace is a projection.</p>
     <div class="pace-toggle" id="paceToggle" role="tablist" aria-label="Rollout window">
       <button type="button" class="pace-btn is-on" data-pace="day" role="tab">Daily</button>
@@ -448,7 +448,7 @@
   <!-- FIRMWARE TRACKER TABLE -->
   <section class="card fleet-card" id="firmwareCard">
     <div class="card-h-row">
-      <h2 class="card-h">Fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_fw">Fleet firmware tracker</span> <span class="card-sub" id="fwSub">sample distribution</span></h2>
       <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
     </div>
     <p class="hint track-note" id="fwRegionNote"></p>
@@ -466,7 +466,7 @@
     <!-- LIVE FEED -->
     <section class="card fleet-card" id="feedCard">
       <div class="card-h-row">
-        <h2 class="card-h">Recent rollout activity <span class="card-sub" id="feedSub"></span></h2>
+        <h2 class="card-h"><span class="ch-label" id="hdr_feed">Recent rollout activity</span> <span class="card-sub" id="feedSub"></span></h2>
         <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
       </div>
       <ul class="feed" id="feed"></ul>
@@ -474,7 +474,7 @@
 
     <!-- MODEL CALIBRATION / BACK-TEST -->
     <section class="card fleet-card" id="calibrationCard">
-      <h2 class="card-h">Model calibration <span class="card-sub" id="calSub">back-tested against real tracker history</span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_cal">Model calibration</span> <span class="card-sub" id="calSub">back-tested against real tracker history</span></h2>
       <div id="calibrationBody"></div>
     </section>
   </div>
@@ -483,7 +483,7 @@
   <!-- wen LEADERBOARD -->
   <section class="card" id="leaderboardCard">
     <div class="card-h-row">
-      <h2 class="card-h">wen Leaderboard 🏆 <span class="card-sub" id="lbSub"></span></h2>
+      <h2 class="card-h"><span class="ch-label" id="hdr_lb">wen Leaderboard 🏆</span> <span class="card-sub" id="lbSub"></span></h2>
       <label class="explore-pick">Region <select id="lbRegion" class="inline-sel"></select></label>
     </div>
     <div id="leaderboardBody"></div>
