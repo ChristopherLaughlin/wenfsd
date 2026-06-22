@@ -347,10 +347,12 @@ apiRouter.get("/predict", ah(async (req, res) => {
   if (!Number.isFinite(earliness)) earliness = 0.45;
   earliness = Math.min(0.97, Math.max(0.03, earliness));
 
-  const car = { market, hardware, installedVersion: req.query.installed || "2026.14.6", earliness, earlinessSource: "default", earlyAccess: req.query.earlyAccess === "true", fsdVersion: req.query.fsd };
+  const entitlement = ["owned", "subscription", "none", "unknown"].includes(req.query.fsdEntitlement) ? req.query.fsdEntitlement : "unknown";
+  const car = { market, hardware, installedVersion: req.query.installed || "2026.14.6", earliness, earlinessSource: "default", earlyAccess: req.query.earlyAccess === "true", fsdVersion: req.query.fsd, fsdEntitlement: entitlement };
 
-  if (!config.mockMode && hasDb() && req.query.vin) {
-    const v = await query(`SELECT market, hardware, current_version, earliness, early_access FROM vehicles WHERE vin=$1`, [req.query.vin]);
+  // VIN lookup is scoped to the signed-in owner — never reveal another user's car attributes.
+  if (!config.mockMode && hasDb() && req.query.vin && req.session && req.session.userId) {
+    const v = await query(`SELECT market, hardware, current_version, earliness, early_access FROM vehicles WHERE vin=$1 AND user_id=$2`, [req.query.vin, req.session.userId]);
     if (v.rows[0]) {
       const r = v.rows[0];
       if (r.market && W.regions[r.market]) car.market = r.market;
@@ -363,12 +365,18 @@ apiRouter.get("/predict", ah(async (req, res) => {
 
   const p = target === "fsd" ? predictNextFSD(car) : predictNextOS(car);
   if (p.capped || p.unavailable) return res.json({ target, vin: req.query.vin || null, capped: !!p.capped, unavailable: !!p.unavailable, current: p.current });
+  // FSD can resolve to a no-date state (promised / sameFsd / not-entitled) — these have no
+  // probWithin(); return them as-is rather than crashing on the within-window call.
+  if (p.promised || p.sameFsd || p.notEntitled) {
+    return res.json({ target, vin: req.query.vin || null, market: car.market, hardware: car.hardware, current: p.current, targetLabel: p.targetLabel || null, mode: p.mode || null, note: p.note || null, promised: !!p.promised, sameFsd: !!p.sameFsd, notEntitled: !!p.notEntitled, bundledWith: p.bundledWith || null });
+  }
+  const within = typeof p.probWithin === "function" ? { d7: round(p.probWithin(7), 3), d14: round(p.probWithin(14), 3), d30: round(p.probWithin(30), 3) } : null;
   res.json({
     target, vin: req.query.vin || null, market: car.market, hardware: car.hardware,
     targetLabel: p.targetLabel, earliness: round(p.earliness, 3),
     medianDate: p.medianDate, p10Date: p.p10Date, p90Date: p.p90Date, daysToMedian: p.daysToMedian,
-    carrierBuild: p.carrierBuild || null, mode: p.mode || null, kind: p.kind || null,
-    within: { d7: round(p.probWithin(7), 3), d14: round(p.probWithin(14), 3), d30: round(p.probWithin(30), 3) },
+    carrierBuild: p.carrierBuild || null, bundledWith: p.bundledWith || null, mode: p.mode || null, kind: p.kind || null,
+    ...(within ? { within } : {}),
   });
 }));
 

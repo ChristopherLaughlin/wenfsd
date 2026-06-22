@@ -75,6 +75,9 @@ function curFsd(car) {
 // car: { market, hardware, installedVersion, earliness, earlinessSource, earlyAccess }
 export function predictNextOS(car, opts = {}) {
   const versions = opts.versions || W.versions, today = opts.today || W.today;
+  // self-calibrating window factor from the back-test (mirrors the client's WEN.cadenceBandFactor),
+  // so the projected-build window the API + poller use matches what the dashboard shows.
+  const bandFactor = Math.min(2.5, Math.max(0.6, +opts.bandFactor || 1));
   const earliness = W.effEarliness(car);
   const delta = regionDelta(car.market);
   const myKey = W.verKey(car.installedVersion || "0");
@@ -95,7 +98,7 @@ export function predictNextOS(car, opts = {}) {
       t0Days += Math.min(120, Math.round(weeksBehind * 2.5));
       t0Sigma = Math.max(21, Math.min(70, Math.round(weeksBehind * 1.8)));
     }
-    const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") });
+    const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, floorDays: 0, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") });
     out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = stale; out.weeksBehind = weeksBehind;
     // does this particular software update change the FSD version, or leave it untouched?
     out.fsdCurrent = curFsd(car);
@@ -113,7 +116,7 @@ export function predictNextOS(car, opts = {}) {
   const lastBranchDate = versions.map(v => v.firstSeen).sort().slice(-1)[0];
   const t0Days = Math.max(2, cad.mean - daysBetween(lastBranchDate, today)) + delta + 6;
   const p = W.parseOS(versions[0].version);
-  const out = mcPredict({ t0Days, k: 0.33, L: 0.95, earliness, t0Sigma: cad.sd, today, seedStr: "OSproj" + car.market + earliness });
+  const out = mcPredict({ t0Days, k: 0.33, L: 0.95, earliness, t0Sigma: cad.sd * bandFactor, floorDays: 0, today, seedStr: "OSproj" + car.market + earliness });
   out.targetLabel = `2026.${(p.week + Math.round(cad.mean / 7))}.x (projected)`; out.kind = "projected"; out.branch = "os"; out.earliness = earliness;
   return out;
 }

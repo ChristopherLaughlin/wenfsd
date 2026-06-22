@@ -7,10 +7,12 @@ function sslConfig() {
   // local or private-network (Railway/Render internal) connections don't need SSL
   if (/localhost|127\.0\.0\.1|\.railway\.internal|\.internal[:/]|\.internal$/.test(url)) return false;
   if (config.databaseCa) return { ca: config.databaseCa, rejectUnauthorized: true }; // fully verified
-  // Managed Postgres (Railway/Render/Heroku/Supabase) presents a self-signed cert and
-  // supplies no CA, so strict verification fails. Encrypt the connection but don't verify
-  // the chain unless a CA is provided via DATABASE_CA (recommended for production).
-  return { rejectUnauthorized: false };
+  // Managed Postgres (Railway/Render/Heroku/Supabase) presents a self-signed cert with no CA, so
+  // strict verification fails. We still ENCRYPT, but unverified TLS is MITM-able on the DB path
+  // (which carries decrypted refresh tokens) — so don't silently fall back to it. Require either a
+  // CA (DATABASE_CA, recommended) or an explicit opt-in (DATABASE_SSL_INSECURE=true).
+  if (config.databaseSslInsecure) return { rejectUnauthorized: false };
+  throw new Error("Refusing insecure DB TLS: set DATABASE_CA (verified, recommended) or DATABASE_SSL_INSECURE=true to explicitly accept an unverified chain.");
 }
 
 let pool = null;

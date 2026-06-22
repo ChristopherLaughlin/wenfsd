@@ -36,3 +36,7 @@ test("client versions match canonical model", () => {
 test("client regions match canonical model", () => {
   assert.deepEqual(J(WEN.regions), MODEL.regions);
 });
+
+test("client versionHistory matches canonical model (the back-test input)", () => {
+  assert.deepEqual(J(WEN.versionHistory || []), MODEL.versionHistory || []);
+});

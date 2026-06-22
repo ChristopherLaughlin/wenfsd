@@ -120,8 +120,9 @@
       <label class="field"><span>Hardware <em>(auto)</em></span>
         <select id="qs_hw"><option value="AI4">HW4 / AI4</option><option value="AI3">HW3 / AI3</option><option value="AI2.5">HW2.5</option></select></label>
       <label class="field"><span>Region</span><select id="qs_market"></select></label>
-      <label class="field"><span>Current software version</span>
-        <input id="qs_ver" list="versionOptions" placeholder="e.g. 2026.14.6 — find it in your car under Software" autocomplete="off" spellcheck="false" inputmode="decimal" aria-label="Currently installed software version"/></label>
+      <label class="field"><span>Current software version <em>— car: Controls → Software · app: tap your car</em></span>
+        <input id="qs_ver" list="versionOptions" placeholder="e.g. 2026.14.6" autocomplete="off" spellcheck="false" aria-label="Currently installed software version"/>
+        <small class="field-warn" id="qs_ver_warn" role="alert" hidden></small></label>
       <label class="field"><span>Do you have FSD?</span>
         <select id="qs_fsd">
           <option value="unknown">Not sure</option>
@@ -237,7 +238,7 @@
           <label class="field"><span>Hardware</span>
             <select id="f_hw"><option>AI4</option><option>AI3</option><option>AI2.5</option></select></label>
           <label class="field"><span>Market</span><select id="f_market"></select></label>
-          <label class="field"><span>Current version</span><input id="f_ver" list="versionOptions" placeholder="e.g. 2026.8.3.10" autocomplete="off" spellcheck="false" inputmode="decimal" aria-label="Currently installed software version"/></label>
+          <label class="field"><span>Current version</span><input id="f_ver" list="versionOptions" placeholder="e.g. 2026.14.6" autocomplete="off" spellcheck="false" aria-label="Currently installed software version"/></label>
           <label class="field"><span>FSD?</span>
             <select id="f_fsd"><option value="unknown">Not sure</option><option value="owned">Purchased</option><option value="subscription">Subscription</option><option value="none">No / not yet</option></select></label>
         </div>
@@ -264,7 +265,7 @@
 
         <label class="field">
           <span>Currently installed version <em id="verHint"></em></span>
-          <input id="versionSel" list="versionOptions" placeholder="type your exact version, e.g. 2026.8.3.10" autocomplete="off" spellcheck="false" aria-label="Currently installed software version"/>
+          <input id="versionSel" list="versionOptions" placeholder="type your exact version, e.g. 2026.14.6" autocomplete="off" spellcheck="false" aria-label="Currently installed software version"/>
         </label>
 
         <label class="field">
