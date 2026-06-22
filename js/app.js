@@ -78,7 +78,6 @@
     "Our official recommendation: enjoy the Autopilot you've got, and make peace. 🧘",
     "Consider channelling the wait into a hobby. Sourdough. Macramé. Grief. 🍞",
     "Set expectations to zero and you can only be pleasantly surprised. (You won't be.)",
-    "Maybe sell it to someone in California before they find out. We didn't say that.",
     "Honestly? Buy a HW4 car. We'll wait. We have nothing but time, and so do you.",
     "Name a houseplant 'FSD' so something in your life finally grows. 🪴",
     "Treat 'HW3' as a personality, not a limitation. Lean in. Thrive. 💅",
@@ -546,7 +545,9 @@
   function renderHumour() {
     for (const id in SUBS) { const el = $(id); if (el) el.textContent = flavorPick("sub:" + id, SUBS[id]); }
     rotateHeadlines();
-    try { document.title = flavorPick("tabTitle", TAB_TITLES); } catch (e) {}
+    // rotate the joke, but keep a stable keyworded base so bookmarks / crawlers / social unfurls
+    // always carry the real product name (never replace the canonical title outright).
+    try { document.title = flavorPick("tabTitle", TAB_TITLES) + " · Tesla software & FSD update predictor"; } catch (e) {}
     injectKickers();
     rollWhyAnswer(false);
     const wa = $("whyAnswer");
@@ -999,7 +1000,9 @@
   function setEarlyLabel() {
     const v = av(), base = v.earliness, eff = effEarliness(v);
     const shifted = Math.abs(eff - base) > 0.005 && v.earlinessSource !== "history";
-    $("earlyVal").textContent = shifted ? `${pctLabel(eff)} (after settings)` : pctLabel(eff);
+    const label = shifted ? `${pctLabel(eff)} (after settings)` : pctLabel(eff);
+    $("earlyVal").textContent = label;
+    const sl = $("earlySlider"); if (sl) sl.setAttribute("aria-valuetext", `${pctLabel(base)} — ${base <= 0.33 ? "first wave" : base >= 0.66 ? "last wave" : "middle of the pack"}`);
   }
 
   // ---- update history -> estimated earliness ----
@@ -1176,13 +1179,22 @@
     const syncHw = () => { $("qs_hw").value = inferHardware($("qs_model").value, $("qs_year").value); };
     syncHw();
     $("qs_model").onchange = syncHw; $("qs_year").onchange = syncHw;
+    const verEl = $("qs_ver"), warn = $("qs_ver_warn");
     go.onclick = () => {
+      const version = verEl.value.trim();
+      // the version is the single load-bearing input — validate it before predicting on garbage.
+      if (version && !WEN.isValidVersion(version)) {
+        if (warn) { warn.hidden = false; warn.textContent = "Hmm — that doesn't look like a Tesla version (try e.g. 2026.14.6, found in your car under Controls → Software)."; }
+        verEl.focus(); return;
+      }
+      if (warn) warn.hidden = true;
       addVehicleAndRender({
         model: $("qs_model").value, year: +$("qs_year").value, hw: $("qs_hw").value,
-        market: $("qs_market").value, version: $("qs_ver").value.trim(),
+        market: $("qs_market").value, version,
         entitlement: $("qs_fsd").value,
       });
     };
+    if (verEl && warn) verEl.addEventListener("input", () => { warn.hidden = true; });
     const c = $("qsConnect"); if (c) c.onclick = connectTesla;
     const vn = $("qsVin"); if (vn) vn.onclick = openAddByVin;
   }

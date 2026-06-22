@@ -134,7 +134,7 @@ const Predict = (function () {
         t0Days += Math.min(120, Math.round(weeksBehind * 2.5));
         t0Sigma = Math.max(21, Math.min(70, Math.round(weeksBehind * 1.8)));
       }
-      const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness, t0Sigma, today, seedStr: "OS" + v.version + car.market + earliness + (stale ? "s" : "") });
+      const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness, t0Sigma, floorDays: 0, today, seedStr: "OS" + v.version + car.market + earliness + (stale ? "s" : "") });
       out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out._t0Days = t0Days; out._k = v.k;
       out.stale = stale; out.weeksBehind = weeksBehind;
       // FSD ships INSIDE this OS build. Surface whether this particular software update actually
@@ -160,7 +160,7 @@ const Predict = (function () {
     // self-calibrating window: widen/narrow the cadence spread by the empirical band factor the
     // back-test derived from real history (defaults to 1 until there's enough history).
     const bandF = Math.min(2.5, Math.max(0.6, +WEN.cadenceBandFactor || 1));
-    const out = mcPredict({ t0Days, k: 0.33, L: 0.95, earliness: car.earlinessPercentile, t0Sigma: cad.sd * bandF, today, seedStr: "OSproj" + car.market + car.earlinessPercentile });
+    const out = mcPredict({ t0Days, k: 0.33, L: 0.95, earliness: car.earlinessPercentile, t0Sigma: cad.sd * bandF, floorDays: 0, today, seedStr: "OSproj" + car.market + car.earlinessPercentile });
     out.targetLabel = `2026.${projWeek}.x (projected)`; out.kind = "projected"; out.branch = "os"; out._t0Days = t0Days; out._k = 0.33;
     out.note = `You're on the newest build. Projected from Tesla's cadence (~${Math.round(cad.mean)}±${Math.round(cad.sd)} days between branches).`;
     return out;

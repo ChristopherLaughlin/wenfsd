@@ -118,6 +118,23 @@ test("a forthcoming FSD (US v14 Lite) lands on/after the next software update, n
   assert.ok(new Date(fsd.medianDate) >= new Date(os.medianDate), "FSD must not precede the next software update");
 });
 
+test("no-date FSD modes expose NO probWithin() (the /api/predict crash contract)", () => {
+  // /api/predict must not call probWithin() on these; this locks the shape so the P0 can't regress.
+  const cases = [
+    { market: "Australia", hardware: "AI3", installedVersion: "2026.14.6", fsdVersion: "none" },            // promised
+    { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4" },        // sameFsd
+    { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "none" }, // notEntitled
+  ];
+  for (const c of cases) {
+    const p = predictNextFSD(c);
+    assert.ok(p.promised || p.sameFsd || p.notEntitled, `expected a no-date mode for ${JSON.stringify(c)}`);
+    assert.equal(typeof p.probWithin, "undefined", "no-date modes must not carry probWithin()");
+  }
+  // a normal dated prediction DOES carry probWithin()
+  const dated = predictNextFSD({ market: "United States", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9" });
+  assert.equal(typeof dated.probWithin, "function");
+});
+
 test("FSD entitlement: a car with no FSD plan gets no FSD date (feature stays dormant)", () => {
   const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "none", earlinessSource: "default" };
   const fsd = predictNextFSD(car);
