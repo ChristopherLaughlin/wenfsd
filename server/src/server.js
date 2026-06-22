@@ -20,8 +20,19 @@ const app = express();
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
+// Force HTTPS. Railway terminates TLS and forwards x-forwarded-proto; if a bare-domain
+// navigation (e.g. typing "wenfsd.info" in Chrome on Android) arrives over http, 301 it to
+// https so it never dead-ends on plain http and falls back to a search.
+app.use((req, res, next) => {
+  if (config.publicBaseUrl.startsWith("https") && req.headers["x-forwarded-proto"] === "http") {
+    return res.redirect(301, "https://" + req.headers.host + req.originalUrl);
+  }
+  next();
+});
+
 // --- security headers (CSP allows our own assets + Google Fonts) ---
 app.use(helmet({
+  hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },  // 2y — tell browsers to always use https
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],

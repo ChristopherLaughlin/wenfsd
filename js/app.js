@@ -816,7 +816,7 @@
       if (showBadge) {
         if (!badge) { badge = document.createElement("div"); badge.className = "est-badge"; card.insertBefore(badge, card.firstChild); }
         badge.innerHTML = modelled
-          ? `⚠️ Regional rollout <strong>timing</strong> is modelled — not observed. Version numbers &amp; FSD builds shown are real where available.`
+          ? `⚖️ <strong>Part observed, part modelled.</strong> Versions, FSD builds &amp; first-seen dates are <strong>real</strong> (from the trackers + connected cars); the per-region <strong>ETA</strong> is a model fitted to those real observations — accurate as far as the data goes, not a Tesla announcement.`
           : `⚠️ Modelled estimate — not live fleet data. <span>Firms up as real cars connect &amp; trackers are aggregated.</span>`;
       } else if (badge) { badge.remove(); }
     });

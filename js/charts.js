@@ -110,6 +110,17 @@ const Charts = (function () {
         class: "bar" + (isGuess ? " bar-guess" : isMedian ? " bar-median" : ""),
       }));
     }
+    // ALWAYS-visible marker lines so BOTH legend items show — even when your guess lands on
+    // the model's median day (previously the blue guess bar hid the red median entirely).
+    const vline = (dayVal, cls) => {
+      if (dayVal == null) return;
+      const dv = Math.max(lo, Math.min(hi, dayVal));
+      const px = m.l + ((dv - lo) / span) * iw;
+      svg.appendChild(el("line", { x1: px, y1: m.t, x2: px, y2: m.t + ih, class: cls }));
+      svg.appendChild(el("polygon", { points: `${px - 4},${m.t} ${px + 4},${m.t} ${px},${m.t + 6}`, class: cls + "-tip" }));
+    };
+    vline(pred.median, "mk-median");                      // 🔴 model's best guess
+    if (guessDays != null) vline(guessDays, "mk-guess");  // 🔵 your guess
     // x labels
     for (let i = 0; i <= 4; i++) {
       const d = Math.round(lo + (span / 4) * i);
