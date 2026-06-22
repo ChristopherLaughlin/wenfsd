@@ -605,35 +605,35 @@
 
   // Up-front, rotating, shamelessly funny nudge to link a Tesla account. Different every refresh
   // (flavorPick re-rolls per page load); shown only when NOT connected, hideable for the session.
+  // Leads with the NO-LOGIN path (Add by VIN). Connecting Tesla is framed as the optional upgrade.
   const NUDGE = [
-    "Connect your Tesla and we'll auto-read your version, so you can stop squinting at the Software screen like it owes you money.",
-    "Link your Tesla account and never hand-type a build number again. Romance is dead; convenience is forever. 💍",
-    "It's read-only OAuth — we can see your software version, not your 2am drive-thru runs. Your secrets (and fries) are safe. 🍟",
-    "Connect and we'll tell you “two weeks” with actual data instead of vibes. Upgrade your cope to premium. 📈",
-    "One tap to link your Tesla. That's fewer taps than you've already spent refreshing the Software menu today. Be honest.",
-    "Sign in with Tesla and climb the regional leaderboard — bragging rights roll out faster than v14 ever will. 🏆",
-    "Link your Tesla. Worst case: eerily accurate predictions. Best case: you finally beat your neighbour to the update. 😈",
-    "Connect your Tesla account: 20 seconds now, a lifetime of smug “I knew it'd land today” later.",
-    "Hook up Tesla OAuth — the same boring-secure thing your bank uses, minus the fees and the hold music. 🏦",
-    "Connect and let the robots track the robots. Deeply meta. Wildly efficient. Mildly dystopian. We're fine with it. 🤖",
-    "Link your Tesla so we can wake it on demand and check its version — like a worried parent, but for firmware. 👶",
-    "Sign in with Tesla. We promise not to summon your car into a wall. That's strictly a you-and-Smart-Summon issue.",
-    "Connect your Tesla: read-only, no credit card, no catch. We genuinely cannot afford to be sinister. 🪙",
-    "Typing “2026.14.6.11” by hand is a cry for help. Connect your Tesla and let us read it for you. 🫶",
-    "Link your Tesla and unlock live version tracking, wenPoints, the leaderboard, AND a front-row seat to your own grief. Value!",
-    "Connect your Tesla account — it's 40% less effort than explaining what “Supervised” means to your in-laws.",
-    "Sign in with Tesla and join the support group with verified credentials. Anonymous crying is so 2023. 🫂",
-    "Connect your Tesla. The “Add by VIN” button works too, but this is the lazy-genius move. Be a lazy genius. 🧠",
-    "Hook up your Tesla and outsource the obsession. We'll stalk your version so you can pretend you've moved on. 🕵️",
-    "Connect and we'll auto-track every update. You'll still refresh compulsively — but now it'll be data-driven refreshing.",
+    "Want your prediction? Paste your VIN — no login, no Tesla access, ~10 seconds. (Or connect Tesla to auto-track, if you're brave.)",
+    "No account needed. Add your VIN and we'll tell you “two weeks” — but with actual maths this time. 📈",
+    "Skip the scary Tesla permission screen entirely: just drop in your VIN. We decode the model, year & hardware for you. 🚗",
+    "Your VIN is all we need to predict your next update. No login, no location, no drama.",
+    "Add by VIN = full prediction, zero access granted. Connecting Tesla is an optional upgrade for the keen. 🫡",
+    "Don't want to grant anything? Smart. Add your VIN and you're done. (Connect later if you change your mind.)",
+    "10 seconds, one VIN, zero logins. That's the whole ask. The robotaxi took longer. 🚕",
+    "Paste your VIN, get your “wen.” No password, no permissions, no problem.",
+    "We predict your update from just your VIN. The Tesla login is optional — it only automates reading your version. 🔢",
+    "Free, no-login, no-tracking prediction, one box: your VIN. Go on, the suspense is unbearable. 🔮",
+    "Worried about the permissions? Use Add by VIN and grant precisely nothing. Still get the full forecast. 🛡️",
+    "Your VIN tells us model, year & hardware — enough to predict your update without touching your account at all.",
   ];
   let _nudgeDismissed = false;
+  function openAddByVin() {
+    const g = $("garageCard"); if (g) g.scrollIntoView({ behavior: "smooth", block: "start" });
+    const add = $("addVehicleBtn"), form = $("addForm");
+    if (form && form.hidden && add) add.click();           // open the add-vehicle form
+    setTimeout(() => { const vin = $("vinInput"); if (vin) vin.focus(); }, 350);
+  }
   function renderConnectNudge(connected) {
     const el = $("connectNudge"); if (!el) return;
     if (connected || _nudgeDismissed) { el.hidden = true; return; }
     el.hidden = false;
     const line = $("cnLine"); if (line) line.textContent = flavorPick("nudge", NUDGE);
-    const em = $("cnEmoji"); if (em) em.textContent = flavorPick("nudgeEmoji", ["🔗", "🚗", "🛰️", "🔮", "🫶", "⚡", "🤝"]);
+    const em = $("cnEmoji"); if (em) em.textContent = flavorPick("nudgeEmoji", ["🚗", "🔢", "🪪", "🔮", "🫶", "⚡", "🛡️"]);
+    const vin = $("cnVin"); if (vin && !vin._wired) { vin._wired = true; vin.onclick = openAddByVin; }
     const btn = $("cnConnect"); if (btn && !btn._wired) { btn._wired = true; btn.onclick = connectTesla; }
     const dx = $("cnDismiss"); if (dx && !dx._wired) { dx._wired = true; dx.onclick = () => { _nudgeDismissed = true; el.hidden = true; }; }
   }

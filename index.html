@@ -40,7 +40,8 @@
   <div id="connectNudge" class="connect-nudge" hidden>
     <div class="cn-text"><span class="cn-emoji" id="cnEmoji">🔗</span><span id="cnLine"></span></div>
     <div class="cn-actions">
-      <button class="btn cn-btn" id="cnConnect" type="button">Connect Tesla</button>
+      <button class="btn cn-btn" id="cnVin" type="button">Add by VIN — no login</button>
+      <button class="btn-ghost cn-btn2" id="cnConnect" type="button">or connect Tesla 🔗</button>
       <button class="cn-dismiss js-open-security" type="button" title="What can it actually access?">is this safe? 🔒</button>
       <button class="cn-dismiss" id="cnDismiss" type="button" title="Fine, ignore me">not now 🙄</button>
     </div>
@@ -383,9 +384,10 @@
         <li>🚗 <strong>Don't want to grant <em>any</em> of that? Don't.</strong> “Add by VIN” gives you the full prediction with <strong>zero login and zero Tesla access</strong>. Connecting is a convenience, never a requirement. Honestly, if the screen worries you, just use Add by VIN.</li>
         <li>🧹 <strong>Leave anytime.</strong> Disconnect in-app, delete your data in one click, or revoke us entirely from <em>Tesla Account → Security → Third-Party Apps</em>. Gone is gone.</li>
         <li>🍪 <strong>No cookies, no trackers, no ad-tech, nothing sold.</strong> Visit counts use a salted daily hash — we don't even store your IP.</li>
-        <li>🫡 <strong>The honest limit:</strong> the grant <em>permits</em> more than we use — that's Tesla's coarse design, not our choice — so the only way to be 100% certain we only read the version is to read the code. We're up for that: ask and we'll share the source.</li>
+        <li>🫡 <strong>The honest limit:</strong> the grant <em>permits</em> more than we use — that's Tesla's coarse design, not our choice — so the only way to be 100% certain we only read the version is to read the code. So here it is.</li>
+        <li>📖 <strong>Don't trust us — verify us.</strong> The entire thing, server included, is <strong>open source</strong>: <a href="https://github.com/ChristopherLaughlin/wenfsd" target="_blank" rel="noopener">github.com/ChristopherLaughlin/wenfsd</a>. Search the code for <code>vehicle_data</code> and you'll find exactly one call — <code>?endpoints=vehicle_state</code>. No location, no commands, no ownership. Receipts, not promises.</li>
       </ul>
-      <p class="sec-foot">Still uneasy? Totally reasonable — <strong>use Add by VIN and grant nothing.</strong> Full details in the <a href="PRIVACY.md">Privacy policy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a>. We'd much rather you ask than worry.</p>
+      <p class="sec-foot">Still uneasy? Totally reasonable — <strong>use Add by VIN and grant nothing.</strong> Or read every line: <a href="https://github.com/ChristopherLaughlin/wenfsd" target="_blank" rel="noopener">the source</a>. More in the <a href="PRIVACY.md">Privacy policy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a>. We'd much rather you ask than worry.</p>
     </details>
   </section>
 
@@ -393,7 +395,7 @@
     <p>wenFSD is an independent project. Predictions are <strong>modelled statistical estimates</strong>, not Tesla commitments, and confidence bands are not yet empirically back-tested. Figures marked “sample” are illustrative, not live counts. If your update doesn't arrive on the predicted day, please direct your disappointment at Tesla, the regulators, or the heat death of the universe — not at us. 🙏</p>
     <p>Not affiliated with, endorsed by, or sponsored by Tesla, Inc. — Tesla, Model Y, and FSD are trademarks of Tesla, Inc. Not affiliated with Teslascope, TeslaFi, Tessie, FleetCtrl, or Tesla Updates. We just admire their data and occasionally borrow it (politely, robots.txt and all).</p>
     <p class="foot-quip" id="footQuip"></p>
-    <p class="foot-links"><a href="PRIVACY.md">Privacy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a> · <span class="foot-made">made by someone refreshing the software menu at 2am</span></p>
+    <p class="foot-links"><a href="https://github.com/ChristopherLaughlin/wenfsd" target="_blank" rel="noopener">Source on GitHub</a> · <a href="PRIVACY.md">Privacy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a> · <span class="foot-made">made by someone refreshing the software menu at 2am</span></p>
   </footer>
 </main>
 
