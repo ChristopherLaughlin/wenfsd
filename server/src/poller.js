@@ -5,6 +5,7 @@ import { query, hasDb } from "./db.js";
 import * as tesla from "./tesla.js";
 import { fitLogistic, predictNextOS } from "./predict.js";
 import { encrypt, decrypt } from "./crypto.js";
+import { deliver, arrivalMessage } from "./mailer.js";
 
 export async function pollOnce() {
   if (config.mockMode || !hasDb()) {
@@ -113,13 +114,26 @@ export async function applyVersionReading(c, version) {
   let changed = false;
   if (version && version !== c.current_version) {
     changed = true;
+    const prevVersion = c.current_version;
     if (c.current_version) { await scorePrediction(c.id, c.current_version); await settleGuesses(c.id, c.current_version); }
     await query(`INSERT INTO version_snapshots(vehicle_id, version, market, hardware) VALUES($1,$2,$3,$4)`, [c.id, version, c.market, c.hardware]);
     await query(`UPDATE vehicles SET current_version=$1 WHERE id=$2`, [version, c.id]);
     c.current_version = version;
+    // the update just LANDED — tell the owner if they opted in. Never let this break the poll.
+    try { await notifyArrival(c, prevVersion, version); } catch (e) { console.warn(`[notify] ${c.vin}:`, e.message); }
   }
   if (c.current_version) await ensurePrediction(c);
   return { changed, version: c.current_version };
+}
+
+// Deliver the opt-in "your update landed" notification for a connected car (no-op if not opted in).
+async function notifyArrival(c, fromVersion, toVersion) {
+  if (!c.user_id) return;
+  const u = await query(`SELECT email, notify_on_update FROM users WHERE id=$1`, [c.user_id]);
+  const row = u.rows[0];
+  if (!row || !row.notify_on_update || !row.email) return;
+  const msg = arrivalMessage({ vin: c.vin, fromVersion, toVersion });
+  await deliver({ to: row.email, subject: msg.subject, text: msg.text, event: { type: "update_landed", vin: c.vin, fromVersion, toVersion } });
 }
 
 // Persist the car's live pending OTA update (or clear it when there's none — e.g. it just

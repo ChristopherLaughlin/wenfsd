@@ -5,7 +5,7 @@ import { config } from "./config.js";
 function sslConfig() {
   const url = config.databaseUrl;
   // local or private-network (Railway/Render internal) connections don't need SSL
-  if (/localhost|127\.0\.0\.1|\.railway\.internal|\.internal[:/]|\.internal$/.test(url)) return false;
+  if (/(localhost|127\.0\.0\.1|\.railway\.internal|\.internal)([:/]|$)/.test(url)) return false;
   if (config.databaseCa) return { ca: config.databaseCa, rejectUnauthorized: true }; // fully verified
   // Managed Postgres (Railway/Render/Heroku/Supabase) presents a self-signed cert with no CA, so
   // strict verification fails. We still ENCRYPT, but unverified TLS is MITM-able on the DB path

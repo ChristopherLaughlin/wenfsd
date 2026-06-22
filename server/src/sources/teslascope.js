@@ -83,7 +83,9 @@ async function fetchLive() {
 // Teslascope publishes the actual Tesla release notes per version at /software/<version>
 // as "Features" cards (current update's features are visible; prior-update ones carry
 // style="display:none"). We parse the visible title + description for each.
-const clean = (s) => s.replace(/<[^>]+>/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&#39;|&apos;/g, "'").replace(/\s+/g, " ").trim();
+const stripTags = (s) => { let p; do { p = s; s = s.replace(/<[^>]*>/g, " "); } while (s !== p); return s; };
+// decode entities with &amp; LAST so a decoded value can't re-form a live entity (no double-unescaping)
+const clean = (s) => stripTags(s).replace(/&quot;/g, '"').replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 function guessTag(t) {
   const s = t.toLowerCase();
   if (/fsd|full self|autopilot|autosteer|smart summon|actually smart/.test(s)) return "FSD";

@@ -58,7 +58,7 @@ async function fetchAndParse() {
     if (!vm || !/^20\d{2}\.\d/.test(vm[1])) continue;
     const version = vm[1];
     const tds = [...r.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)]
-      .map(c => c[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, "").replace(/,/g, "").trim());
+      .map(c => { let s = c[1], p; do { p = s; s = s.replace(/<[^>]*>/g, ""); } while (s !== p); return s.replace(/&nbsp;/g, "").replace(/,/g, "").trim(); });
     const nums = tds.filter(c => /^\d+$/.test(c)).map(Number);
     if (nums.length < 2) continue;
     // nums[0] = pending; nums[1..] = daily counts, newest-first per `dates`
