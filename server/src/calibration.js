@@ -113,6 +113,52 @@ function quantile(xs, q) {
   return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (i - lo);
 }
 
+// ---- FIT-FROM-OBSERVATIONS: learn k + t0 from real install timing instead of hand-set priors ----
+// Given the days-since-release on which cars actually received a build, fit the logistic adoption
+// curve F(t) = 1/(1+e^-k(t-t0)). logit(F) = k·t − k·t0 is linear in t, so an OLS regression of
+// logit(plotting-position fraction) on day recovers slope k and intercept → t0 = −intercept/k.
+// Returns null until there are enough observations to fit honestly (no fabricated params).
+export function fitRollout(installDays, minPoints = 8) {
+  const xs = (installDays || []).filter(d => Number.isFinite(d)).sort((a, b) => a - b);
+  const n = xs.length;
+  if (n < minPoints) return null;
+  // plotting-position fraction for the i-th of n sorted installs (avoids logit(0)/logit(1))
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  const ys = xs.map((_, i) => Math.log(((i + 0.5) / n) / (1 - (i + 0.5) / n)));
+  for (let i = 0; i < n; i++) { sx += xs[i]; sy += ys[i]; sxx += xs[i] * xs[i]; sxy += xs[i] * ys[i]; }
+  const denom = n * sxx - sx * sx;
+  if (denom === 0) return null;
+  let k = (n * sxy - sx * sy) / denom;          // slope
+  const b = (sy - k * sx) / n;                  // intercept
+  if (!(k > 0)) return null;                    // non-increasing ⇒ not a rollout we can fit
+  k = Math.min(0.6, Math.max(0.04, k));
+  const t0Days = Math.round((-b / k) * 10) / 10;
+  // residual spread (days): how far each real install sat from where the fitted curve placed it
+  const resid = xs.map((x, i) => x - (t0Days + ys[i] / k));
+  const mean = resid.reduce((a, c) => a + c, 0) / n;
+  const sigmaDays = Math.round((sd(resid, mean) || 0) * 10) / 10;
+  return { k: Math.round(k * 1000) / 1000, t0Days, n, sigmaDays };
+}
+
+// Fit every build that has enough real install snapshots (version_snapshots). Days are measured
+// from each build's first observation. Returns { "2026.20.3": {k,t0Days,n,sigmaDays}, ... }.
+export async function fitBuilds() {
+  if (!hasDb()) return null;
+  try {
+    const r = await query(`SELECT version, observed_at FROM version_snapshots WHERE version IS NOT NULL ORDER BY version, observed_at`);
+    const byVer = new Map();
+    for (const row of r.rows) { if (!byVer.has(row.version)) byVer.set(row.version, []); byVer.get(row.version).push(Date.parse(row.observed_at)); }
+    const fitted = {};
+    for (const [version, ts] of byVer) {
+      const t0ms = Math.min(...ts);
+      const days = ts.map(t => (t - t0ms) / 86400000);
+      const f = fitRollout(days);
+      if (f) fitted[version] = f;
+    }
+    return Object.keys(fitted).length ? fitted : null;
+  } catch { return null; }
+}
+
 // REAL per-car prediction accuracy from scored predictions (the connected-car back-test).
 // Empty until cars actually update after we've made a prediction — then it fills automatically.
 async function accuracy() {
@@ -145,11 +191,14 @@ export async function computeCalibration({ live = false } = {}) {
   const withPct = merged.filter(v => v.fleetPct != null).length;
   // back-test on the richer of: real merged tracker history, or the historical branch anchors
   const bt = backtest(merged.length >= 6 ? merged : W.versionHistory);
+  const fitted = await fitBuilds();   // per-build k/t0/σ learned from real install snapshots
   return {
     mode: "live",
     cadence: cadence(merged),
     velocity: velocity(daily.series || []),
     backtest: bt,
+    fitted,
+    fittedCount: fitted ? Object.keys(fitted).length : 0,
     coverage: { versions: merged.length, versionsWithShare: withPct, sources, sourceCount: sources.length },
     accuracy: acc,
     honesty: (acc && acc.scored)
