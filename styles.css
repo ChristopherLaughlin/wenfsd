@@ -523,6 +523,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .rn-safety{background:rgba(230,41,55,.14);color:var(--acc2)}
 .rn-ui{background:rgba(143,149,168,.16);color:var(--mut)}
 .rn-src{font-size:10.5px;color:var(--mut2);padding:0 14px 11px;font-style:italic}
+.rn-explain{margin:0 0 12px}
+.rn-explain code{font-family:var(--mono);font-size:11.5px;background:rgba(143,149,168,.14);padding:1px 5px;border-radius:4px}
+.rn-filter{display:flex;gap:6px;margin:0 0 12px}
+.rnf-btn{font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--line);
+  background:#0b0e14;color:var(--mut);cursor:pointer}
+.rnf-btn.is-on{background:rgba(57,212,255,.12);color:var(--cyan);border-color:var(--cyan)}
+.rn-grp{border-top:1px solid var(--line)}
+.rn-grp-h{font-size:11px;font-weight:700;color:var(--mut);padding:9px 14px 2px;letter-spacing:.3px}
+.rn-grp-fsd .rn-grp-h{color:var(--violet)}
+.rn-grp .rn-items{border-top:none;padding-top:0}
+.rn-li-fsd{border-left:2px solid rgba(155,140,255,.4);padding-left:8px!important;margin-left:-2px}
 
 /* per-region OS rollout panel */
 .region-panel{display:flex;flex-direction:column;gap:2px}

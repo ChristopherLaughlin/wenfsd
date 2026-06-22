@@ -4,7 +4,7 @@
   const today = WEN.today;
 
   let gstate = Garage.get();           // { vehicles, activeId }
-  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold" };
+  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all" };
 
   function av() { return Garage.active(gstate); }
 
@@ -977,21 +977,42 @@
 
   // ---- release notes (fleetctrl-style changelog) ----
   const RN_TAG = { FSD: "rn-fsd", Dashcam: "rn-feat", Charging: "rn-feat", Sentry: "rn-feat", Nav: "rn-feat", Fix: "rn-fix", Safety: "rn-safety", UI: "rn-ui" };
+  const isFsdItem = (it) => it.tag === "FSD" || /\bFSD\b|autosteer|autopilot|supervised|robotaxi/i.test(it.text || "");
+  function wireRnFilter() {
+    const bar = $("rnFilter"); if (!bar || bar._wired) return;
+    bar._wired = true;
+    bar.querySelectorAll(".rnf-btn").forEach(b => b.onclick = () => {
+      ui.rnFilter = b.dataset.rnf;
+      bar.querySelectorAll(".rnf-btn").forEach(x => x.classList.toggle("is-on", x === b));
+      renderReleaseNotes();
+    });
+  }
   function renderReleaseNotes() {
+    wireRnFilter();
     const mine = av() ? av().installedVersion : null;
+    const filt = ui.rnFilter;
     const order = WEN.versions.map(v => v.version).filter(v => WEN.releaseNotes[v]);
-    $("releaseNotes").innerHTML = order.map(ver => {
+    const html = order.map(ver => {
       const rn = WEN.releaseNotes[ver];
       const isMine = ver === mine;
-      const items = rn.items.map(it => `<li><span class="rn-tag ${RN_TAG[it.tag] || "rn-feat"}">${esc(it.tag)}</span>${esc(it.text)}</li>`).join("");
+      // split FSD vs OS notes; FSD pinned first so the autonomy crowd sees it immediately
+      const fsd = (rn.items || []).filter(isFsdItem);
+      const os = (rn.items || []).filter(it => !isFsdItem(it));
+      const show = filt === "fsd" ? fsd : filt === "os" ? os : fsd.concat(os);
+      if (!show.length) return ""; // version has nothing for the active filter — hide it
+      const li = (it, fsdNote) => `<li class="${fsdNote ? "rn-li-fsd" : ""}"><span class="rn-tag ${RN_TAG[it.tag] || "rn-feat"}">${esc(it.tag)}</span>${esc(it.text)}</li>`;
+      const blocks =
+        (filt !== "os" && fsd.length ? `<div class="rn-grp rn-grp-fsd"><div class="rn-grp-h">🤖 FSD (Supervised) ${esc(rn.fsd || "")}</div><ul class="rn-items">${fsd.map(it => li(it, true)).join("")}</ul></div>` : "") +
+        (filt !== "fsd" && os.length ? `<div class="rn-grp rn-grp-os"><div class="rn-grp-h">⚙️ OS / firmware ${esc(ver)}</div><ul class="rn-items">${os.map(it => li(it, false)).join("")}</ul></div>` : "");
       const regions = (rn.regions || []).map(r => `<span class="rn-region">${esc(r)}</span>`).join("");
       return `<details class="rn-item${isMine ? " rn-mine" : ""}" data-ver="${esc(ver)}"${isMine ? " open" : ""}>` +
         `<summary><span class="rn-ver">${esc(ver)}</span>${isMine ? ' <span class="tag-you">you</span>' : ''}` +
         `<span class="rn-date">${esc(rn.date)}</span><span class="rn-fsdb">FSD ${esc(rn.fsd || "—")}</span>` +
         `<span class="rn-regions">${regions}</span></summary>` +
-        `<ul class="rn-items">${items}</ul>` +
+        blocks +
         `<div class="rn-src">via ${esc(rn.source || "trackers")}</div></details>`;
     }).join("");
+    $("releaseNotes").innerHTML = html || `<p class="hint">No ${filt === "fsd" ? "FSD" : "OS"}-specific notes in the tracked builds.</p>`;
   }
 
   // ---- per-region OS rollout panel (country breakdown) ----

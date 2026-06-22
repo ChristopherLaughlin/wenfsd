@@ -245,6 +245,12 @@
   <!-- RELEASE NOTES -->
   <section class="card fleet-card" id="releaseNotesCard">
     <h2 class="card-h">Release notes <span class="card-sub">what's in each build · newest first</span></h2>
+    <p class="hint rn-explain">Two changelogs ship in every build: the <strong>OS / firmware</strong> notes (the in-car “Software” release notes) and the <strong>FSD (Supervised)</strong> notes — FSD rides bundled <em>inside</em> the OS build but versions and documents itself separately (e.g. OS <code>2026.20.3</code> carries <code>FSD v14.3.4</code>). Use the filter to see one or both.</p>
+    <div class="rn-filter" id="rnFilter" role="tablist" aria-label="Release-note filter">
+      <button type="button" class="rnf-btn is-on" data-rnf="all" role="tab">All</button>
+      <button type="button" class="rnf-btn" data-rnf="fsd" role="tab">🤖 FSD only</button>
+      <button type="button" class="rnf-btn" data-rnf="os" role="tab">⚙️ OS only</button>
+    </div>
     <div id="dataSources" class="data-sources"></div>
     <div id="releaseNotes" class="rn-list"></div>
   </section>
