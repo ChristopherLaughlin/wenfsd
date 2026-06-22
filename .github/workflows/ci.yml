@@ -39,3 +39,38 @@ jobs:
       - run: npm ci
       - name: Audit production dependencies (fail on high/critical)
         run: npm audit --omit=dev --audit-level=high
+
+  # ---- gated deploy (CD) ----
+  # Runs ONLY after `test` AND `audit` succeed, and ONLY on a push to main. A red test or a
+  # high/critical advisory means `needs` is unmet → this job is skipped → no deploy ships.
+  #
+  # Dormant until you opt in (so it can't turn main red before it's wired up). To activate:
+  #   1. Repo → Settings → Secrets and variables → Actions:
+  #        - add Secret  RAILWAY_TOKEN          (a Railway *project* token)
+  #        - add Variable DEPLOY_ENABLED = true
+  #        - (optional)  Variable RAILWAY_SERVICE_NAME = <your service name>
+  #   2. In Railway, turn OFF "deploy on push" for the service so this gated job is the
+  #      only path to production (otherwise Railway also deploys, ungated).
+  deploy:
+    needs: [test, audit]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+      - name: Deploy to Railway (only because tests + audit passed)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error::DEPLOY_ENABLED is true but RAILWAY_TOKEN secret is not set."; exit 1
+          fi
+          if [ -n "${{ vars.RAILWAY_SERVICE_NAME }}" ]; then
+            railway up --ci --service "${{ vars.RAILWAY_SERVICE_NAME }}"
+          else
+            railway up --ci
+          fi
