@@ -4,7 +4,7 @@
   const today = WEN.today;
 
   let gstate = Garage.get();           // { vehicles, activeId }
-  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all", paceWindow: "day" };
+  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all", paceWindow: "day", trackRegion: null };
 
   function av() { return Garage.active(gstate); }
 
@@ -52,6 +52,7 @@
 
   function render() {
     const a0 = av();
+    if (ui.trackRegion == null) ui.trackRegion = a0 ? a0.market : "";   // default tracking views to YOUR region
     setTopConnect(!!(a0 && a0.connected), !!(a0 && a0.connected && a0.optedIn));
     if (!av()) { renderEmptyState(); return; }
     const pred = currentPrediction();
@@ -1030,9 +1031,12 @@
   }
   function renderReleaseNotes() {
     wireRnFilter();
-    const mine = av() ? av().installedVersion : null;
+    syncTrackRegion();
+    const region = trackRegion();
+    const showYouTags = !region || (av() && region === av().market);
+    const mine = showYouTags && av() ? av().installedVersion : null;
     const filt = ui.rnFilter;
-    const order = WEN.versions.map(v => v.version).filter(v => WEN.releaseNotes[v]);
+    const order = WEN.versionsForRegion(region).map(v => v.version).filter(v => WEN.releaseNotes[v]);
     const html = order.map(ver => {
       const rn = WEN.releaseNotes[ver];
       const isMine = ver === mine;
@@ -1156,6 +1160,7 @@
         stat("Status", d ? (d.status || "—") : "—") +
         stat("First seen", d && d.firstSeen ? shortDate(d.firstSeen) : "—") +
         stat("FSD build (AI4)", d && d.fsdBuild && d.fsdBuild.AI4 && d.fsdBuild.AI4 !== "—" ? d.fsdBuild.AI4 : "—") +
+        (d ? stat("Ships to", (() => { const m = WEN.marketsFor(d); return m.length >= WEN.allMarkets.length ? "🌍 all regions" : "📍 " + m.join(", "); })()) : "") +
         (d && d.recentInstalls ? stat("Installs this week", "🔥 " + Number(d.recentInstalls).toLocaleString()) : "") +
       `</div>` +
       (regions.length ? `<div class="vm-regions"><span class="vm-k">Seen in:</span> ${regions.map(r => `<span class="rn-region">${esc(r)}</span>`).join("")}</div>` : "") +
@@ -1208,18 +1213,52 @@
     const bars = vals.map((inst, i) => { const bh = max > 0 ? Math.max(1, (inst / max) * h) : 1; return `<rect x="${(i * bw + 1).toFixed(1)}" y="${(h - bh).toFixed(1)}" width="${(bw - 1.5).toFixed(1)}" height="${bh.toFixed(1)}" rx="1"/>`; }).join("");
     return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="7-day install velocity">${bars}</svg>`;
   }
+  // ---- region build-path filter shared across the tracking sections ----
+  function trackRegion() { return ui.trackRegion || ""; }   // "" ⇒ all regions
+  function syncTrackRegion() {
+    document.querySelectorAll(".js-track-region").forEach(sel => {
+      if (!sel.dataset.filled) {
+        sel.innerHTML = `<option value="">🌍 All regions</option>` +
+          WEN.allMarkets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+        sel.dataset.filled = "1";
+        sel.addEventListener("change", () => {
+          ui.trackRegion = sel.value;
+          renderTable(); renderFeed(); renderReleaseNotes(); renderRolloutPace(); syncTrackRegion();
+        });
+      }
+      sel.value = trackRegion();
+    });
+  }
+  // a little region availability chip for a build (🌍 = everyone, 📍N = limited)
+  function mktChip(v) {
+    const m = WEN.marketsFor(v), all = WEN.allMarkets.length;
+    if (m.length >= all) return `<span class="mkt-chip mkt-all" title="Ships to every tracked market">🌍</span>`;
+    return `<span class="mkt-chip mkt-some" title="Only ships to: ${esc(m.join(", "))}">📍${m.length}</span>`;
+  }
+  function regionNoteFor(list, region) {
+    if (!region) return `Showing <strong>all ${list.length}</strong> tracked builds across every region. 🌍 = global build · 📍N = only reaches N markets. ${rnd(["The US &amp; Canada hoard the point releases like the last Tim Bit. 🍩", "Some of these builds will never grace a right-hand-drive driveway. C'est la vie. 🚗", "Yes, North America gets more builds. No, complaining hasn't worked yet."])}`;
+    const missing = WEN.versions.filter(v => !WEN.inRegion(v, region)).map(v => v.version);
+    const miss = missing.length ? ` <span class="track-miss">Skipped here: ${missing.map(esc).join(", ")}.</span>` : "";
+    return `Showing the <strong>${list.length}</strong> build${list.length === 1 ? "" : "s"} that actually reach <strong>${esc(region)}</strong>, with dates shifted to when ${esc(region)} typically sees them.${miss} ${rnd(["This is YOUR build path — not North America's wishlist.", "Fewer builds, more character. 🫡", "What you see is what you (eventually) get."])}`;
+  }
   function renderTable() {
+    syncTrackRegion();
+    const region = trackRegion();
+    const list = WEN.versionsForRegion(region);
     const mine = av() ? av().installedVersion : null;
     const nextVer = av() ? (currentPrediction().targetLabel || null) : null;
-    $("fwBody").innerHTML = WEN.versions.map(v => {
-      const isMine = v.version === mine;
-      const isNext = nextVer && v.version === nextVer;
+    const showYouTags = !region || (av() && region === av().market);
+    if ($("fwRegionNote")) $("fwRegionNote").innerHTML = regionNoteFor(list, region);
+    $("fwBody").innerHTML = list.map(v => {
+      const isMine = showYouTags && v.version === mine;
+      const isNext = showYouTags && nextVer && v.version === nextVer;
+      const seen = region ? WEN.regionFirstSeen(v, region) : v.firstSeen;
       return `<tr class="${isMine ? "mine" : ""}${isNext ? " fw-next" : ""}">` +
-        `<td><strong class="fw-verlink" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}${isNext ? ' <span class="tag-next">next</span>' : ''}</td>` +
+        `<td>${mktChip(v)} <strong class="fw-verlink" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}${isNext ? ' <span class="tag-next">next</span>' : ''}</td>` +
         `<td><span class="status status-${v.status}">${v.status}</span></td>` +
         `<td>${v.fleetPct != null ? `<div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div>` : `<span class="mut-i">not reported</span>`}</td>` +
         `<td>${v.fleetPct != null ? sparkSVG(v) : "—"}</td>` +
-        `<td>${v.firstSeen ? shortDate(v.firstSeen) : "—"}</td><td>${(v.fsdBuild && v.fsdBuild.AI4) || "—"}</td>` +
+        `<td>${seen ? shortDate(seen) : "—"}</td><td>${(v.fsdBuild && v.fsdBuild.AI4) || "—"}</td>` +
         `<td class="notes">${v.recentInstalls ? `<span class="fw-active">🔥 ${Number(v.recentInstalls).toLocaleString()} installs this week</span>` : (v.notes || "")}</td></tr>`;
     }).join("");
   }
@@ -1240,26 +1279,29 @@
   function renderFeed() {
     const feed = $("feed");
     if (!feed) return;
-    const rows = (WEN.versions || [])
+    syncTrackRegion();
+    const region = trackRegion();
+    const rows = WEN.versionsForRegion(region)
       .filter(v => v.firstSeen)
-      .slice()
-      .sort((a, b) => String(b.firstSeen).localeCompare(String(a.firstSeen)))
+      .map(v => ({ v, seen: region ? WEN.regionFirstSeen(v, region) : v.firstSeen }))
+      .sort((a, b) => String(b.seen).localeCompare(String(a.seen)))
       .slice(0, 8);
     if (!rows.length) { feed.innerHTML = `<li class="feed-empty">No recent rollout activity yet.</li>`; $("feedSub").textContent = ""; return; }
+    const showYouTags = !region || (av() && region === av().market);
     const mine = av() ? av().installedVersion : null;
     const nextVer = av() ? (currentPrediction().targetLabel || null) : null;
-    feed.innerHTML = rows.map(v => {
+    feed.innerHTML = rows.map(({ v, seen }) => {
       const pct = v.fleetPct != null ? `${v.fleetPct}% of fleet` : null;
       const inst = v.recentInstalls ? `🔥 ${Number(v.recentInstalls).toLocaleString()} installs/wk` : null;
       const fsd = (v.fsdBuild && v.fsdBuild.AI4 && v.fsdBuild.AI4 !== "—") ? `FSD ${v.fsdBuild.AI4}` : null;
       const meta = [pct, inst, fsd].filter(Boolean).join(" · ");
       const src = (v.sources && v.sources.length) ? `via ${v.sources.join(", ")}` : "";
-      const tag = v.version === mine ? ' <span class="tag-you">you</span>' : (nextVer && v.version === nextVer ? ' <span class="tag-next">next</span>' : "");
-      return `<li><span class="feed-when">${shortDate(v.firstSeen)}</span>` +
-        `<span class="feed-main"><strong class="feed-relver" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${esc(v.version)}</strong>${tag}${meta ? ` <span class="feed-meta">${esc(meta)}</span>` : ""}</span>` +
+      const tag = showYouTags && v.version === mine ? ' <span class="tag-you">you</span>' : (showYouTags && nextVer && v.version === nextVer ? ' <span class="tag-next">next</span>' : "");
+      return `<li><span class="feed-when">${shortDate(seen)}</span>` +
+        `<span class="feed-main">${mktChip(v)} <strong class="feed-relver" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${esc(v.version)}</strong>${tag}${meta ? ` <span class="feed-meta">${esc(meta)}</span>` : ""}</span>` +
         `<span class="feed-ver">${esc(src)}</span></li>`;
     }).join("");
-    $("feedSub").textContent = rows.length + " recent releases";
+    $("feedSub").textContent = region ? `${rows.length} in ${region}` : `${rows.length} recent · all regions`;
   }
 
   // ---------------- events ----------------

@@ -244,7 +244,10 @@
 
   <!-- RELEASE NOTES -->
   <section class="card fleet-card" id="releaseNotesCard">
-    <h2 class="card-h">Release notes <span class="card-sub">what's in each build · newest first</span></h2>
+    <div class="card-h-row">
+      <h2 class="card-h">Release notes <span class="card-sub">what's in each build · newest first</span></h2>
+      <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
+    </div>
     <p class="hint rn-explain">Two changelogs ship in every build: the <strong>OS / firmware</strong> notes (the in-car “Software” release notes) and the <strong>FSD (Supervised)</strong> notes — FSD rides bundled <em>inside</em> the OS build but versions and documents itself separately (e.g. OS <code>2026.20.3</code> carries <code>FSD v14.3.4</code>). Use the filter to see one or both.</p>
     <div class="rn-filter" id="rnFilter" role="tablist" aria-label="Release-note filter">
       <button type="button" class="rnf-btn is-on" data-rnf="all" role="tab">All</button>
@@ -278,7 +281,11 @@
 
   <!-- FIRMWARE TRACKER TABLE -->
   <section class="card fleet-card" id="firmwareCard">
-    <h2 class="card-h">Fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>
+    <div class="card-h-row">
+      <h2 class="card-h">Fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>
+      <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
+    </div>
+    <p class="hint track-note" id="fwRegionNote"></p>
     <div class="table-wrap">
       <table class="fw-table">
         <thead>
@@ -292,7 +299,10 @@
   <div class="grid2">
     <!-- LIVE FEED -->
     <section class="card fleet-card" id="feedCard">
-      <h2 class="card-h">Recent rollout activity <span class="card-sub" id="feedSub"></span></h2>
+      <div class="card-h-row">
+        <h2 class="card-h">Recent rollout activity <span class="card-sub" id="feedSub"></span></h2>
+        <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
+      </div>
       <ul class="feed" id="feed"></ul>
     </section>
 

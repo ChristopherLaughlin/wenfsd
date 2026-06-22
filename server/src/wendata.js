@@ -27,6 +27,11 @@ export function verKey(v) {
 }
 export function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
+// region build-path: which markets receive a build (default all); is a build in a region?
+const ALL_MARKETS = Object.keys(regions);
+export function marketsFor(v) { return Array.isArray(v.markets) && v.markets.length ? v.markets : ALL_MARKETS; }
+export function inRegion(v, market) { return !market || marketsFor(v).includes(market); }
+
 // effective rollout percentile (Early Access shifts you earlier; history overrides)
 export function effEarliness(vehicle) {
   let e = vehicle.earliness != null ? vehicle.earliness : 0.5;

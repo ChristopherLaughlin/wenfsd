@@ -93,9 +93,11 @@ const Predict = (function () {
     const delta = region.osLagDays - AU_LAG;
     const myKey = WEN.verKey(car.installedVersion);
 
-    // newest distributed version strictly newer than yours
+    // newest distributed version strictly newer than yours — restricted to builds your REGION
+    // actually receives (the US/Canada get builds AU/NZ/EU never will, so "next" differs by market)
     const newer = WEN.versions.filter(v => WEN.verKey(v.version) > myKey &&
-      (v.status === "rolling" || v.status === "tapering" || v.status === "mature"))
+      (v.status === "rolling" || v.status === "tapering" || v.status === "mature") &&
+      (WEN.inRegion ? WEN.inRegion(v, car.market) : true))
       .sort((a, b) => WEN.verKey(b.version) - WEN.verKey(a.version));
 
     if (newer.length) {
@@ -126,6 +128,7 @@ const Predict = (function () {
     if (!nextMajor) return null;
     const carriers = WEN.versions.filter(v => {
       if (!(v.status === "rolling" || v.status === "tapering" || v.status === "mature")) return false;
+      if (WEN.inRegion && !WEN.inRegion(v, car.market)) return false; // a region can only get FSD via a build it actually receives
       const fb = v.fsdBuild && v.fsdBuild[car.hardware];
       return fb && WEN.fsdMajor(fb) >= nextMajor;
     }).sort((a, b) => WEN.verKey(a.version) - WEN.verKey(b.version));
@@ -156,7 +159,7 @@ const Predict = (function () {
     // So its timing is NOT a separate schedule — it's the OS prediction for that carrier build.
     // This is why "next software update" and "next FSD version" must be consistent.
     const myKey = WEN.verKey(car.installedVersion || "0");
-    const distributed = WEN.versions.filter(v => v.status === "rolling" || v.status === "tapering" || v.status === "mature");
+    const distributed = WEN.versions.filter(v => (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && (WEN.inRegion ? WEN.inRegion(v, car.market) : true));
     const nextBuild = distributed.filter(v => WEN.verKey(v.version) > myKey).sort((a, b) => WEN.verKey(b.version) - WEN.verKey(a.version))[0];
     const carrier = carrierBuild(car, nextMajor); // earliest distributed build whose FSD >= nextMajor
 

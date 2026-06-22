@@ -29,22 +29,37 @@ const WEN = (function () {
   // (AU is the baseline, AU_LAG=12 in predict.js). Predictions for other regions apply
   // `regions[market].osLagDays - 12` as a delta. Do NOT set t0 from a version's firstSeen
   // (that's the rollout START, ~10+ days before the midpoint) — see api.js hydration.
+  // `markets` = the regions that actually RECEIVE this build. Tesla does NOT ship every build
+  // to every market: the US & Canada get nearly all of them (including point releases), while
+  // Europe and Australia/New Zealand get a sparser, different sequence (regulatory homologation
+  // + RHD validation means they skip many interim builds and jump between majors). When a build
+  // omits a region, that region's "previous/next build" is computed from ITS OWN path, not the
+  // global list. Region keys must match `regions` below.
   const versions = [
+    { version: "2026.20.4", firstSeen: "2026-06-19", fleetPct: 3.2, status: "rolling", branch: "standard",
+      k: 0.30, t0: "2026-06-30", fsdBuild: { AI4: "v14.3.5", AI3: "v12.6.4" },
+      markets: ["United States", "Canada"],
+      notes: "Fresh North-America-only point release. Europe/AU/NZ won't see this one — they wait for the next broad wave." },
     { version: "2026.20.3", firstSeen: "2026-06-17", fleetPct: 9.8, status: "rolling", branch: "standard",
       k: 0.34, t0: "2026-06-27", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
-      notes: "Latest wave. Dashcam Viewer, charging UI, Sentry power tuning." },
+      markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
+      notes: "The broad v14 wave — the build that eventually reaches every market. Dashcam Viewer, charging UI, Sentry power tuning." },
     { version: "2026.20", firstSeen: "2026-06-10", fleetPct: 6.1, status: "tapering", branch: "standard",
       k: 0.31, t0: "2026-06-20", fsdBuild: { AI4: "v14.3.2", AI3: "v12.6.4" },
-      notes: "Initial .20 branch, superseded for most by 2026.20.3." },
+      markets: ["United States", "Canada"],
+      notes: "Initial .20 branch — North America only. RHD/EU markets skipped straight to 2026.20.3." },
     { version: "2026.14.6.11", firstSeen: "2026-06-05", fleetPct: 24.4, status: "mature", branch: "standard",
       k: 0.36, t0: "2026-06-12", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
-      notes: "Point fix on the dominant .14.6 branch." },
+      markets: ["United States", "Canada", "Australia"],
+      notes: "Point fix on the .14.6 branch — shipped to NA + Australia; Europe & NZ skipped it." },
     { version: "2026.14.6", firstSeen: "2026-05-22", fleetPct: 35.7, status: "mature", branch: "standard",
       k: 0.33, t0: "2026-06-01", fsdBuild: { AI4: "v13.2.9", AI3: "v12.6.4" },
-      notes: "Most-installed build in the AU fleet. Likely your current version." },
+      markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
+      notes: "Global build. Most-installed in the AU fleet — likely your current version." },
     { version: "2026.14.2", firstSeen: "2026-05-08", fleetPct: 11.3, status: "legacy", branch: "standard",
       k: 0.30, t0: "2026-05-18", fsdBuild: { AI4: "v13.2.8", AI3: "v12.6.3" },
-      notes: "Older but widely seen overall. Tapering as cars move up." },
+      markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
+      notes: "Older global build. Tapering everywhere as cars move up." },
   ];
 
   // ---- Region model: OS lag + per-hardware FSD status ----
@@ -76,6 +91,11 @@ const WEN = (function () {
   // Release notes per version (fleetctrl-style changelog). In real mode these are
   // ingested + merged from the external trackers; this is the seed/offline copy.
   const releaseNotes = {
+    "2026.20.4": { date: "2026-06-19", regions: ["US", "Canada"], fsd: "v14.3.5 (HW4)", source: "Teslascope",
+      items: [
+        { tag: "FSD", text: "FSD (Supervised) v14.3.5 for HW4 — North America only; refined merges & roundabout handling" },
+        { tag: "Fix", text: "Hotfix for a charging-session display glitch on 2026.20.3" },
+      ] },
     "2026.20.3": { date: "2026-06-17", regions: ["US", "Europe", "Down Under"], fsd: "v14.3.4 (HW4)", source: "FleetCtrl + Teslascope",
       items: [
         { tag: "FSD", text: "FSD (Supervised) v14.3.4 for HW4 — smoother lane changes, fewer interventions" },
@@ -159,8 +179,37 @@ const WEN = (function () {
   // FSD major from a string like "v13.2.9", "v14.x", "v14 (lite)" -> 13 / 14
   function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
 
+  // ---- region build-path helpers ----
+  const ALL_MARKETS = Object.keys(regions);
+  // which regions receive a build (default: all, for builds without an explicit list / live data)
+  function marketsFor(v) { return Array.isArray(v.markets) && v.markets.length ? v.markets : ALL_MARKETS; }
+  function inRegion(v, market) { return !market || marketsFor(v).includes(market); }
+  // the builds a given region actually gets, newest-first (null/"" market ⇒ the global list)
+  function versionsForRegion(market) {
+    const list = market ? versions.filter(v => inRegion(v, market)) : versions.slice();
+    return list.sort((a, b) => verKey(b.version) - verKey(a.version));
+  }
+  // region-adjusted first-seen: builds reach a region ~osLagDays after the (AU-based) seed date.
+  // AU is the seed baseline (lag 12), so delta = region.osLagDays - 12.
+  function regionFirstSeen(v, market) {
+    if (!v.firstSeen) return null;
+    const r = regions[market]; if (!r) return v.firstSeen;
+    const delta = (r.osLagDays || 0) - 12;
+    const d = new Date(v.firstSeen + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + delta);
+    return d.toISOString().slice(0, 10);
+  }
+  // your region's previous + next build relative to a version (within that region's own path)
+  function neighborsForRegion(version, market) {
+    const list = versionsForRegion(market); // newest-first
+    const i = list.findIndex(v => v.version === version);
+    return { prev: i >= 0 && i < list.length - 1 ? list[i + 1] : null,
+             next: i > 0 ? list[i - 1] : null,
+             list };
+  }
+
   return { today, carPreset, versions, regions, regionLag, fsdMilestones, releaseNotes, feedSeeds, stats,
            // 'sample' until a live backend hydrates real data (api.js flips this to 'live').
-           dataMode: "sample", versionSuggestions,
+           dataMode: "sample", versionSuggestions, allMarkets: ALL_MARKETS,
+           marketsFor, inRegion, versionsForRegion, regionFirstSeen, neighborsForRegion,
            earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor, isValidVersion };
 })();

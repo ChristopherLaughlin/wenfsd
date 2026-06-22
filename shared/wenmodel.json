@@ -4,6 +4,20 @@
   "earlyAccessShift": -0.3,
   "versions": [
     {
+      "version": "2026.20.4",
+      "firstSeen": "2026-06-19",
+      "fleetPct": 3.2,
+      "status": "rolling",
+      "branch": "standard",
+      "k": 0.3,
+      "t0": "2026-06-30",
+      "fsdBuild": {
+        "AI4": "v14.3.5",
+        "AI3": "v12.6.4"
+      },
+      "markets": ["United States", "Canada"]
+    },
+    {
       "version": "2026.20.3",
       "firstSeen": "2026-06-17",
       "fleetPct": 9.8,
@@ -14,7 +28,8 @@
       "fsdBuild": {
         "AI4": "v14.3.4",
         "AI3": "v12.6.4"
-      }
+      },
+      "markets": ["United States", "Canada", "Europe", "Australia", "New Zealand"]
     },
     {
       "version": "2026.20",
@@ -27,7 +42,8 @@
       "fsdBuild": {
         "AI4": "v14.3.2",
         "AI3": "v12.6.4"
-      }
+      },
+      "markets": ["United States", "Canada"]
     },
     {
       "version": "2026.14.6.11",
@@ -40,7 +56,8 @@
       "fsdBuild": {
         "AI4": "v14.3.4",
         "AI3": "v12.6.4"
-      }
+      },
+      "markets": ["United States", "Canada", "Australia"]
     },
     {
       "version": "2026.14.6",
@@ -53,7 +70,8 @@
       "fsdBuild": {
         "AI4": "v13.2.9",
         "AI3": "v12.6.4"
-      }
+      },
+      "markets": ["United States", "Canada", "Europe", "Australia", "New Zealand"]
     },
     {
       "version": "2026.14.2",
@@ -66,7 +84,8 @@
       "fsdBuild": {
         "AI4": "v13.2.8",
         "AI3": "v12.6.3"
-      }
+      },
+      "markets": ["United States", "Canada", "Europe", "Australia", "New Zealand"]
     }
   ],
   "regions": {

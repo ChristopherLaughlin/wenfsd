@@ -45,9 +45,9 @@ function mcPredict(o) {
 }
 
 function regionDelta(market) { const r = W.regions[market]; return (r ? r.osLagDays : AU_LAG) - AU_LAG; }
-function carrierBuild(hardware, nextMajor, versions) {
+function carrierBuild(hardware, nextMajor, versions, market) {
   if (!nextMajor) return null;
-  return versions.filter(v => (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && v.fsdBuild && v.fsdBuild[hardware] && W.fsdMajor(v.fsdBuild[hardware]) >= nextMajor)
+  return versions.filter(v => (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, market) && v.fsdBuild && v.fsdBuild[hardware] && W.fsdMajor(v.fsdBuild[hardware]) >= nextMajor)
     .sort((a, b) => W.verKey(a.version) - W.verKey(b.version))[0] || null;
 }
 
@@ -68,7 +68,7 @@ export function predictNextOS(car, opts = {}) {
   const earliness = W.effEarliness(car);
   const delta = regionDelta(car.market);
   const myKey = W.verKey(car.installedVersion || "0");
-  const newer = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature")).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
+  const newer = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
   if (newer.length) {
     const v = newer[0];
     const out = mcPredict({ t0Days: daysBetween(today, v.t0) + delta, k: v.k, L: 0.95, earliness, today, seedStr: "OS" + v.version + car.market + earliness });
@@ -102,9 +102,9 @@ export function predictNextFSD(car, opts = {}) {
 
   // FSD ships bundled in OS builds → its arrival = the OS prediction for the build that carries
   // it. Keeps next-OS-update and next-FSD consistent (see client predict.js for the rationale).
-  const carrier = carrierBuild(car.hardware, nextMajor, versions);
+  const carrier = carrierBuild(car.hardware, nextMajor, versions, car.market);
   const myKey = W.verKey(car.installedVersion || "0");
-  const nextBuild = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature")).sort((a, b) => W.verKey(b.version) - W.verKey(a.version))[0];
+  const nextBuild = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version))[0];
 
   const _fb = nextBuild && nextBuild.fsdBuild && nextBuild.fsdBuild[car.hardware];
   const _fbMajor = (_fb && _fb !== "—") ? W.fsdMajor(_fb) : null;
