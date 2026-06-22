@@ -10,7 +10,7 @@ import { applyVersionReading } from "../poller.js";
 export const authRouter = Router();
 
 authRouter.get("/login", (req, res) => {
-  if (config.mockMode) { req.session.userId = 1; req.session.mock = true; return res.redirect("/?linked=mock"); }
+  if (config.mockMode) { req.session = { userId: 1, mock: true }; return res.redirect("/?linked=mock"); }
   const { verifier, challenge } = tesla.makePkce();
   req.session.pkce = verifier;
   req.session.oauthState = tesla.randomState();
@@ -77,7 +77,9 @@ authRouter.get("/callback", async (req, res, next) => {
         } catch (_) { /* asleep/unavailable — the poller will pick it up later */ }
       }
     }
-    req.session.userId = userId;
+    // establish a FRESH session at the moment of authentication (drops the pre-auth pkce/state
+    // scratch values) — avoids session-fixation on the signed cookie.
+    req.session = { userId };
     res.redirect("/?linked=1");
   } catch (e) {
     // log the detail server-side; show the browser a generic message (no internal leak)

@@ -17,10 +17,10 @@ function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B7
 function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); while (v === 0) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 function triangular(r, lo, mode, hi) { const u = r(), c = (mode - lo) / (hi - lo); return u < c ? lo + Math.sqrt(u * (hi - lo) * (mode - lo)) : hi - Math.sqrt((1 - u) * (hi - lo) * (hi - mode)); }
 function quantile(s, q) { const i = (s.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (i - lo); }
-function hashInputs(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function hashInputs(s) { s = String(s).slice(0, 256); let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 
 function mcPredict(o) {
-  const N = o.N || 4000, L = o.L || 0.95;
+  const N = Math.min(20000, Math.max(100, o.N || 4000)), L = o.L || 0.95;
   const r = rng(hashInputs(o.seedStr || "x"));
   const samples = [], approvals = [];
   for (let i = 0; i < N; i++) {

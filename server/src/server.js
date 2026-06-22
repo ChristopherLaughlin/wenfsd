@@ -64,6 +64,21 @@ app.use(cookieSession({
 // --- rate limits ---
 const apiLimiter = rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false });
 const authLimiter = rateLimit({ windowMs: 60_000, max: 20, standardHeaders: true, legacyHeaders: false });
+// generous catch-all so every route — including the static asset / og / robots / sitemap / key
+// handlers — is rate-limited (defence against fs-access abuse); the stricter limiters above still apply.
+app.use(rateLimit({ windowMs: 60_000, max: 600, standardHeaders: true, legacyHeaders: false }));
+
+// CSRF protection for state-changing requests: require a same-origin Origin/Referer token.
+// Pairs with SameSite=lax cookies; a cross-site page can't forge a matching Origin header.
+const SELF_ORIGIN = config.publicBaseUrl.replace(/\/$/, "");
+app.use((req, res, next) => {
+  if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
+  const src = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : "");
+  if (!config.mockMode && SELF_ORIGIN.startsWith("http") && src && src.replace(/\/$/, "") !== SELF_ORIGIN) {
+    return res.status(403).json({ error: "cross-origin write refused (CSRF protection)" });
+  }
+  next();
+});
 
 // --- Tesla partner public key (Tesla fetches this to trust your domain) ---
 app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem", async (req, res) => {
@@ -184,7 +199,9 @@ app.use((req, res, next) => {
 
 // --- error handler (so thrown/rejected route handlers return JSON, not hang) ---
 app.use((err, req, res, next) => {
-  console.error("[error]", req.method, req.path, err && err.message);
+  // strip CR/LF from request-derived values before logging (no log-injection / forged log lines)
+  const safe = (s) => String(s == null ? "" : s).replace(/[\r\n]+/g, " ").slice(0, 200);
+  console.error("[error]", safe(req.method), safe(req.path), safe(err && err.message));
   if (res.headersSent) return next(err);
   res.status(err.status || 500).json({ error: config.mockMode ? String(err.message || err) : "internal error" });
 });

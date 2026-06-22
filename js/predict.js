@@ -28,13 +28,13 @@ const Predict = (function () {
   function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); while (v === 0) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
   function triangular(r, lo, mode, hi) { const u = r(), c = (mode - lo) / (hi - lo); return u < c ? lo + Math.sqrt(u * (hi - lo) * (mode - lo)) : hi - Math.sqrt((1 - u) * (hi - lo) * (hi - mode)); }
   function quantile(s, q) { const i = (s.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (i - lo); }
-  function hashInputs(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hashInputs(s) { s = String(s).slice(0, 256); let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 
   // ---- core Monte Carlo ----
   // opts: { t0Days, k, L, earliness, t0Sigma, N, approval?:{earliestDays,modeDays,latestDays},
   //         midpointAfterApprovalDays?, seedStr }
   function mcPredict(opts) {
-    const N = opts.N || 4000, L = opts.L || 0.95;
+    const N = Math.min(20000, Math.max(100, opts.N || 4000)), L = opts.L || 0.95;
     const r = rng(hashInputs(opts.seedStr || "x"));
     const samples = [], approvals = [];
     for (let i = 0; i < N; i++) {
