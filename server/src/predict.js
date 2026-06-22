@@ -82,9 +82,10 @@ export function predictNextOS(car, opts = {}) {
     const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
     const stale = noHistory && weeksBehind >= 9;
     if (stale) {
-      eff = Math.min(0.93, Math.max(eff, 0.8));
-      t0Days += Math.min(60, Math.round(weeksBehind * 1.5));
-      t0Sigma = Math.max(14, Math.min(45, weeksBehind));
+      // bimodal arrival (offline → never; online → soon); push the midpoint out + widen hard
+      eff = Math.min(0.95, Math.max(eff, weeksBehind >= 15 ? 0.9 : 0.82));
+      t0Days += Math.min(120, Math.round(weeksBehind * 2.5));
+      t0Sigma = Math.max(21, Math.min(70, Math.round(weeksBehind * 1.8)));
     }
     const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") });
     out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = stale; out.weeksBehind = weeksBehind;

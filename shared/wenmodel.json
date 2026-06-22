@@ -193,13 +193,15 @@
         "AI4": {
           "current": "v13.2.9",
           "next": "v14.x",
-          "mode": "gated",
-          "approval": {
-            "earliestDays": 14,
-            "modeDays": 45,
-            "latestDays": 110
-          },
-          "k": 0.08
+          "mode": "early",
+          "firstSeen": "2026-06-19",
+          "fleetPct": 9,
+          "k": 0.1,
+          "t0": "2026-07-01",
+          "t0Sigma": 7,
+          "newDeliveryFirst": true,
+          "existingFleetDelayDays": 60,
+          "existingFleetSigma": 24
         },
         "AI3": {
           "current": "none",

@@ -117,15 +117,18 @@ const Predict = (function () {
       const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
       const stale = noHistory && weeksBehind >= 9;   // ~2+ branches behind
       if (stale) {
-        earliness = Math.min(0.93, Math.max(earliness, 0.8));
-        t0Days += Math.min(60, Math.round(weeksBehind * 1.5));
-        t0Sigma = Math.max(14, Math.min(45, weeksBehind));
+        // a car this far back has skipped EVERY intervening build → almost certainly offline or
+        // declining updates. Arrival is bimodal (soon IF it reconnects, otherwise never), so push
+        // the midpoint well out and widen hard — we are NOT confident it lands soon.
+        earliness = Math.min(0.95, Math.max(earliness, weeksBehind >= 15 ? 0.9 : 0.82));
+        t0Days += Math.min(120, Math.round(weeksBehind * 2.5));
+        t0Sigma = Math.max(21, Math.min(70, Math.round(weeksBehind * 1.8)));
       }
       const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness, t0Sigma, today, seedStr: "OS" + v.version + car.market + earliness + (stale ? "s" : "") });
       out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out._t0Days = t0Days; out._k = v.k;
       out.stale = stale; out.weeksBehind = weeksBehind;
       out.note = stale
-        ? `Low confidence: your ${car.installedVersion} is ~${weeksBehind} weeks behind the rollout — usually a sign the car's been offline or holding updates. If it's active again it should catch up to ${v.version} over the coming weeks, but a car this far back doesn't follow the normal curve. Treat the date as a wide estimate.`
+        ? `Low confidence — and note this is the OS software update (HW3 cars still get those; FSD is separate, below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped every build since — which almost always means the car's been offline or declining updates. If it comes back online it could jump to ${v.version} within weeks; if it stays offline, there's no telling. A car this far back doesn't follow the normal rollout curve, so this is a wide guess, not a date to bank on.`
         : `Newest build above yours that's actively rolling. Midpoint ~${fmtDate(addDays(today, t0Days)).replace(/^\w+, /, "")}.`;
       return out;
     }

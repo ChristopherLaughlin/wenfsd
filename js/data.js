@@ -91,7 +91,7 @@ const WEN = (function () {
       AI4: { current: "v13.2.9", next: "v14.x", mode: "early", firstSeen: "2026-06-09", fleetPct: 18, k: 0.11, t0: "2026-06-23", t0Sigma: 6, newDeliveryFirst: true, existingFleetDelayDays: 55, existingFleetSigma: 21 },
       AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in Australia. v14 Lite for older hardware is promised, but it's US-first and right-hand-drive markets need extra validation + regulatory sign-off — Tesla has committed to no date. Owners are right to be skeptical." } } },
     "New Zealand": { osLagDays: 14, drive: "RHD", fsd: {
-      AI4: { current: "v13.2.9", next: "v14.x", mode: "gated", approval: { earliestDays: 14, modeDays: 45, latestDays: 110 }, k: 0.08 },
+      AI4: { current: "v13.2.9", next: "v14.x", mode: "early", firstSeen: "2026-06-19", fleetPct: 9, k: 0.10, t0: "2026-07-01", t0Sigma: 7, newDeliveryFirst: true, existingFleetDelayDays: 60, existingFleetSigma: 24 },
       AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in New Zealand. v14 Lite is promised internationally but US-first, with no committed RHD/NZ date. Skepticism warranted." } } },
   };
 
