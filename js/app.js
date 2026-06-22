@@ -86,26 +86,27 @@
   // The FSD half of the hero's two-up header — a SEPARATE predicted date (or honest "no date"),
   // so software-update timing and FSD-version timing are never conflated.
   function renderFsdPred(osPred) {
-    const verEl = $("fsdPredVer"), dateEl = $("fsdPredDate"), winEl = $("fsdPredWindow");
+    const verEl = $("fsdPredVer"), dateEl = $("fsdPredDate"), winEl = $("fsdPredWindow"), quipEl = $("fsdPredQuip");
     const block = document.querySelector(".hpred-fsd");
     if (!verEl || !dateEl || !winEl) return;
     const v = av();
-    const set = (cls, ver, date, win) => {
+    const set = (cls, ver, date, win, state) => {
       if (block) block.className = "hpred hpred-fsd" + (cls ? " " + cls : "");
       verEl.textContent = ver ? "· " + ver : "";
       dateEl.textContent = date;
       winEl.textContent = win;
+      if (quipEl) quipEl.textContent = state ? fsdPredQuip(state, v ? v.market : "") : "";
     };
     let fsd; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { fsd = null; }
-    if (!v || !fsd || fsd.unavailable) { set("fsd-none", "", "—", "no FSD data for this car"); return; }
-    if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `promised for HW3 in ${v.market}, never delivered`); return; }
-    if (fsd.capped) { set("fsd-none", "", "Not coming", `${v.hardware} can't run newer FSD — capped`); return; }
+    if (!v || !fsd || fsd.unavailable) { set("fsd-none", "", "—", "no FSD data for this car", ""); return; }
+    if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `promised for HW3 in ${v.market}, never delivered`, "promised"); return; }
+    if (fsd.capped) { set("fsd-none", "", "Not coming", `${v.hardware} can't run newer FSD — capped`, "capped"); return; }
     const bundled = fsd.bundledWith && osPred && (fsd.bundledWith === osPred.targetLabel || +new Date(fsd.medianDate) === +new Date(osPred.medianDate));
-    if (bundled) { set("fsd-bundled", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), "🎁 ships with your next software update"); return; }
+    if (bundled) { set("fsd-bundled", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), "🎁 ships with your next software update", "bundled"); return; }
     const win = fsd.mode === "gated"
       ? "⚠️ modelled regulatory window — least certain"
       : (fsd.mode === "current" ? "next point release · " : "") + "Most likely " + shortDate(fsd.p10Date) + " – " + shortDate(fsd.p90Date);
-    set("", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), win);
+    set("", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), win, fsd.mode === "gated" ? "gated" : "dated");
   }
 
   function renderFsdSummary(osPred) {
@@ -160,6 +161,8 @@
     if ($("fsdPredVer")) $("fsdPredVer").textContent = "";
     if ($("fsdPredDate")) $("fsdPredDate").textContent = "—";
     if ($("fsdPredWindow")) $("fsdPredWindow").textContent = "add a car to see both dates";
+    if ($("osPredQuip")) $("osPredQuip").textContent = "";
+    if ($("fsdPredQuip")) $("fsdPredQuip").textContent = "";
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
     if ($("heroFlavor")) $("heroFlavor").innerHTML = flavorPick("empty", [
@@ -191,6 +194,7 @@
     $("heroDate").textContent = pred.capped ? "Not coming" : "Unknown";
     $("heroWindow").textContent = pred.capped ? "hardware-limited" : "";
     if ($("osPredVer")) $("osPredVer").textContent = "";
+    if ($("osPredQuip")) $("osPredQuip").textContent = "";
     renderFsdPred(pred);
     $("ringDays").textContent = pred.capped ? "—" : "?"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
@@ -277,6 +281,43 @@
     if (d != null && d >= 8 && d <= 18) return `${fl.flag} ${flavorPick("soon:" + v.market, fl.soon.concat(MEME))}`;   // the meme zone
     const q = flavorPick("quip:" + v.market, fl.quips.concat(GENERIC)).replace(/\{ver\}/g, esc(v.installedVersion || "your build"));
     return `${fl.flag} ${q}`;
+  }
+
+  // ---- the two hero prediction cards: funny + RELENTLESSLY clear that these are guesses ----
+  // Picked stable-per-load (fresh on refresh), keyed by market so switching cars re-rolls.
+  const OS_PRED_QUIPS = [
+    "Our crystal ball's best guess — not a Tesla announcement. Tesla doesn't do those. 🔮",
+    "A prediction, not a promise. We don't work at Tesla; we just refresh the menu like you do.",
+    "Modelled, not confirmed — if Tesla published real dates, 'two weeks' would be out of a job.",
+    "Educated guess, heavy on the guess. Tesla's release calendar is written in disappearing ink. 🖊️",
+    "A forecast. The only 'official' Tesla date is the one that just slipped to next quarter.",
+    "Somewhere between 'soon™' and 'on Elon Time™' — we did the maths so you can cope. ⏳",
+    "A projection. Treat it like FSD itself: supervise it, don't trust it blindly. 👀",
+    "Best numbers we've got. Tesla's actual ship date remains a closely guarded state secret. 🤫",
+    "We modelled it; we did not pinky-promise it. Nobody at Tesla signed off on this. ✍️",
+  ];
+  const OS_PRED_REGION = {
+    "Australia": ["A guess, not gospel — and {m} gets the build only after the US finds all the bugs. 🐛", "Predicted, not promised. Down here, 'soon' is measured in seasons. ☀️→🍂", "Forecast, mate. RHD markets sit last in the OTA queue, behind every roundabout on Earth. 🔄"],
+    "New Zealand": ["Predicted, not promised — and Australia gets it before you, as is tradition, bro. 🐑", "A guess. Population 5 million; Teslas updated this week: possibly 3. Calibrate accordingly.", "Forecast only, eh. Sweet as — just don't hold your breath waiting on it. 🥝"],
+    "United States": ["A prediction — but you're first in line, so gloat responsibly. 🦅", "Best guess. You'll probably have it before you finish reading this sentence. Probably.", "A forecast, not a tweet from Elon — and those are somehow less reliable. 🚀"],
+    "Canada": ["A guess, bud — sorry if it's off. Should land before the next Tims run. Probably. ☕", "Predicted, not promised. Patience, eh — it's a beauty when it finally shows up. 🍁"],
+    "Europe": ["A forecast — pending homologation, consultation, and 17 agencies signing off. 🇪🇺", "Predicted, not promised. The real date lives in a committee, which lives in another committee. 📚", "An estimate, delivered at the stately speed of bureaucracy. 🐌"],
+  };
+  function osPredQuip() {
+    const v = av(); if (!v) return "";
+    const arr = OS_PRED_QUIPS.concat(OS_PRED_REGION[v.market] || []);
+    return flavorPick("osPredQuip:" + v.market, arr).replace(/\{m\}/g, v.market);
+  }
+  const FSD_PRED_QUIPS = {
+    promised: ["We refuse to predict a date Tesla never gave — this is the literal opposite of a promise. 🫥", "No date to forecast, because Tesla announced none. We won't invent one (unlike some trackers). 🤥", "Nothing here to predict but vibes, and the vibes are, frankly, dire. 💀"],
+    bundled: ["Predicted to ride shotgun in your next OS update — same date, same caveats, no guarantees. 🎁", "A guess: it's bundled in, so if the software slips, FSD slips with it. One disappointment, one for free.", "Forecast — it ships inside the build above. Two predictions, one ETA, zero promises."],
+    capped: ["Nothing to predict — your hardware tapped out. We can't forecast a ghost. 🪦", "No forecast possible: Tesla capped this hardware. The future arrived for everyone else. 🚪"],
+    gated: ["A modelled regulatory window — i.e. a guess about when the bureaucrats finish reading. 📋", "Predicted, not promised, and gated behind regulators who do nothing in a hurry. ⏳"],
+    dated: ["A forecast — and FSD dates are Tesla's most theoretical numbers, which is really saying something.", "Predicted, not promised. 'Full Self-Driving' is supervised; so is this estimate. 👀", "Educated guess. FSD ETAs have a half-life shorter than a phantom brake. 🛑", "Modelled, not confirmed — Elon said 'this year', he just declined to specify which one. 📆"],
+  };
+  function fsdPredQuip(state, market) {
+    const arr = FSD_PRED_QUIPS[state] || FSD_PRED_QUIPS.dated;
+    return flavorPick("fsdPredQuip:" + state + ":" + market, arr);
   }
 
   // Rotating funny card subtitles — picked stable-per-load (fresh on refresh) so the whole
@@ -426,6 +467,7 @@
     const hw = $("heroWindow");
     hw.textContent = (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
     hw.classList.toggle("hw-stale", !!pred.stale);
+    if ($("osPredQuip")) $("osPredQuip").textContent = osPredQuip();
     renderFsdPred(pred);
     renderFsdSummary(pred);
 
