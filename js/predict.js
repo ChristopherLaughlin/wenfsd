@@ -105,10 +105,28 @@ const Predict = (function () {
 
     if (newer.length) {
       const v = newer[0];
-      const t0Days = daysBetween(today, v.t0) + delta;
-      const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: car.earlinessPercentile, today, seedStr: "OS" + v.version + car.market + car.earlinessPercentile });
-      out.targetLabel = v.version; out.kind = "distributed"; out.branch = "os"; out._t0Days = t0Days; out._k = v.k;
-      out.note = `Newest build above yours that's actively rolling. Midpoint ~${fmtDate(addDays(today, t0Days)).replace(/^\w+, /, "")}.`;
+      let t0Days = daysBetween(today, v.t0) + delta;
+      let earliness = car.earlinessPercentile, t0Sigma;
+      // STALENESS GUARD: a car many WEEKS behind the newest build it could get is a demonstrated
+      // laggard (usually offline or holding updates) — the active-fleet rollout curve doesn't
+      // describe it, so don't claim it leaps to the newest build at the rollout midpoint. Push it
+      // into the late tail, delay the midpoint, and widen the window to an honest range. Only when
+      // we have no measured earliness (real history/manual override always wins).
+      const pc = WEN.parseOS(car.installedVersion), pn = WEN.parseOS(v.version);
+      const weeksBehind = (pc && pn) ? Math.max(0, (pn.year * 52 + pn.week) - (pc.year * 52 + pc.week)) : 0;
+      const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
+      const stale = noHistory && weeksBehind >= 9;   // ~2+ branches behind
+      if (stale) {
+        earliness = Math.min(0.93, Math.max(earliness, 0.8));
+        t0Days += Math.min(60, Math.round(weeksBehind * 1.5));
+        t0Sigma = Math.max(14, Math.min(45, weeksBehind));
+      }
+      const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness, t0Sigma, today, seedStr: "OS" + v.version + car.market + earliness + (stale ? "s" : "") });
+      out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out._t0Days = t0Days; out._k = v.k;
+      out.stale = stale; out.weeksBehind = weeksBehind;
+      out.note = stale
+        ? `Low confidence: your ${car.installedVersion} is ~${weeksBehind} weeks behind the rollout — usually a sign the car's been offline or holding updates. If it's active again it should catch up to ${v.version} over the coming weeks, but a car this far back doesn't follow the normal curve. Treat the date as a wide estimate.`
+        : `Newest build above yours that's actively rolling. Midpoint ~${fmtDate(addDays(today, t0Days)).replace(/^\w+, /, "")}.`;
       return out;
     }
 

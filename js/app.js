@@ -24,7 +24,7 @@
       model: v.model, year: v.year, hardware: v.hardware,
       market: v.market, drive: v.drive,
       earlinessPercentile: effEarliness(v), installedVersion: v.installedVersion,
-      fsdVersion: v.fsdVersion, earlyAccess: v.earlyAccess, newCar: !!v.newCar,
+      earlinessSource: v.earlinessSource, fsdVersion: v.fsdVersion, earlyAccess: v.earlyAccess, newCar: !!v.newCar,
     };
   }
 
@@ -390,7 +390,9 @@
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
     $("heroEyebrow").textContent = `Your next update${pred.targetLabel ? " — " + pred.targetLabel : ""} on ${av().nickname || "your car"}`;
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
-    $("heroWindow").textContent = "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + " · 80% confidence";
+    const hw = $("heroWindow");
+    hw.textContent = (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
+    hw.classList.toggle("hw-stale", !!pred.stale);
     renderFsdSummary(pred);
 
     const ring = $("ringFg"), C = 2 * Math.PI * 78, d = pred.daysToMedian;

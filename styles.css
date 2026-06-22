@@ -111,6 +111,7 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .hero-window{display:inline-block;margin-top:6px;font-size:14px;font-weight:600;color:var(--cyan);font-family:var(--mono);
   background:rgba(57,212,255,.08);border:1px solid rgba(57,212,255,.22);border-radius:8px;padding:4px 10px}
 .hero-window:empty{display:none}
+.hero-window.hw-stale{color:var(--amber);background:rgba(232,177,90,.10);border-color:rgba(232,177,90,.3)}
 .hero-countdown{display:flex;align-items:flex-end;gap:14px;margin:18px 0}
 .cd{text-align:center}
 .cd-num{font-size:30px;font-weight:800;line-height:1;font-family:var(--mono)}

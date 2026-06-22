@@ -73,8 +73,21 @@ export function predictNextOS(car, opts = {}) {
   const newer = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
   if (newer.length) {
     const v = newer[0];
-    const out = mcPredict({ t0Days: daysBetween(today, v.t0) + delta, k: v.k, L: 0.95, earliness, today, seedStr: "OS" + v.version + car.market + earliness });
-    out.targetLabel = v.version; out.kind = "distributed"; out.branch = "os"; out.earliness = earliness;
+    let t0Days = daysBetween(today, v.t0) + delta, eff = earliness, t0Sigma;
+    // STALENESS GUARD (mirrors client predict.js): a car many weeks behind the newest build it
+    // could get is a demonstrated laggard — don't claim it leaps to the newest build at the
+    // active-fleet midpoint. Push late, delay, widen. Only when we have no measured earliness.
+    const pc = W.parseOS(car.installedVersion || "0"), pn = W.parseOS(v.version);
+    const weeksBehind = (pc && pn) ? Math.max(0, (pn.year * 52 + pn.week) - (pc.year * 52 + pc.week)) : 0;
+    const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
+    const stale = noHistory && weeksBehind >= 9;
+    if (stale) {
+      eff = Math.min(0.93, Math.max(eff, 0.8));
+      t0Days += Math.min(60, Math.round(weeksBehind * 1.5));
+      t0Sigma = Math.max(14, Math.min(45, weeksBehind));
+    }
+    const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") });
+    out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = stale; out.weeksBehind = weeksBehind;
     return out;
   }
   const cad = osCadence(versions);
