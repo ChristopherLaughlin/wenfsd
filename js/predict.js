@@ -210,38 +210,51 @@ const Predict = (function () {
     // The real question is whether the software update you're about to get actually changes your
     // FSD version. Compare your current FSD to the FSD the build carries.
     const osNext = predictNextOS(car, today);   // your next software update (newest in-region build)
+    const nextIsConcrete = osNext.kind !== "projected";
     const buildFsd = osNext.fsdInBuild;
     const buildKey = (buildFsd && buildFsd !== "—") ? WEN.fsdKey(buildFsd) : null;
 
-    // (1) your next software update carries a NEWER FSD → they arrive together, same build, same day.
-    if (osNext.kind !== "projected" && buildKey != null && buildKey > curKey) {
-      const carrierLabel = osNext.targetLabel;            // the OS build that carries the new FSD
-      osNext.bundledWith = carrierLabel;                  // (set before we relabel to the FSD version)
-      osNext.targetLabel = buildFsd; osNext.current = cur; osNext.mode = "bundled"; osNext.branch = "fsd";
-      osNext.fsdChanges = true;
-      osNext.note = `Good news — your next software update (${carrierLabel}) actually changes your FSD: it carries FSD ${buildFsd} (up from ${cur}). FSD ships inside the OS build, so the two arrive on the same day.`;
+    // INVARIANT: FSD ships INSIDE an OS build, so a new FSD can never reach you BEFORE your next
+    // software update. The soonest you can get it is bundled with that update. Reuse the OS
+    // prediction (same build, same date) so the two can never disagree or invert.
+    const bundleWithNext = (label, knownFsd) => {
+      const carrierLabel = osNext.targetLabel;            // the OS build that carries it
+      osNext.bundledWith = carrierLabel;                  // set before we relabel to the FSD version
+      osNext.targetLabel = label; osNext.current = cur; osNext.mode = "bundled"; osNext.branch = "fsd"; osNext.fsdChanges = true;
+      osNext.note = knownFsd
+        ? `Good news — your next software update (${carrierLabel}) actually changes your FSD: it carries FSD ${label} (up from ${cur}). FSD ships inside the OS build, so they arrive on the same day.`
+        : `${label} ships inside an OS build, and the next software update rolling to you (${carrierLabel}) is the build that carries it — so your software update and FSD ${label} arrive together, same day.`;
       return osNext;
-    }
+    };
 
-    // (2) the region has a newer FSD modelled that no in-region build carries yet (e.g. US 'v14 Lite'
-    //     for HW3, or a forthcoming major). It'll land in a FUTURE build — separately from, and
-    //     usually later than, your next maintenance update.
+    // (1) the build we KNOW you're getting carries a newer FSD → bundled, same day.
+    if (nextIsConcrete && buildKey != null && buildKey > curKey) return bundleWithNext(buildFsd, true);
+
     const configHasNewer = nextMajor != null && nextMajor > (WEN.fsdMajor(cur) || 0) && (f.t0 || f.mode === "rolling" || f.mode === "early" || f.mode === "current");
     if (configHasNewer) {
+      // Is the new FSD already carried by a build that's at-or-below the newest one you're getting?
+      // (carrierBuild only returns in-region builds, and your next update is the newest in-region
+      // build, so any carrier ≤ it.) If so, you receive that FSD WITH your next software update →
+      // bundled. This also covers live tracker data that omits per-build FSD (buildKey unknown).
       const carrier = carrierBuild(car, nextMajor);
-      if (carrier) {
-        const t0Days = daysBetween(today, carrier.t0) + regionDelta(car);
-        const out = mcPredict({ t0Days, k: carrier.k || 0.33, L: 0.95, earliness: car.earlinessPercentile, today, seedStr: "FSDcar" + f.next + car.market + car.earlinessPercentile });
-        out._t0Days = t0Days; out._k = carrier.k || 0.33;
-        out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.laterBuild = carrier.version; out.fsdChanges = true;
-        out.note = `${f.next} ships inside OS build ${carrier.version}+, newer than your next maintenance update — you'll get it when that build reaches you (a separate, later software update).`;
-        return out;
-      }
-      const t0Days = f.t0 ? daysBetween(today, f.t0) : 30;
+      // You receive the new FSD WITH your next software update when either:
+      //  - a current in-region build already carries it (carrier ≤ the newest build you're getting), or
+      //  - we don't know this build's FSD (live tracker data omits it) but the region is actively
+      //    shipping this FSD in builds now (rolling/early/current) → the newest build almost
+      //    certainly carries it. Bundling (vs a fabricated separate date) is both likelier and safer.
+      const carrierBundles = nextIsConcrete && carrier && WEN.verKey(carrier.version) <= WEN.verKey(osNext.targetLabel);
+      const unknownButRolling = nextIsConcrete && buildKey == null && (f.mode === "rolling" || f.mode === "early" || f.mode === "current");
+      if (carrierBundles || unknownButRolling) return bundleWithNext(f.next, false);
+      // (2) genuinely forthcoming FSD — not in ANY build you're about to get (e.g. US 'v14 Lite' for
+      //     HW3). It ships in a LATER build, so it must land on/after your next software update —
+      //     never before. Floor the timing at the next-OS midpoint.
+      const floorDays = nextIsConcrete && osNext.daysToMedian != null ? osNext.daysToMedian + 7 : 0;
+      let t0Days = f.t0 ? daysBetween(today, f.t0) : 30;
+      t0Days = Math.max(t0Days, floorDays);
       const out = mcPredict({ t0Days, k: f.k || 0.1, L: 0.9, earliness: car.earlinessPercentile, t0Sigma: f.t0Sigma || 14, today, seedStr: "FSDfb" + car.market });
       out._t0Days = t0Days; out._k = f.k || 0.1;
       out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.fsdChanges = true;
-      out.note = `${f.next} for ${car.hardware} in ${car.market} is expected around this window. It arrives inside a future OS build — not necessarily your very next one.`;
+      out.note = `${f.next} for ${car.hardware} in ${car.market} isn't carried by any build you're about to receive yet — it'll ship in a later OS build, after your next software update.`;
       return out;
     }
 
