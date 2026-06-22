@@ -349,6 +349,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .fsd-stat{background:#0b0e14;border:1px solid var(--line);border-radius:12px;padding:14px}
 .fsd-num{font-size:16px;font-weight:700;color:var(--amber);font-family:var(--mono)}
 .fsd-lbl{font-size:11px;color:var(--mut);margin-top:3px}
+.fsd-compare{font-size:13px;line-height:1.5;margin:-8px 0 16px;padding:11px 14px;border-radius:11px;
+  background:#0b0e14;border:1px solid var(--line);border-left-width:3px}
+.fsd-compare.fc-ahead{border-left-color:#5fd1a0}
+.fsd-compare.fc-behind{border-left-color:#e8b15a}
+.fsd-compare.fc-same{border-left-color:#6aa3ff}
+.fsd-compare.fc-home{border-left-color:var(--line);color:var(--mut)}
+.fsd-compare .fc-quip{color:var(--mut);font-style:italic}
+.fsd-compare:empty{display:none}
 .timeline{list-style:none;margin:0;padding:0}
 .timeline li{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:11px 0 11px 18px;
   position:relative;border-left:2px solid var(--line);font-size:13px}

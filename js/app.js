@@ -838,6 +838,41 @@
       `<div class="fsd-stat"><div class="fsd-num">${f ? esc(f.current) : "—"}</div><div class="fsd-lbl">current FSD ${isYours ? "(yours)" : "(typical car)"}</div></div>` +
       `<div class="fsd-stat"><div class="fsd-num">${esc(eta)}</div><div class="fsd-lbl">next FSD — ${isYours ? "your ETA" : "typical-car ETA"}</div></div>`;
 
+    // ---- Explore: a genuine head-to-head vs YOUR region (this is what makes the dropdown useful) ----
+    const cmp = $("fsdCompare");
+    if (cmp) {
+      const home = v ? v.market : "Australia";
+      const homeR = WEN.regions[home] || {};
+      const homeF = homeR.fsd ? homeR.fsd[hw] : null;
+      if (isYours || !v) {
+        // viewing your own region (or no car): explain the tool + tease the lead board
+        const leader = Object.entries(WEN.regions)
+          .filter(([, r]) => r.fsd && r.fsd[hw])
+          .sort((a, b) => (a[1].osLagDays || 0) - (b[1].osLagDays || 0))[0];
+        const ld = leader ? leader[0] : "the US";
+        const ldF = leader && leader[1].fsd[hw] ? leader[1].fsd[hw].current : "—";
+        cmp.innerHTML = v
+          ? `🧭 <strong>This is your turf (${esc(home)}).</strong> Pick another region above (or tap a row below) to see how many days it runs ahead of — or behind — you. Spoiler: <strong>${esc(ld)}</strong> is usually first to the party, currently on <strong>${esc(ldF)}</strong>.`
+          : `🧭 Pick a region above to explore who gets builds first. <strong>${esc(ld)}</strong> typically leads (on <strong>${esc(ldF)}</strong>); the rest of us refresh the app and wait.`;
+        cmp.className = "fsd-compare fc-home";
+      } else {
+        const lag = (region.osLagDays || 0) - (homeR.osLagDays || 0); // +ve ⇒ explored region trails yours
+        const ahead = lag < 0, same = lag === 0;
+        const days = Math.abs(lag);
+        const dir = same ? "neck-and-neck with" : ahead ? `~${days} day${days === 1 ? "" : "s"} AHEAD of` : `~${days} day${days === 1 ? "" : "s"} BEHIND`;
+        const fsdSame = homeF && f && homeF.current === f.current;
+        const fsdLine = !homeF || !f ? ""
+          : fsdSame ? ` Both of you are on <strong>${esc(f.current)}</strong> — same boat.`
+          : ` They're on <strong>${esc(f.current)}</strong> vs your <strong>${esc(homeF.current)}</strong>.`;
+        const quip = rnd(ahead
+          ? [`Salt levels: rising. 🧂`, `Yes, they got it first. Again.`, `Try not to refresh the changelog out of spite.`, `The grass really is greener (and more autonomous) over there.`]
+          : same ? [`Misery loves company. 🫠`, `At least you're suffering together.`, `Synchronised waiting — very Olympic.`]
+          : [`Smug mode: unlocked. 😎`, `For once, you're not last. Savour it.`, `Somewhere, ${esc(rname0)} owners are refreshing in envy.`]);
+        cmp.innerHTML = `🆚 <strong>${esc(rname0)}</strong> vs your <strong>${esc(home)}</strong>: OS builds reach there <strong>${dir}</strong> you.${fsdLine} <span class="fc-quip">${quip}</span>`;
+        cmp.className = "fsd-compare " + (ahead ? "fc-behind" : same ? "fc-same" : "fc-ahead");
+      }
+    }
+
     // region × hardware matrix (highlights the explored region)
     const rows = Object.keys(WEN.regions).map(rname => {
       const r = WEN.regions[rname];
