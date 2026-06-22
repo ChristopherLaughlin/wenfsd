@@ -346,7 +346,9 @@ tr.fw-next td{background:rgba(70,180,140,.05)}
 /* top-bar connect control */
 .top-connect{font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;border:1px solid;transition:filter .12s}
 .top-connect:hover{filter:brightness(1.12)}
-.top-connect.tc-off{background:var(--red,#e0444e);color:#fff;border-color:transparent}
+/* secondary, not solid-red: the no-login Quick Predict path is the primary CTA — this shouldn't out-shout it */
+.top-connect.tc-off{background:transparent;color:var(--mut);border-color:var(--line2)}
+.top-connect.tc-off:hover{color:var(--txt);border-color:var(--mut2)}
 .top-connect.tc-link{background:rgba(90,160,255,.12);color:var(--cyan);border-color:rgba(90,160,255,.4)}
 .top-connect.tc-on{background:rgba(70,180,140,.14);color:#5fd1a0;border-color:rgba(70,180,140,.45)}
 /* social profile block */
