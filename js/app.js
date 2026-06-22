@@ -1500,6 +1500,34 @@
   }
 
   // ---- model calibration / back-test against real tracker history ----
+  // Prominent "does the model actually work?" scoreboard (top of the open-model card). Surfaces
+  // the SAME back-tested + live numbers the calibration card computes — just front-and-centre.
+  function renderScoreboard(cal) {
+    const board = $("scoreboard"), tilesEl = $("sbTiles"), noteEl = $("sbNote"), scopeEl = $("sbScope");
+    if (!board) return;
+    const bt = cal && cal.backtest, acc = cal && cal.accuracy, haveAcc = acc && acc.scored > 0;
+    if (!bt && !haveAcc) {
+      board.hidden = false; if (scopeEl) scopeEl.textContent = "— building";
+      tilesEl.innerHTML = `<div class="sb-tile sb-soon"><div class="sb-num">soon</div><div class="sb-lbl">accuracy appears once there's enough real release history</div></div>`;
+      noteEl.innerHTML = `We refuse to print a made-up accuracy number. Every connected car and tracker reading adds a data point; the moment we can measure it honestly, it shows up here. 🧾`;
+      return;
+    }
+    board.hidden = false;
+    const sample = !cal || cal.mode === "sample";
+    if (scopeEl) scopeEl.textContent = sample ? "— illustrative history" : haveAcc ? "— live, measured" : "— back-tested";
+    const tiles = [];
+    if (bt) {
+      tiles.push([`${bt.coveragePct}%`, `of ${bt.tested} past releases landed inside our 80% window (target ~80%)`, bt.coveragePct >= 70 && bt.coveragePct <= 92]);
+      tiles.push([`±${bt.medianAbsErrorDays}d`, `median miss between predicted and actual release date`, true]);
+    }
+    if (haveAcc) tiles.push([`${acc.hitRate}%`, `live per-car hit-rate (${acc.scored} connected prediction${acc.scored === 1 ? "" : "s"} scored)`, true]);
+    if (bt && bt.bandFactor) tiles.push([`×${bt.bandFactor}`, `self-calibration: we auto-widen/narrow the window to match real history`, true]);
+    tilesEl.innerHTML = tiles.map(([n, l, ok]) => `<div class="sb-tile${ok ? " sb-ok" : ""}"><div class="sb-num">${esc(n)}</div><div class="sb-lbl">${esc(l)}</div></div>`).join("");
+    noteEl.innerHTML = sample
+      ? `These are <strong>back-tested on illustrative release history</strong> while live tracker data is wiring up — not yet a live per-car record. We'd rather show a modest measured number than a flashy fake one. The live figure replaces it automatically.`
+      : `Measured by replaying real release history (walk-forward) and scoring live predictions against what actually happened. No fabricated figures, ever.`;
+  }
+
   function renderCalibration(cal) {
     const el = $("calibrationBody");
     if (!el) return;
@@ -2027,7 +2055,7 @@
   window.WENFSD = {
     rerender() { renderFSD(); renderStats(); renderDataMode(); renderFeed(); render(); },
     setSources(list, live) { renderDataSources(list, live); },
-    setCalibration(cal) { renderCalibration(cal); },
+    setCalibration(cal) { renderCalibration(cal); renderScoreboard(cal); },
     addConnectedVehicles, setLinkState, addHistory,
     get activeVehicle() { return av(); },
   };
@@ -2043,6 +2071,7 @@
   renderDataSources();
   renderFeed();
   renderCalibration();
+  renderScoreboard();
   renderLeaderboard();
   wire();
   render();

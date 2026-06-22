@@ -520,6 +520,13 @@
       <summary class="card-h">🔬 The model — open, and yours to tinker with <span class="card-sub">no black box</span></summary>
       <div class="why-body">
         <p class="hint">We don't want you to trust us — we want you to <strong>check us</strong>. The whole prediction model is open. Pull it apart, find where it's wrong, and help make it better.</p>
+
+        <!-- TRACK RECORD scoreboard — the honest accuracy numbers, front and centre -->
+        <div class="scoreboard" id="scoreboard" hidden>
+          <div class="sb-h">📊 Track record <span id="sbScope" class="sb-scope"></span></div>
+          <div class="sb-tiles" id="sbTiles"></div>
+          <p class="sb-note" id="sbNote"></p>
+        </div>
         <div class="model-actions">
           <button class="btn" id="dlModelBtn" type="button">📥 Download the model (Excel / Google&nbsp;Sheets)</button>
           <a class="btn-ghost" href="/model.json" target="_blank" rel="noopener">View the raw model (JSON)</a>

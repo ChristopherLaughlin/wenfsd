@@ -31,7 +31,9 @@ export const config = {
   tokenEncKey: process.env.TOKEN_ENC_KEY || "",          // 32-byte key (base64/hex) for token encryption
   allowLiveSources: bool(process.env.ALLOW_LIVE_SOURCES, false), // explicit opt-in to fetch external trackers
   adminToken: process.env.ADMIN_TOKEN || "",             // gates the creator-only /admin dashboard (unset ⇒ disabled)
-  notifyWebhookUrl: process.env.NOTIFY_WEBHOOK_URL || "", // where "your update landed" events POST (email provider / Zapier / ntfy); unset ⇒ log-only
+  notifyWebhookUrl: process.env.NOTIFY_WEBHOOK_URL || "", // where "your update landed" events POST (Zapier / ntfy); unset ⇒ log-only
+  resendApiKey: process.env.RESEND_API_KEY || "",        // if set (with NOTIFY_FROM_EMAIL), send real email via Resend
+  notifyFromEmail: process.env.NOTIFY_FROM_EMAIL || "",  // verified sender, e.g. "wenFSD <updates@wenfsd.info>"
 };
 
 // If real mode is requested but its required config is incomplete, DEGRADE to sample

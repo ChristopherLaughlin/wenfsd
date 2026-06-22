@@ -5,9 +5,22 @@
 import { config } from "./config.js";
 
 export async function deliver({ to, subject, text, event }) {
+  // Provider order: a real email sender (Resend HTTP API) if configured, else a generic webhook,
+  // else log-only. All dependency-free (plain fetch). Pick whichever you've set env for.
+  if (config.resendApiKey && config.notifyFromEmail) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.resendApiKey}` },
+        body: JSON.stringify({ from: config.notifyFromEmail, to: [to], subject, text }),
+      });
+      if (!res.ok) { console.warn(`[notify] resend ${res.status} for ${to}`); return { delivered: false, channel: "resend", status: res.status }; }
+      return { delivered: true, channel: "resend" };
+    } catch (e) { console.warn(`[notify] resend error for ${to}:`, e.message); return { delivered: false, channel: "resend", error: e.message }; }
+  }
   const url = config.notifyWebhookUrl;
   if (!url) {
-    console.log(`[notify] (no NOTIFY_WEBHOOK_URL) would send to ${to}: ${subject}`);
+    console.log(`[notify] (no email provider / webhook configured) would send to ${to}: ${subject}`);
     return { delivered: false, channel: "none" };
   }
   try {
