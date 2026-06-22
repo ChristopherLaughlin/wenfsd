@@ -41,6 +41,7 @@
     <div class="cn-text"><span class="cn-emoji" id="cnEmoji">🔗</span><span id="cnLine"></span></div>
     <div class="cn-actions">
       <button class="btn cn-btn" id="cnConnect" type="button">Connect Tesla</button>
+      <button class="cn-dismiss js-open-security" type="button" title="What can it actually access?">is this safe? 🔒</button>
       <button class="cn-dismiss" id="cnDismiss" type="button" title="Fine, ignore me">not now 🙄</button>
     </div>
   </div>
@@ -173,7 +174,7 @@
             <input type="checkbox" id="optInToggle"/>
             <span>Contribute this car's anonymised version data to wenFSD fleet stats</span>
           </label>
-          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only — we can see your software version, not drive your car into a lake). No manual logging. Opting in improves predictions for everyone, which is basically charity. You can disconnect or opt out anytime, no hard feelings. 🤝</p>
+          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only — we can see your software version, not drive your car into a lake). No manual logging. Opting in improves predictions for everyone, which is basically charity. You can disconnect or opt out anytime, no hard feelings. 🤝<br/><button type="button" class="sec-link js-open-security">🔒 Exactly what we can &amp; can't access →</button></p>
 
           <!-- social profile (connected cars only) -->
           <div class="profile-block" id="profileBlock" hidden>
@@ -356,6 +357,25 @@
         <li><strong>Honest to a fault</strong>: every modelled number is badged as modelled. We will not look you in the eye and invent a fleet statistic. That's a different company's job. 📦</li>
       </ul>
       <div class="stats-strip" id="statsStrip"></div>
+    </details>
+  </section>
+
+  <!-- SECURITY & PRIVACY (for the reasonably-suspicious) -->
+  <section class="card" id="securityCard">
+    <details class="why-details" id="securityDetails">
+      <summary class="card-h">🔒 Security &amp; privacy <span class="card-sub">for the reasonably suspicious</span></summary>
+      <p class="why-sub">Short version: you should be skeptical of giving any third-party app access to your Tesla. Good. Here's exactly what wenFSD can and can't do — decide for yourself.</p>
+      <ul class="why sec-list">
+        <li>🔑 <strong>We never see your Tesla password.</strong> You log in on Tesla's own page — the same OAuth handshake as “Sign in with Google.” We only ever receive a token.</li>
+        <li>👀 <strong>Read-only. Truly.</strong> The single scope we request is <code>vehicle_device_data</code> — it lets us read your <em>software version</em>. It <strong>cannot</strong> drive, steer, unlock, open, charge, honk, or send <em>any</em> command to your car. The capability simply isn't in the grant.</li>
+        <li>🔐 <strong>Your tokens are encrypted at rest</strong> (AES-256-GCM) and only ever move over HTTPS. We store the bare minimum: your Tesla account id, the email from the login, and your car's VIN / version / region.</li>
+        <li>🙈 <strong>Nothing is public unless you tick the box.</strong> Fleet sharing and the leaderboard are <strong>opt-in</strong> and default to off. No handle, no car, no grief note appears anywhere until you choose it.</li>
+        <li>🧹 <strong>Leave anytime, no hard feelings.</strong> Disconnect in-app, delete your data with one click, or revoke us entirely from <em>Tesla Account → Security → Third-Party Apps</em>. Gone is gone.</li>
+        <li>🚗 <strong>You don't have to connect at all.</strong> “Add by VIN” gives you the full prediction with zero login. Connecting just automates reading your version.</li>
+        <li>🍪 <strong>No cookies, no trackers, no ad-tech.</strong> No Google Analytics, no Facebook pixel, nothing sold to anyone. Visit counts use a salted daily hash — we don't even store your IP.</li>
+        <li>🫡 <strong>Honest caveat:</strong> this is an independent project, not a SOC-2-audited megacorp. While you're connected, the token <em>can</em> read your vehicle data — that's the whole point — and you can cut it off in two taps. We're telling you the trade-off instead of hiding it. <span class="mut-i">(We also genuinely cannot afford to be sinister.)</span></li>
+      </ul>
+      <p class="sec-foot">Want to poke holes in this? The full <a href="PRIVACY.md">Privacy policy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a> spell it all out, including how to reach a human. We'd genuinely rather you ask than worry.</p>
     </details>
   </section>
 

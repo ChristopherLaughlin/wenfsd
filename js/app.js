@@ -1618,6 +1618,8 @@
     // delegated clicks for dynamically-rendered interactive elements (region rows, FSD
     // matrix rows, firmware/feed version links) — bound once, survive re-renders.
     function handleActivate(e) {
+      const sec = e.target.closest(".js-open-security");
+      if (sec) { e.preventDefault(); const d = $("securityDetails"); if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" }); } return; }
       const er = e.target.closest("[data-explore-region]");
       if (er) { e.preventDefault(); exploreRegion(er.getAttribute("data-explore-region")); return; }
       const g = e.target.closest("[data-goto-version]");
