@@ -2,8 +2,32 @@
 // 80% window against historical branch first-seen dates and return a coverage % + median error.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { backtest } from "../src/calibration.js";
+import { backtest, fitRollout } from "../src/calibration.js";
 import { computeCalibration } from "../src/calibration.js";
+
+// logit helper for synthesising install days from a known logistic curve
+const logit = (p) => Math.log(p / (1 - p));
+
+test("fitRollout recovers the k + t0 it was generated from (learns params from real timing)", () => {
+  const k0 = 0.22, t0_0 = 18, n = 60;
+  // simulate n cars receiving the build at the days a logistic(k0,t0_0) curve predicts
+  const days = [];
+  for (let i = 0; i < n; i++) { const p = (i + 0.5) / n; days.push(t0_0 + logit(p) / k0); }
+  const fit = fitRollout(days);
+  assert.ok(fit, "should fit with 60 observations");
+  assert.ok(Math.abs(fit.k - k0) < 0.03, `k≈${k0}, got ${fit.k}`);
+  assert.ok(Math.abs(fit.t0Days - t0_0) < 2, `t0≈${t0_0}, got ${fit.t0Days}`);
+  assert.equal(fit.n, n);
+});
+
+test("fitRollout refuses to fit without enough observations (no fabricated params)", () => {
+  assert.equal(fitRollout([1, 2, 3]), null);
+  assert.equal(fitRollout([]), null);
+});
+
+test("fitRollout returns null for non-increasing/degenerate data", () => {
+  assert.equal(fitRollout(new Array(12).fill(5)), null); // all same day → zero slope
+});
 
 test("backtest returns null without enough branch history", () => {
   assert.equal(backtest([]), null);

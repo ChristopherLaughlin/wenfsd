@@ -1521,6 +1521,7 @@
       tiles.push([`±${bt.medianAbsErrorDays}d`, `median miss between predicted and actual release date`, true]);
     }
     if (haveAcc) tiles.push([`${acc.hitRate}%`, `live per-car hit-rate (${acc.scored} connected prediction${acc.scored === 1 ? "" : "s"} scored)`, true]);
+    if (cal && cal.fittedCount > 0) tiles.push([`${cal.fittedCount}`, `build${cal.fittedCount === 1 ? "" : "s"} with k + t0 learned from real install timing (not hand-set priors)`, true]);
     if (bt && bt.bandFactor) tiles.push([`×${bt.bandFactor}`, `self-calibration: we auto-widen/narrow the window to match real history`, true]);
     tilesEl.innerHTML = tiles.map(([n, l, ok]) => `<div class="sb-tile${ok ? " sb-ok" : ""}"><div class="sb-num">${esc(n)}</div><div class="sb-lbl">${esc(l)}</div></div>`).join("");
     noteEl.innerHTML = sample
