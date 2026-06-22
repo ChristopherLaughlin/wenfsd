@@ -53,6 +53,10 @@
     "FSD v14 on HW3 in {mkt}? That's not a rollout, that's a hostage situation with no demands.",
     "you have a better chance of Tesla mailing you a HW4 board personally signed by Elon.",
     "the ETA is best expressed in geological epochs. 🪨",
+    "the model checked, double-checked, then offered you a hug instead of a date. 🫂",
+    "your car's hardware and your hope are both, respectfully, end-of-life.",
+    "ETA: shortly after the heat death of the universe, give or take a fortnight. 🌌",
+    "we ran the numbers. The numbers asked us not to share them with you.",
   ];
   const BETTER_LUCK = [
     "You'd have better luck teaching a magpie to parallel park. 🐦🚗",
@@ -65,6 +69,10 @@
     "You'd have better luck spotting a Tasmanian tiger doing donuts in a car park. 🐅",
     "You'd have better luck convincing the regulator that roundabouts are 'basically optional'. 🔄",
     "You'd have better luck if the car identified as a HW4 and committed to the bit. 🎭",
+    "You'd have better luck getting a straight answer out of a Tesla service centre. 📞",
+    "You'd have better luck teaching the Autopark to respect a single line marking. 🅿️",
+    "You'd have better luck finding the indicator stalk they deleted. 🫥",
+    "You'd have better luck if you renamed the car 'HW4' and just believed really hard. 🙏",
   ];
   const DOOM_ADVICE = [
     "Our official recommendation: enjoy the Autopilot you've got, and make peace. 🧘",
@@ -72,6 +80,10 @@
     "Set expectations to zero and you can only be pleasantly surprised. (You won't be.)",
     "Maybe sell it to someone in California before they find out. We didn't say that.",
     "Honestly? Buy a HW4 car. We'll wait. We have nothing but time, and so do you.",
+    "Name a houseplant 'FSD' so something in your life finally grows. 🪴",
+    "Treat 'HW3' as a personality, not a limitation. Lean in. Thrive. 💅",
+    "Picture the v14 you'll never get. Hold it. Let it go. That's the whole journey. 🎈",
+    "The good news: Autopilot still works. The bad news: that was the good news.",
   ];
   function isDownUnderHW3(v) { return v && v.hardware === "AI3" && (v.market === "Australia" || v.market === "New Zealand"); }
   function renderDoom(el, v, fresh) {
@@ -217,6 +229,9 @@
       `🚗 Add your car. Yes, the whole VIN. No, we won't sell it to anyone. (We can't even afford to.)`,
       `📡 Your Tesla is out there, asking "wen FSD" into the void. Connect it and let's get answers.`,
       `🍿 Add a vehicle and find out if you're "first wave" or "suffering in silence on {nope}".`.replace("{nope}", "an ancient build"),
+      `🧮 Pick your car above. We'll convert "soon™" into an actual date with actual error bars.`,
+      `🛋️ No login, no VIN, no commitment. It's the least Tesla-like experience you'll have all day.`,
+      `🔭 Tell us your model, year and version. We'll tell you "two weeks" — but, like, responsibly.`,
     ]);
     $("heroNote").innerHTML = "👆 <strong>Use the quick form above</strong> — just your model, year &amp; current software. <strong>No login, no VIN, nothing leaves your browser.</strong> We'll predict your next software update and next FSD version, with confidence bands. (Prefer to auto-track or use your VIN? Those are optional, in the garage below.)";
     $("predictTips").innerHTML = "";
@@ -272,7 +287,8 @@
   }
   function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; } // fresh every call (transient msgs)
   const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter.", "Coming right after the robotaxis. 🚕", "Soon™ — on Elon Time™.", "Two more weeks. (The two weeks renew automatically.)",
-    "It's in the next build. The one after the next one.", "Leaked on X by a guy with a rocket emoji. Ironclad.", "The wizard said two weeks. The wizard always says two weeks. 🧙", "Your car can feel you refreshing. It's getting embarrassed.", "So close you can almost taste the regression bugs.", "Optimus will hand-deliver it. Standby. 🤖", "Imminent. In the geological sense.", "The OTA gods are merely buffering. 🙏", "Any minute now. For a generous definition of 'minute'."];
+    "It's in the next build. The one after the next one.", "Leaked on X by a guy with a rocket emoji. Ironclad.", "The wizard said two weeks. The wizard always says two weeks. 🧙", "Your car can feel you refreshing. It's getting embarrassed.", "So close you can almost taste the regression bugs.", "Optimus will hand-deliver it. Standby. 🤖", "Imminent. In the geological sense.", "The OTA gods are merely buffering. 🙏", "Any minute now. For a generous definition of 'minute'.",
+    "It's coming. Like Christmas, but you don't know the year. 🎄", "Two weeks — now with a confidence interval of ± two weeks.", "Closer than it appears. The mirror is lying, but still.", "Your update and the robotaxi are in a footrace. Both pulled a hamstring. 🏃", "It's queued. Behind everyone in California. And Texas. And Norway. 🇳🇴", "Elon liked a tweet about it. That's basically a changelog. ❤️", "Downloading at the speed of vibes. 📶", "Patience is a virtue. Tesla is testing exactly how virtuous you are.", "It's in beta. The beta is in beta. The beta's beta has a beta. ♾️", "Manifesting. Loudly. Into the software menu. 🔮"];
   // region-agnostic Tesla/FSD meme one-liners — mixed into the hero flavour for variety
   const GENERIC = [
     "Still on {ver}? It's fine. FSD is 'two weeks' away. It's always two weeks away.",
@@ -301,26 +317,36 @@
     "It's coming in the same update as the Roadster, the van, and world peace.",
     "Your Tesla has more compute than the Apollo missions and uses it to ignore you.",
     "Autopark found a spot, considered it, and emotionally withdrew. Relatable.",
+    "{ver} → your car depreciated faster than the FSD timeline. Impressive, honestly. 📉",
+    "The wipers came on. It was not raining. The wipers know something. 🌦️",
+    "It detected a stop sign on a billboard and got philosophical about it. 🛑",
+    "You bought the future. The future is buffering. Please hold. ⏳",
+    "Cabin overheat protection kicked in. Your patience has no such protection. 🥵",
+    "Lane-change signalled, reconsidered, signalled again. A true Libra. ♎",
+    "Stuck on {ver}? Your software updates and your gym membership share a usage pattern.",
+    "It can play Cuphead and fart noises but won't change lanes near a truck. Priorities. 💨",
+    "The yoke turns. The wheel does not. We do not talk about the yoke. 🛞",
+    "It's basically AGI, but for finding reasons not to update your specific car. 🤖",
   ];
   const REGION_FLAVOR = {
     "Australia": { flag: "🇦🇺",
-      soon: ["Two weeks. Trust me, mate. 🦘", "She'll be right — a fortnight, tops.", "Basically here. Crack a tinnie. 🍺", "Soon-ish, bruz. Trust.", "Won't be a sec — go put the snags on. 🌭", "It's comin' quicker than a bin chicken on a chip. 🐦"],
+      soon: ["Two weeks. Trust me, mate. 🦘", "She'll be right — a fortnight, tops.", "Basically here. Crack a tinnie. 🍺", "Soon-ish, bruz. Trust.", "Won't be a sec — go put the snags on. 🌭", "It's comin' quicker than a bin chicken on a chip. 🐦", "Any tick of the clock now, champ. ⏰", "Closer than a magpie in swooping season. 🐦‍⬛", "Hang about — it's nearly here, you legend.", "Coming faster than you can say 'where's the GST'.", "Reckon it lands before the next servo sausage sizzle. 🌭"],
       quips: ["Strewth — still on {ver}? She'll be right.", "Your car's more behind than a tradie on a Friday arvo.", "No dramas, wen FSD is basically here. *distant kangaroo noises*", "Still on {ver}? Yeah-nah, the update's comin', mate.", "Hooroo to {ver} — eventually.", "Tell 'em they're dreamin'… then check again tomorrow.", "Carn, Tesla. We're not getting any younger down here.", "It's coming faster than a magpie in September. 🐦",
         "Still on {ver}? Reckon it'll land between smoko and knock-off.", "Your update's doing a Bradbury — last in the queue, might still win. ⛸️", "Fair dinkum, {ver}'s older than a servo pie under the heat lamp. 🥧", "She's flat out like a lizard drinkin', that rollout. 🦎", "Yeah-nah it's close, but also yeah-nah it's RHD, so… nah. 🚗", "Drier than the Nullarbor out here on {ver}. Send update.", "Bit of a wait, but that's just Straya tax on everything, eh."] },
     "New Zealand": { flag: "🇳🇿",
-      soon: ["Two weeks. Trust me, bro. 🥝", "Sweet as, basically rolling out.", "Yeah-nah-yeah, real soon.", "Chur, won't be long now.", "Munted wait, but she's coming, bro.", "Bee's knees — any day now, eh."],
+      soon: ["Two weeks. Trust me, bro. 🥝", "Sweet as, basically rolling out.", "Yeah-nah-yeah, real soon.", "Chur, won't be long now.", "Munted wait, but she's coming, bro.", "Bee's knees — any day now, eh.", "Hard out, it's nearly here, bro.", "Lands before the jandals come off for winter. 🩴", "Couple sleeps away, ya beauty.", "Track stand — it's right round the corner, eh. 🚲"],
       quips: ["Still on {ver}? Sweet as, it's coming.", "Yeah nah yeah, it's basically rolling out, bro.", "Chur — won't be long now, eh.", "Still on {ver}? Hard. Hang in there, bro.", "She's a good keen update. Coming. Promise.", "Choice. Now we wait. Choice.",
         "Aussie gets it first again? Yeah, nah, classic. 🐑", "Still on {ver}? Egg, mate. The update's the same egg. 🥚", "Stink one, bro — {ver}'s ancient. But she'll come right.", "Jandals on, kettle's boiled, still no update. 🩴", "Population: 5 million. Teslas updated this week: possibly 3.", "Box of birds once it lands. Just gotta wait for Aus to finish, eh."] },
     "United States": { flag: "🇺🇸",
-      soon: ["Two weeks. Trust me bro. 🦅", "It's coming. Probably this OTA. 🫡", "Soon™. Very soon™.", "Faster than you can say 'supervised'.", "Locked, loaded, and rolling. Allegedly. 🇺🇸", "Elon tweeted a rocket. That counts. 🚀"],
+      soon: ["Two weeks. Trust me bro. 🦅", "It's coming. Probably this OTA. 🫡", "Soon™. Very soon™.", "Faster than you can say 'supervised'.", "Locked, loaded, and rolling. Allegedly. 🇺🇸", "Elon tweeted a rocket. That counts. 🚀", "Inbound like a drive-thru order. 🍔", "Any minute, freedom-units of soon. 🦅", "Closer than the next price change (and those are frequent).", "It's basically already in your driveway. Manifest it. ✨"],
       quips: ["Still on {ver}? That's downright un-American. 🦅", "Freedom units of patience required.", "Refresh harder. That always works.", "Still on {ver}? Elon tweeted, so… any minute now.", "It's coming faster than you can say 'Full Self-Driving (Supervised, terms apply)'.", "Manifest the update. Believe.", "Your neighbor has it. Of course they do.",
         "You get builds first and you STILL complain. Bald eagle sheds a tear. 🦅", "Still on {ver}? Texas got it last Tuesday. Texas gets everything.", "Drive-thru's faster than this rollout, and that's saying something. 🍔", "It's your god-given right to a point release. Demand it.", "Stuck on {ver}? Tweet at Elon. Worked for that one guy, probably.", "Robotaxi's launching in your city any day. So's the update. Same energy."] },
     "Canada": { flag: "🇨🇦",
-      soon: ["Two weeks. Trust me, bud. 🍁", "It'll be here before the next Tims run. ☕", "For sure for sure, soon.", "Give'r — almost there.", "Soon, bud. Sorry for the wait. 🙏", "Beauty — basically out, eh."],
+      soon: ["Two weeks. Trust me, bud. 🍁", "It'll be here before the next Tims run. ☕", "For sure for sure, soon.", "Give'r — almost there.", "Soon, bud. Sorry for the wait. 🙏", "Beauty — basically out, eh.", "Soon as the snow clears. So, May. ❄️", "Closer than the puck at a faceoff. 🏒", "Two-four says it lands this long weekend. 🍺", "Almost there, bud, no word of a lie."],
       quips: ["Still on {ver}, eh? Sorry aboot that.", "Patience, bud — it's coming, for sure for sure.", "It'll be here before the next double-double. ☕", "Still on {ver}? Beauty. Hang tight, bud.", "Take off, {ver}. Eventually, eh.", "It's coming, dontcha know.",
         "Update's frozen solid out here. Give'r a sec to thaw. ❄️", "Still on {ver}? It's a real gong show, bud.", "Coming slower than a Zamboni between periods. 🏒", "Sorry. Sorry. It's late. Sorry. (Very Canadian apology.)", "Two-four says it lands this weekend. 🍺", "It'll be here, bud — right after the Leafs win the Cup. So… eventually."] },
     "Europe": { flag: "🇪🇺",
-      soon: ["Two weeks*. (*pending homologation) 📋", "Soon — once 17 agencies sign off. 🇪🇺", "Approval imminent. Allegedly.", "Bald. (That's 'soon' in German. Cope.)", "Soon, after the consultation period. 📝", "Imminent — in three official languages. 🗣️"],
+      soon: ["Two weeks*. (*pending homologation) 📋", "Soon — once 17 agencies sign off. 🇪🇺", "Approval imminent. Allegedly.", "Bald. (That's 'soon' in German. Cope.)", "Soon, after the consultation period. 📝", "Imminent — in three official languages. 🗣️", "Soon — subject to a working-group sub-committee. 📚", "Bientôt. Bald. Presto. Pick a language to wait in. 🗣️", "Any decade now, pending impact assessment. 📊", "Closer than EU-wide phone-charger standardisation took. 🔌"],
       quips: ["Still on {ver}? Blame the regulators. 📋", "Approval pending since approximately forever.", "It's coming — after a public consultation period.", "Still on {ver}? The paperwork is, how you say, in progress.", "Coming soon to a TÜV-approved vehicle near you.", "GDPR-compliant patience required.",
         "FSD in Europe: a beautiful theoretical concept, like a balanced budget.", "Still on {ver}? The UNECE working group will get back to you. Eventually. 📚", "Roundabout handling pending approval from every roundabout individually. 🔄", "Your update is stuck in committee. The committee is stuck in another committee.", "It'll arrive precisely when the regulators mean it to. ⏳🧙", "Autobahn-ready software, delivered at the speed of bureaucracy. 🐌"] },
   };
@@ -345,6 +371,9 @@
     "A projection. Treat it like FSD itself: supervise it, don't trust it blindly. 👀",
     "Best numbers we've got. Tesla's actual ship date remains a closely guarded state secret. 🤫",
     "We modelled it; we did not pinky-promise it. Nobody at Tesla signed off on this. ✍️",
+    "A forecast with error bars — which already makes it more honest than 'two weeks'. 📏",
+    "Statistically literate hope. The best kind. 🤓",
+    "If it's late, blame the rollout curve. If it's early, you're welcome. 😎",
   ];
   const OS_PRED_REGION = {
     "Australia": ["A guess, not gospel — and {m} gets the build only after the US finds all the bugs. 🐛", "Predicted, not promised. Down here, 'soon' is measured in seasons. ☀️→🍂", "Forecast, mate. RHD markets sit last in the OTA queue, behind every roundabout on Earth. 🔄"],
@@ -365,7 +394,7 @@
     same: ["Your next software update is bug-fixes and vibes — FSD stays exactly put. 🧰", "Maintenance build incoming. The robotaxi dream rides a *later* parcel. 📦", "No new FSD this round. Most builds are like this; the shiny one comes later.", "FSD holds steady. A newer version lands in a future build Tesla hasn't shipped. ⏳"],
     notEntitled: ["The hardware's ready and willing. Your wallet has the floor. 💳", "Software updates: free. FSD: a small fortune. The dormant module waits patiently. 😴", "Your car *could* drive itself, if you'd just sign the cheque. 🖊️", "FSD's installed and napping — it wakes up when you buy the alarm clock. ⏰"],
     gated: ["A modelled regulatory window — i.e. a guess about when the bureaucrats finish reading. 📋", "Predicted, not promised, and gated behind regulators who do nothing in a hurry. ⏳"],
-    dated: ["A forecast — and FSD dates are Tesla's most theoretical numbers, which is really saying something.", "Predicted, not promised. 'Full Self-Driving' is supervised; so is this estimate. 👀", "Educated guess. FSD ETAs have a half-life shorter than a phantom brake. 🛑", "Modelled, not confirmed — Elon said 'this year', he just declined to specify which one. 📆"],
+    dated: ["A forecast — and FSD dates are Tesla's most theoretical numbers, which is really saying something.", "Predicted, not promised. 'Full Self-Driving' is supervised; so is this estimate. 👀", "Educated guess. FSD ETAs have a half-life shorter than a phantom brake. 🛑", "Modelled, not confirmed — Elon said 'this year', he just declined to specify which one. 📆", "We'd stake our reputation on it, but we've seen Tesla's roadmap. 🫣", "An estimate. The robotaxi keynote was also, technically, an estimate. 🎤"],
   };
   function fsdPredQuip(state, market) {
     const arr = FSD_PRED_QUIPS[state] || FSD_PRED_QUIPS.dated;
@@ -375,9 +404,9 @@
   // Rotating funny card subtitles — picked stable-per-load (fresh on refresh) so the whole
   // page reads differently every visit. Set the text content of decorative .card-sub spans.
   const SUBS = {
-    whenSub: ["probability by day (science!)", "your wen, quantified", "a graph of pure hope 📈", "statistically: soon-ish", "the suspense, plotted", "every day's odds, ranked by cope", "maths, but make it anxious"],
-    shotSub: ["wen, exactly? Put a date on it.", "no take-backs, hero 🎯", "easy to say 'two weeks' — prove it", "stake your bragging rights", "the model is watching 👀", "calling it is free; being wrong is forever"],
-    fsdRegSub: ["who gets it first (probably not you)", "the global FSD pecking order", "a leaderboard of smugness", "spoiler: the US, again 🇺🇸", "geography decides your autonomy", "find out exactly how jealous to be"],
+    whenSub: ["probability by day (science!)", "your wen, quantified", "a graph of pure hope 📈", "statistically: soon-ish", "the suspense, plotted", "every day's odds, ranked by cope", "maths, but make it anxious", "a bell curve of yearning 🔔", "the only Tesla timeline with error bars", "feelings, but with axes"],
+    shotSub: ["wen, exactly? Put a date on it.", "no take-backs, hero 🎯", "easy to say 'two weeks' — prove it", "stake your bragging rights", "the model is watching 👀", "calling it is free; being wrong is forever", "bet the house (the house is a Tesla)", "your turn to say 'trust me bro'", "loser buys the Supercharger session ⚡"],
+    fsdRegSub: ["who gets it first (probably not you)", "the global FSD pecking order", "a leaderboard of smugness", "spoiler: the US, again 🇺🇸", "geography decides your autonomy", "find out exactly how jealous to be", "your postcode is your destiny 📮", "rank your continent's heartbreak", "the autonomy hunger games 🏹"],
     // NOTE: the data/trust cards (OS rollout, calibration, rollout pace) deliberately keep their
     // plain static subtitles from the HTML — humour there reads as less credible (per the audit).
     footQuip: [
@@ -387,6 +416,10 @@
       "Powered by hope, S-curves, and an unhealthy relationship with the refresh button.",
       "wenFSD: because \"soon\" was not a satisfying answer and neither was \"trust me bro\".",
       "Disclaimer: staring at the prediction will not make the update arrive faster. We've tested this. Extensively.",
+      "Not affiliated with Tesla, who would frankly be horrified by our candour.",
+      "We aggregate public trackers and feelings. The trackers are public. The feelings are ours.",
+      "Open source, so you can read exactly how the sausage of cope is made. 🌭",
+      "Every figure here is one Elon tweet away from being gloriously wrong.",
     ],
   };
   // "Why wenFSD beats the trackers?" → "It doesn't. But at least…" (cycles on click + per load)
@@ -413,13 +446,23 @@
     "it can't be repossessed by an app.",
     "it won't ship a feature, remove it, then sell it back to you.",
     "your insurance premium won't read this site and panic.",
+    "it won't rename a perfectly good button into a fourth-level submenu.",
+    "it won't decide, mid-merge, that the truck beside you is a suggestion.",
+    "it never said the robotaxis would print you money while you sleep. 💸",
+    "it won't lock you out of your own car to install at 3am.",
+    "it doesn't get a software update that removes features you paid for.",
+    "it won't gaslight you with 'improvements to overall stability'.",
+    "it has never, not once, blamed the user for phantom braking.",
+    "it won't replace your stalk with a touchscreen and call it progress.",
+    "it doesn't depreciate the moment you drive it off the lot. (It's a website.)",
+    "it will never, ever, sell your data to an insurer. We can barely store it.",
   ];
   function rollWhyAnswer(fresh) {
     const el = $("whyAnswer"); if (!el) return;
     const pick = fresh ? rnd(AT_LEAST) : flavorPick("whyAnswer", AT_LEAST);
     el.innerHTML = `It doesn't. <span class="wa-but">But at least <em>${pick}</em></span>`;
   }
-  const TAB_TITLES = ["wenFSD — two weeks, probably", "wenFSD · refreshing won't help (you'll refresh anyway)", "wenFSD — wen, exactly?", "wenFSD · soon™", "wenFSD — trust me bro", "wenFSD · coming right after the robotaxis", "wenFSD — your update is in another castle", "wenFSD · still on the same build, huh", "wenFSD — the answer is two weeks", "wenFSD · (Supervised) (heavily)", "wenFSD — manifesting your OTA", "wenFSD · don't refresh. okay, refresh."];
+  const TAB_TITLES = ["wenFSD — two weeks, probably", "wenFSD · refreshing won't help (you'll refresh anyway)", "wenFSD — wen, exactly?", "wenFSD · soon™", "wenFSD — trust me bro", "wenFSD · coming right after the robotaxis", "wenFSD — your update is in another castle", "wenFSD · still on the same build, huh", "wenFSD — the answer is two weeks", "wenFSD · (Supervised) (heavily)", "wenFSD — manifesting your OTA", "wenFSD · don't refresh. okay, refresh.", "wenFSD — on Elon Time™", "wenFSD · the update is buffering, spiritually", "wenFSD — go check the software menu, we'll wait", "wenFSD · ± two weeks, with feeling", "wenFSD — yes, California has it already", "wenFSD · phantom-brake-free since launch"];
   // Rotating cheeky kicker line under every data-card header — fresh on each page load, so the
   // whole site reads differently every refresh. Pure text (emojis fine); {region} is filled in.
   const KICK = [
@@ -448,6 +491,15 @@
     "As seen on a tracker, reinterpreted with feelings.",
     "{region} edition: same data, more sighing.",
     "We'd say 'coming soon' but we have standards. Low ones, but standards.",
+    "Refreshing this won't help. You know that. We know that. Refresh away.",
+    "Numbers cold, takes lukewarm, hope rationed responsibly.",
+    "Sponsored by nobody. Endorsed by no one. Believed by a few.",
+    "Each figure hand-curdled from public trackers and raw cope.",
+    "{region}: technically on the roadmap, spiritually on a Post-it. 📝",
+    "We checked twice so you'd only have to despair once.",
+    "Updates this section more often than Tesla updates your car. Low bar. 🏋️",
+    "100% organic, free-range, grass-fed disappointment. 🌾",
+    "If this were any more honest it'd need a content warning.",
   ];
   function injectKickers() {
     const region = av() ? av().market : "your region";
@@ -757,6 +809,10 @@
     "Paste your VIN, get your “wen.” No password, no permissions, no problem.",
     "We predict your update from just your VIN. The Tesla login is optional — it only automates reading your version. 🔢",
     "Free, no-login, no-tracking prediction, one box: your VIN. Go on, the suspense is unbearable. 🔮",
+    "No VIN even? Fine. Pick your model, year & version up top. We're flexible; Tesla isn't. 🤷",
+    "Your VIN tells us model, year & hardware — that's it. Not your location, not your sins. 😇",
+    "Cheaper than FSD, faster than a service appointment, and it asks for zero passwords. 🔓",
+    "We want one box filled in. Tesla wanted your whole account. We're the reasonable one here.",
     "Worried about the permissions? Use Add by VIN and grant precisely nothing. Still get the full forecast. 🛡️",
     "Your VIN tells us model, year & hardware — enough to predict your update without touching your account at all.",
   ];
@@ -1458,7 +1514,7 @@
       renderReleaseNotes();
     });
   }
-  const NO_OS_NOTES = ["OS changelog not captured for this build yet — Tesla's keeping it mysterious. 🤫", "OS notes pending. Assume “improvements to overall stability”; they always say that.", "No OS changelog scraped yet. The trackers are working on it, allegedly.", "OS notes MIA. The dog ate Tesla's release notes again. 🐕"];
+  const NO_OS_NOTES = ["OS changelog not captured for this build yet — Tesla's keeping it mysterious. 🤫", "OS notes pending. Assume “improvements to overall stability”; they always say that.", "No OS changelog scraped yet. The trackers are working on it, allegedly.", "OS notes MIA. The dog ate Tesla's release notes again. 🐕", "Changelog still loading. Spoiler: it'll say 'minor improvements'. It always says 'minor improvements'.", "No notes yet. Could be a new feature, could be that they moved a button again. 🔘", "Release notes TBD. History suggests one bug fix and three new bugs. 🐛"];
   function renderReleaseNotes() {
     wireRnFilter();
     syncTrackRegion();
@@ -1515,6 +1571,9 @@
     "Describe your pain in 180 characters or fewer.",
     "Dear diary, still on the same build…",
     "Let it out. Tesla won't read this. Neither will Elon. But we will. 🫂",
+    "Scream into the void. The void has 8 cameras and still won't change lanes.",
+    "Tell us where it hurts (it's the software menu, isn't it).",
+    "180 characters. Same limit as the platform that promised you this car. 🐦",
   ];
   const griefByKey = (k) => GRIEF.find(g => g.key === k);
   function predictGrief(pred, v) {
