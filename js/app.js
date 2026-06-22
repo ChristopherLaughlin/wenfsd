@@ -83,6 +83,31 @@
       box.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") go(e); });
     }
   }
+  // The FSD half of the hero's two-up header — a SEPARATE predicted date (or honest "no date"),
+  // so software-update timing and FSD-version timing are never conflated.
+  function renderFsdPred(osPred) {
+    const verEl = $("fsdPredVer"), dateEl = $("fsdPredDate"), winEl = $("fsdPredWindow");
+    const block = document.querySelector(".hpred-fsd");
+    if (!verEl || !dateEl || !winEl) return;
+    const v = av();
+    const set = (cls, ver, date, win) => {
+      if (block) block.className = "hpred hpred-fsd" + (cls ? " " + cls : "");
+      verEl.textContent = ver ? "· " + ver : "";
+      dateEl.textContent = date;
+      winEl.textContent = win;
+    };
+    let fsd; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { fsd = null; }
+    if (!v || !fsd || fsd.unavailable) { set("fsd-none", "", "—", "no FSD data for this car"); return; }
+    if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `promised for HW3 in ${v.market}, never delivered`); return; }
+    if (fsd.capped) { set("fsd-none", "", "Not coming", `${v.hardware} can't run newer FSD — capped`); return; }
+    const bundled = fsd.bundledWith && osPred && (fsd.bundledWith === osPred.targetLabel || +new Date(fsd.medianDate) === +new Date(osPred.medianDate));
+    if (bundled) { set("fsd-bundled", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), "🎁 ships with your next software update"); return; }
+    const win = fsd.mode === "gated"
+      ? "⚠️ modelled regulatory window — least certain"
+      : (fsd.mode === "current" ? "next point release · " : "") + "Most likely " + shortDate(fsd.p10Date) + " – " + shortDate(fsd.p90Date);
+    set("", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), win);
+  }
+
   function renderFsdSummary(osPred) {
     const el = $("fsdSummary"); if (!el) return;
     const v = av(); if (!v) { el.innerHTML = ""; return; }
@@ -131,6 +156,10 @@
     $("heroEyebrow").textContent = "Welcome to wenFSD";
     $("heroDate").textContent = "wen FSD? Let's find out.";
     $("heroWindow").textContent = "";
+    if ($("osPredVer")) $("osPredVer").textContent = "";
+    if ($("fsdPredVer")) $("fsdPredVer").textContent = "";
+    if ($("fsdPredDate")) $("fsdPredDate").textContent = "—";
+    if ($("fsdPredWindow")) $("fsdPredWindow").textContent = "add a car to see both dates";
     $("ringDays").textContent = "—"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
     if ($("heroFlavor")) $("heroFlavor").innerHTML = flavorPick("empty", [
@@ -161,6 +190,8 @@
     $("heroEyebrow").textContent = (ui.target === "fsd" ? "Next FSD version" : "Next update") + " for " + (av().nickname || "your car");
     $("heroDate").textContent = pred.capped ? "Not coming" : "Unknown";
     $("heroWindow").textContent = pred.capped ? "hardware-limited" : "";
+    if ($("osPredVer")) $("osPredVer").textContent = "";
+    renderFsdPred(pred);
     $("ringDays").textContent = pred.capped ? "—" : "?"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
     if ($("heroFlavor")) $("heroFlavor").innerHTML = pred.capped ? `🪦 Your hardware tapped out. F in the chat.` : "";
@@ -391,9 +422,11 @@
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
     $("heroEyebrow").textContent = `Your next update${pred.targetLabel ? " — " + pred.targetLabel : ""} on ${av().nickname || "your car"}`;
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
+    $("osPredVer").textContent = pred.targetLabel ? "· " + pred.targetLabel : "";
     const hw = $("heroWindow");
     hw.textContent = (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
     hw.classList.toggle("hw-stale", !!pred.stale);
+    renderFsdPred(pred);
     renderFsdSummary(pred);
 
     const ring = $("ringFg"), C = 2 * Math.PI * 78, d = pred.daysToMedian;

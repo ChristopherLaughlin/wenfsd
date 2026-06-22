@@ -116,10 +116,13 @@ const Predict = (function () {
       const weeksBehind = (pc && pn) ? Math.max(0, (pn.year * 52 + pn.week) - (pc.year * 52 + pc.week)) : 0;
       const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
       const stale = noHistory && weeksBehind >= 9;   // ~2+ branches behind
+      // regions that simply receive OS builds slowly + infrequently (RHD / EU — high osLag). For
+      // these, being many weeks behind is the NORM Tesla creates, not evidence the owner's car is
+      // doing anything wrong. We frame the lag honestly by cause rather than blaming the car.
+      const slowRegion = (region.osLagDays || 0) >= 9;
       if (stale) {
-        // a car this far back has skipped EVERY intervening build → almost certainly offline or
-        // declining updates. Arrival is bimodal (soon IF it reconnects, otherwise never), so push
-        // the midpoint well out and widen hard — we are NOT confident it lands soon.
+        // a car this far back lands on no predictable cadence — push the midpoint well out and
+        // widen hard. We are NOT confident it lands soon.
         earliness = Math.min(0.95, Math.max(earliness, weeksBehind >= 15 ? 0.9 : 0.82));
         t0Days += Math.min(120, Math.round(weeksBehind * 2.5));
         t0Sigma = Math.max(21, Math.min(70, Math.round(weeksBehind * 1.8)));
@@ -128,7 +131,9 @@ const Predict = (function () {
       out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out._t0Days = t0Days; out._k = v.k;
       out.stale = stale; out.weeksBehind = weeksBehind;
       out.note = stale
-        ? `Low confidence — and note this is the OS software update (HW3 cars still get those; FSD is separate, below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped every build since — which almost always means the car's been offline or declining updates. If it comes back online it could jump to ${v.version} within weeks; if it stays offline, there's no telling. A car this far back doesn't follow the normal rollout curve, so this is a wide guess, not a date to bank on.`
+        ? (slowRegion
+            ? `This is the OS software update — separate from FSD (see below). ${car.market} gets far fewer OS builds than the US/Canada, and they arrive late and on no set schedule, so a car in ${car.market} sitting ~${weeksBehind} weeks behind the newest build it's even eligible for is closer to normal than alarming — it usually reflects how sparsely Tesla ships here, not anything wrong with your car. When the next one does land it may jump you straight to ${v.version}. Because there's no predictable cadence to fit, this is a wide, low-confidence guess — not a date to bank on.`
+            : `This is the OS software update — separate from FSD (see below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped the builds since. That usually means the car hasn't been pulling updates (parked offline, sitting on an old branch, or set to decline them). If it starts updating again it could jump to ${v.version} fairly quickly; until then there's no reliable cadence to fit, so this is a wide, low-confidence guess — not a date to bank on.`)
         : `Newest build above yours that's actively rolling. Midpoint ~${fmtDate(addDays(today, t0Days)).replace(/^\w+, /, "")}.`;
       return out;
     }

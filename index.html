@@ -123,8 +123,19 @@
     <div class="hero-left">
       <div class="hero-head" aria-live="polite" role="status">
         <div class="hero-eyebrow" id="heroEyebrow">Predicted arrival on your car</div>
-        <div class="hero-date" id="heroDate">—</div>
-        <div class="hero-window" id="heroWindow">—</div>
+        <div class="hero-preds">
+          <div class="hpred hpred-os">
+            <div class="hpred-lbl">🔧 Next <strong>software</strong> update<span class="hpred-ver" id="osPredVer"></span></div>
+            <div class="hero-date" id="heroDate">—</div>
+            <div class="hero-window" id="heroWindow">—</div>
+          </div>
+          <div class="hpred hpred-fsd">
+            <div class="hpred-lbl">🧠 Next <strong>FSD</strong> update<span class="hpred-ver" id="fsdPredVer"></span></div>
+            <div class="hpred-date" id="fsdPredDate">—</div>
+            <div class="hpred-window" id="fsdPredWindow">—</div>
+          </div>
+        </div>
+        <p class="hero-split-hint">These are two different things. Your car's <strong>OS/firmware</strong> (2026.x) and its <strong>FSD</strong> version ship — and arrive — separately.</p>
       </div>
       <div class="fsd-summary" id="fsdSummary"></div>
       <div class="confidence-row" id="confRow"></div>

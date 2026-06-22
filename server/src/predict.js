@@ -89,6 +89,12 @@ export function predictNextOS(car, opts = {}) {
     }
     const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") });
     out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = stale; out.weeksBehind = weeksBehind;
+    if (stale) {
+      const slowRegion = ((W.regions[car.market] || {}).osLagDays || 0) >= 9;
+      out.note = slowRegion
+        ? `This is the OS software update — separate from FSD (see below). ${car.market} gets far fewer OS builds than the US/Canada, and they arrive late and on no set schedule, so a car in ${car.market} sitting ~${weeksBehind} weeks behind the newest build it's even eligible for is closer to normal than alarming — it usually reflects how sparsely Tesla ships here, not anything wrong with your car. When the next one does land it may jump you straight to ${v.version}. Because there's no predictable cadence to fit, this is a wide, low-confidence guess — not a date to bank on.`
+        : `This is the OS software update — separate from FSD (see below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped the builds since. That usually means the car hasn't been pulling updates (parked offline, sitting on an old branch, or set to decline them). If it starts updating again it could jump to ${v.version} fairly quickly; until then there's no reliable cadence to fit, so this is a wide, low-confidence guess — not a date to bank on.`;
+    }
     return out;
   }
   const cad = osCadence(versions);
