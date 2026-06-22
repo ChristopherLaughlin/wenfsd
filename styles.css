@@ -135,6 +135,17 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
   background:rgba(232,177,90,.12);border:1px solid rgba(232,177,90,.32);border-radius:6px;padding:2px 6px;white-space:nowrap}
 .hpred-quip{font-size:11.5px;color:#e8b15a;font-style:italic;margin-top:8px;line-height:1.42}
 .hpred-quip:empty{display:none}
+/* software card's one-line FSD relationship tag */
+.hpred-tag{margin-top:8px;font-size:11px;font-weight:700;border-radius:7px;padding:4px 8px;display:inline-block;line-height:1.3}
+.hpred-tag:empty{display:none}
+.tag-fsd-yes{color:#7fe0b8;background:rgba(70,180,140,.10);border:1px solid rgba(70,180,140,.32)}
+.tag-fsd-yes strong{color:#9ff0cd}
+.tag-fsd-no{color:var(--mut);background:#0c1019;border:1px solid var(--line)}
+/* FSD card "no FSD change in your next build" state */
+.hpred-fsd.fsd-same{border-color:var(--line2);background:#0c1019}
+.hpred-fsd.fsd-same .hpred-date{color:var(--mut);font-size:19px}
+.hpred-fsd.fsd-same .hpred-window{color:var(--mut)}
+.fsum-same{background:#0c1019;border-color:var(--line2)}
 /* grouped detail sections so each piece clearly belongs to software OR FSD */
 .hero-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .hero-section[hidden]{display:none}

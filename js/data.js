@@ -198,6 +198,16 @@ const WEN = (function () {
   const versionSuggestions = ["2026.8.3.10", "2026.8.3", "2026.2.9", "2025.44.30.5"];
   // FSD major from a string like "v13.2.9", "v14.x", "v14 (lite)" -> 13 / 14
   function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
+  // Full comparable key so "v14.3.5" > "v14.3.4" > "v13.2.9". "v14.x" / "v14 Lite" compare as
+  // major-only (their finer track is decided by region mode, not by this number). "none" -> 0.
+  function fsdKey(v) {
+    if (v == null) return 0;
+    const s = String(v).toLowerCase();
+    if (!/\d/.test(s)) return 0; // "none", "—"
+    const m = s.match(/v?\s*(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?/);
+    if (!m) return 0;
+    return (+m[1] || 0) * 1e9 + (+m[2] || 0) * 1e6 + (+m[3] || 0) * 1e3 + (+m[4] || 0);
+  }
 
   // ---- region build-path helpers ----
   const ALL_MARKETS = Object.keys(regions);
@@ -231,5 +241,5 @@ const WEN = (function () {
            // 'sample' until a live backend hydrates real data (api.js flips this to 'live').
            dataMode: "sample", versionSuggestions, allMarkets: ALL_MARKETS,
            marketsFor, inRegion, versionsForRegion, regionFirstSeen, neighborsForRegion,
-           earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor, isValidVersion };
+           earlyAccessShift, parseOS, verKey, cmpOS, fsdMajor, fsdKey, isValidVersion };
 })();

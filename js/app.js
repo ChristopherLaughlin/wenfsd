@@ -85,7 +85,13 @@
   }
   // The FSD half of the hero's two-up header — a SEPARATE predicted date (or honest "no date"),
   // so software-update timing and FSD-version timing are never conflated.
-  function renderFsdPred(osPred) {
+  // is the FSD update riding along in the SAME build as the next software update?
+  function fsdIsBundled(osPred, fsd) {
+    return !!(fsd && fsd.bundledWith && !fsd.promised && !fsd.capped && !fsd.sameFsd && osPred &&
+      (fsd.bundledWith === osPred.targetLabel || +new Date(fsd.medianDate) === +new Date(osPred.medianDate)));
+  }
+
+  function renderFsdPred(osPred, fsd) {
     const verEl = $("fsdPredVer"), dateEl = $("fsdPredDate"), winEl = $("fsdPredWindow"), quipEl = $("fsdPredQuip");
     const block = document.querySelector(".hpred-fsd");
     if (!verEl || !dateEl || !winEl) return;
@@ -97,33 +103,48 @@
       winEl.textContent = win;
       if (quipEl) quipEl.textContent = state ? fsdPredQuip(state, v ? v.market : "") : "";
     };
-    let fsd; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { fsd = null; }
     if (!v || !fsd || fsd.unavailable) { set("fsd-none", "", "—", "no FSD data for this car", ""); return; }
     if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `promised for HW3 in ${v.market}, never delivered`, "promised"); return; }
     if (fsd.capped) { set("fsd-none", "", "Not coming", `${v.hardware} can't run newer FSD — capped`, "capped"); return; }
-    const bundled = fsd.bundledWith && osPred && (fsd.bundledWith === osPred.targetLabel || +new Date(fsd.medianDate) === +new Date(osPred.medianDate));
-    if (bundled) { set("fsd-bundled", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), "🎁 ships with your next software update", "bundled"); return; }
+    // your upcoming software update is a maintenance build — no FSD change
+    if (fsd.sameFsd) { set("fsd-same", fsd.current || "", "No FSD change yet", `your next software update keeps FSD ${fsd.current || "as-is"}`, "same"); return; }
+    if (fsdIsBundled(osPred, fsd)) { set("fsd-bundled", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), "🎁 same build as your next software update ↑", "bundled"); return; }
     const win = fsd.mode === "gated"
       ? "⚠️ modelled regulatory window — least certain"
-      : (fsd.mode === "current" ? "next point release · " : "") + "Most likely " + shortDate(fsd.p10Date) + " – " + shortDate(fsd.p90Date);
+      : (fsd.mode === "current" ? "next point release · " : "later build than your next update · ") + "Most likely " + shortDate(fsd.p10Date) + " – " + shortDate(fsd.p90Date);
     set("", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), win, fsd.mode === "gated" ? "gated" : "dated");
   }
 
-  function renderFsdSummary(osPred) {
+  // the software card's one-line tag: does THIS software update change your FSD version?
+  function renderOsFsdTag(osPred, fsd) {
+    const el = $("osFsdTag"); if (!el) return;
+    if (fsdIsBundled(osPred, fsd)) {
+      el.className = "hpred-tag tag-fsd-yes";
+      el.innerHTML = `🧠 also bumps <strong>FSD ${esc(fsd.targetLabel)}</strong> — see FSD card`;
+    } else {
+      el.className = "hpred-tag tag-fsd-no";
+      el.textContent = "🧠 FSD version unchanged in this build";
+    }
+  }
+
+  function renderFsdSummary(osPred, fsd) {
     const el = $("fsdSummary"); if (!el) return;
     const v = av(); if (!v) { el.innerHTML = ""; return; }
     if (isDownUnderHW3(v)) { renderDoom(el, v, false); return; }   // 🇦🇺/🇳🇿 + HW3 → the give-up special
-    let fsd; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { el.innerHTML = ""; return; }
+    if (fsd === undefined) { try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { fsd = null; } }
     if (!fsd || fsd.unavailable) { el.innerHTML = ""; return; }
     if (fsd.promised) { el.innerHTML = `<div class="fsum fsum-promised">🤷 <strong>FSD ${esc(fsd.targetLabel)} — promised, no timeline.</strong> ${esc(fsd.note || "")}</div>`; return; }
     if (fsd.capped) { el.innerHTML = `<div class="fsum fsum-capped">🪚 <strong>FSD:</strong> ${esc(fsd.current || "your version")} is the end of the line for your ${esc(v.hardware)} hardware — Tesla caps it here.</div>`; return; }
-    const bundled = fsd.bundledWith && osPred && (fsd.bundledWith === osPred.targetLabel || +new Date(fsd.medianDate) === +new Date(osPred.medianDate));
-    if (bundled) {
-      el.innerHTML = `<div class="fsum fsum-yay">🎉 <strong>This update brings FSD ${esc(fsd.targetLabel)}.</strong> It's bundled inside ${esc(osPred.targetLabel)} — your next software update <em>is</em> your next FSD version. One drop, one date.</div>`;
+    if (fsd.sameFsd) {
+      el.innerHTML = `<div class="fsum fsum-same">🧰 <strong>No FSD change in your next software update.</strong> Your next build${fsd.bundledWith ? ` (${esc(fsd.bundledWith)})` : ""} is a maintenance release — it keeps <strong>FSD ${esc(fsd.current || "as-is")}</strong>. New FSD versions only arrive in <em>some</em> software builds; a newer one will land in a future build Tesla hasn't shipped yet.</div>`;
+      return;
+    }
+    if (fsdIsBundled(osPred, fsd)) {
+      el.innerHTML = `<div class="fsum fsum-yay">🎉 <strong>Your next software update bumps FSD to ${esc(fsd.targetLabel)}.</strong> It ships <em>inside</em> ${esc(osPred.targetLabel)} — so this is one of those builds where the software update <em>and</em> a new FSD version land on the same day.</div>`;
     } else if (fsd.mode === "current") {
-      el.innerHTML = `<div class="fsum">🧭 You're on the newest FSD (<strong>${esc(fsd.current)}</strong>). Next point release (${esc(fsd.targetLabel)}) projected around <strong>${shortDate(fsd.medianDate)}</strong>.</div>`;
+      el.innerHTML = `<div class="fsum">🧭 You're on the newest FSD (<strong>${esc(fsd.current)}</strong>). Next point release (${esc(fsd.targetLabel)}) projected around <strong>${shortDate(fsd.medianDate)}</strong> — it'll ride inside a future software build.</div>`;
     } else {
-      el.innerHTML = `<div class="fsum">🎯 Your <strong>FSD ${esc(fsd.targetLabel)}</strong> jump lands a little later than this update — around <strong>${shortDate(fsd.medianDate)}</strong> (it ships in a newer build than your next one).</div>`;
+      el.innerHTML = `<div class="fsum">🎯 <strong>FSD ${esc(fsd.targetLabel)}</strong> lands <em>later</em> than your next software update — around <strong>${shortDate(fsd.medianDate)}</strong>${fsd.laterBuild ? `, inside build ${esc(fsd.laterBuild)}+` : ""}. Your next maintenance update comes first; the new FSD rides in a later build.</div>`;
     }
   }
 
@@ -163,6 +184,7 @@
     if ($("fsdPredWindow")) $("fsdPredWindow").textContent = "add a car to see both dates";
     if ($("osPredQuip")) $("osPredQuip").textContent = "";
     if ($("fsdPredQuip")) $("fsdPredQuip").textContent = "";
+    if ($("osFsdTag")) $("osFsdTag").textContent = "";
     if ($("osDetail")) $("osDetail").hidden = true;
     if ($("fsdDetail")) $("fsdDetail").hidden = true;
     if ($("ringCap")) $("ringCap").hidden = true;
@@ -198,10 +220,11 @@
     $("heroWindow").textContent = pred.capped ? "hardware-limited" : "";
     if ($("osPredVer")) $("osPredVer").textContent = "";
     if ($("osPredQuip")) $("osPredQuip").textContent = "";
+    if ($("osFsdTag")) $("osFsdTag").textContent = "";
     if ($("osDetail")) $("osDetail").hidden = true;
     if ($("fsdDetail")) $("fsdDetail").hidden = true;
     if ($("ringCap")) $("ringCap").hidden = true;
-    renderFsdPred(pred);
+    renderFsdPred(pred, null);
     $("ringDays").textContent = pred.capped ? "—" : "?"; $("ringFg").style.strokeDashoffset = 2 * Math.PI * 78;
     $("confRow").innerHTML = "";
     if ($("heroFlavor")) $("heroFlavor").innerHTML = pred.capped ? `🪦 Your hardware tapped out. F in the chat.` : "";
@@ -318,6 +341,7 @@
     promised: ["We refuse to predict a date Tesla never gave — this is the literal opposite of a promise. 🫥", "No date to forecast, because Tesla announced none. We won't invent one (unlike some trackers). 🤥", "Nothing here to predict but vibes, and the vibes are, frankly, dire. 💀"],
     bundled: ["Predicted to ride shotgun in your next OS update — same date, same caveats, no guarantees. 🎁", "A guess: it's bundled in, so if the software slips, FSD slips with it. One disappointment, one for free.", "Forecast — it ships inside the build above. Two predictions, one ETA, zero promises."],
     capped: ["Nothing to predict — your hardware tapped out. We can't forecast a ghost. 🪦", "No forecast possible: Tesla capped this hardware. The future arrived for everyone else. 🚪"],
+    same: ["Your next software update is bug-fixes and vibes — FSD stays exactly put. 🧰", "Maintenance build incoming. The robotaxi dream rides a *later* parcel. 📦", "No new FSD this round. Most builds are like this; the shiny one comes later.", "FSD holds steady. A newer version lands in a future build Tesla hasn't shipped. ⏳"],
     gated: ["A modelled regulatory window — i.e. a guess about when the bureaucrats finish reading. 📋", "Predicted, not promised, and gated behind regulators who do nothing in a hurry. ⏳"],
     dated: ["A forecast — and FSD dates are Tesla's most theoretical numbers, which is really saying something.", "Predicted, not promised. 'Full Self-Driving' is supervised; so is this estimate. 👀", "Educated guess. FSD ETAs have a half-life shorter than a phantom brake. 🛑", "Modelled, not confirmed — Elon said 'this year', he just declined to specify which one. 📆"],
   };
@@ -474,8 +498,10 @@
     hw.textContent = (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
     hw.classList.toggle("hw-stale", !!pred.stale);
     if ($("osPredQuip")) $("osPredQuip").textContent = osPredQuip();
-    renderFsdPred(pred);
-    renderFsdSummary(pred);
+    let fsd = null; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { fsd = null; }
+    renderOsFsdTag(pred, fsd);
+    renderFsdPred(pred, fsd);
+    renderFsdSummary(pred, fsd);
     // each detail section is now explicitly grouped under software vs FSD
     if ($("osDetail")) $("osDetail").hidden = false;
     if ($("ringCap")) $("ringCap").hidden = false;

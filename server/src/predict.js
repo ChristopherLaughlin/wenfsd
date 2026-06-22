@@ -64,6 +64,14 @@ function osCadence(versions) {
   return { mean, sd: Math.max(sd, mean * 0.3, 5) };
 }
 
+// the FSD version a car is on now (its own reading, else the region's typical current)
+function curFsd(car) {
+  const v = car.fsdVersion;
+  if (v && !/^(none|—|-|)$/i.test(String(v).trim())) return v;
+  const r = W.regions[car.market];
+  return (r && r.fsd && r.fsd[car.hardware]) ? r.fsd[car.hardware].current : null;
+}
+
 // car: { market, hardware, installedVersion, earliness, earlinessSource, earlyAccess }
 export function predictNextOS(car, opts = {}) {
   const versions = opts.versions || W.versions, today = opts.today || W.today;
@@ -89,6 +97,10 @@ export function predictNextOS(car, opts = {}) {
     }
     const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") });
     out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = stale; out.weeksBehind = weeksBehind;
+    // does this particular software update change the FSD version, or leave it untouched?
+    out.fsdCurrent = curFsd(car);
+    out.fsdInBuild = (v.fsdBuild && v.fsdBuild[car.hardware]) || null;
+    out.bringsNewFsd = !!(out.fsdInBuild && out.fsdInBuild !== "—" && W.fsdKey(out.fsdInBuild) > W.fsdKey(out.fsdCurrent));
     if (stale) {
       const slowRegion = ((W.regions[car.market] || {}).osLagDays || 0) >= 9;
       out.note = slowRegion
@@ -117,37 +129,54 @@ export function predictNextFSD(car, opts = {}) {
   if (f.mode === "promised") return { promised: true, current: f.current, targetLabel: f.next, mode: "promised", branch: "fsd", note: f.note || null };
 
   const nextMajor = W.fsdMajor(f.next);
+  const cur = curFsd(car);
+  const curKey = W.fsdKey(cur);
 
-  if (f.mode === "current") {
-    const out = mcPredict({ t0Days: f.cadenceDays || 35, k: f.k || 0.15, L: 0.9, earliness, t0Sigma: (f.cadenceDays || 35) * 0.45, today, seedStr: "FSDc" + car.market + earliness });
-    out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
+  // gated — regulators haven't cleared it for this region → modelled regulatory window
+  if (f.mode === "gated") {
+    const out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness, today, seedStr: "FSDg" + f.next + car.market + earliness });
+    out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
     return out;
   }
 
-  // FSD ships bundled in OS builds → its arrival = the OS prediction for the build that carries
-  // it. Keeps next-OS-update and next-FSD consistent (see client predict.js for the rationale).
-  const carrier = carrierBuild(car.hardware, nextMajor, versions, car.market);
-  const myKey = W.verKey(car.installedVersion || "0");
-  const nextBuild = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version))[0];
+  // FSD rides inside OS builds, but most builds keep the same FSD version. Does the next software
+  // update actually CHANGE the FSD version? (mirrors client predict.js exactly)
+  const osNext = predictNextOS(car, opts);
+  const buildFsd = osNext.fsdInBuild;
+  const buildKey = (buildFsd && buildFsd !== "—") ? W.fsdKey(buildFsd) : null;
 
-  const _fb = nextBuild && nextBuild.fsdBuild && nextBuild.fsdBuild[car.hardware];
-  const _fbMajor = (_fb && _fb !== "—") ? W.fsdMajor(_fb) : null;
-  if (nextBuild && (_fbMajor == null || _fbMajor >= nextMajor)) {
-    const os = predictNextOS(car, opts);
-    os.targetLabel = f.next; os.current = f.current; os.mode = f.mode; os.branch = "fsd"; os.bundledWith = nextBuild.version;
-    return os;
+  // (1) next software update carries a NEWER FSD → bundled, same build, same day
+  if (osNext.kind !== "projected" && buildKey != null && buildKey > curKey) {
+    const carrierLabel = osNext.targetLabel;
+    osNext.bundledWith = carrierLabel;
+    osNext.targetLabel = buildFsd; osNext.current = cur; osNext.mode = "bundled"; osNext.branch = "fsd"; osNext.fsdChanges = true;
+    return osNext;
   }
-  let out;
-  if (f.mode === "gated") {
-    out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness, today, seedStr: "FSDg" + f.next + car.market + earliness });
-  } else if (carrier) {
-    out = mcPredict({ t0Days: daysBetween(today, carrier.t0) + regionDelta(car.market), k: carrier.k || 0.33, L: 0.95, earliness, today, seedStr: "FSDcar" + f.next + car.market + earliness });
-  } else {
-    out = mcPredict({ t0Days: f.t0 ? daysBetween(today, f.t0) : 30, k: f.k || 0.1, L: 0.9, earliness, t0Sigma: f.t0Sigma || 12, today, seedStr: "FSDfb" + car.market });
+
+  // (2) region has a newer FSD modelled that no in-region build carries yet (e.g. US 'v14 Lite')
+  const configHasNewer = nextMajor != null && nextMajor > (W.fsdMajor(cur) || 0) && (f.t0 || f.mode === "rolling" || f.mode === "early" || f.mode === "current");
+  if (configHasNewer) {
+    const carrier = carrierBuild(car.hardware, nextMajor, versions, car.market);
+    let out;
+    if (carrier) {
+      out = mcPredict({ t0Days: daysBetween(today, carrier.t0) + regionDelta(car.market), k: carrier.k || 0.33, L: 0.95, earliness, today, seedStr: "FSDcar" + f.next + car.market + earliness });
+      out.laterBuild = carrier.version;
+    } else {
+      out = mcPredict({ t0Days: f.t0 ? daysBetween(today, f.t0) : 30, k: f.k || 0.1, L: 0.9, earliness, t0Sigma: f.t0Sigma || 14, today, seedStr: "FSDfb" + car.market });
+    }
+    out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness; out.fsdChanges = true;
+    return out;
   }
-  out.targetLabel = f.next; out.current = f.current; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
-  out.carrierBuild = carrier ? carrier.version : null;
-  return out;
+
+  // (3) 'current' — on the newest FSD; project the next point from cadence
+  if (f.mode === "current") {
+    const out = mcPredict({ t0Days: f.cadenceDays || 35, k: f.k || 0.15, L: 0.9, earliness, t0Sigma: (f.cadenceDays || 35) * 0.45, today, seedStr: "FSDc" + car.market + earliness });
+    out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
+    return out;
+  }
+
+  // (4) nothing newer in the pipeline → next software update keeps FSD as-is
+  return { sameFsd: true, current: cur, targetLabel: null, mode: "same", branch: "fsd", bundledWith: osNext.kind !== "projected" ? osNext.targetLabel : null };
 }
 
 // ---- kept for the poller: fit logistic + estimate earliness from real snapshots ----

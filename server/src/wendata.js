@@ -27,6 +27,15 @@ export function verKey(v) {
   return p.year * 1e12 + g(0, 999) * 1e9 + g(1, 999) * 1e6 + g(2, 999) * 1e3 + g(3, 999);
 }
 export function fsdMajor(v) { const m = String(v).match(/v?(\d+)/i); return m ? +m[1] : null; }
+// Full comparable key so "v14.3.5" > "v14.3.4" > "v13.2.9". "v14.x"/"v14 Lite" compare major-only.
+export function fsdKey(v) {
+  if (v == null) return 0;
+  const s = String(v).toLowerCase();
+  if (!/\d/.test(s)) return 0;
+  const m = s.match(/v?\s*(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?/);
+  if (!m) return 0;
+  return (+m[1] || 0) * 1e9 + (+m[2] || 0) * 1e6 + (+m[3] || 0) * 1e3 + (+m[4] || 0);
+}
 
 // region build-path: which markets receive a build (default all); is a build in a region?
 const ALL_MARKETS = Object.keys(regions);

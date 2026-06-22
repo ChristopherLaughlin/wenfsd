@@ -79,14 +79,32 @@ test("within-window probabilities are monotonic and in [0,1]", () => {
   assert.ok(w30 >= w7);
 });
 
-test("predictNextFSD bundles with the OS build that carries it (consistent dates)", () => {
+test("when the next OS build bumps FSD, it bundles (same build, same date, real FSD version)", () => {
+  // AU AI4 on 2026.14.6 (FSD v13.2.9) → next build 2026.20.3 carries FSD v14.3.4 → they ride together
   const fsd = predictNextFSD(auAI4);
   const os = predictNextOS(auAI4);
-  assert.equal(fsd.targetLabel, "v14.x");
+  assert.match(fsd.targetLabel, /^v14/, "FSD target is the concrete version the build carries, not a placeholder");
   assert.equal(fsd.branch, "fsd");
-  // FSD ships INSIDE an OS build → it must arrive with the next OS update, same median date.
-  assert.equal(fsd.bundledWith, os.targetLabel);
-  assert.equal(+new Date(fsd.medianDate), +new Date(os.medianDate));
+  assert.equal(fsd.fsdChanges, true);
+  assert.equal(fsd.bundledWith, os.targetLabel, "FSD rides inside the next OS build");
+  assert.equal(+new Date(fsd.medianDate), +new Date(os.medianDate), "same build → same date");
+});
+
+test("a maintenance build that keeps the same FSD is flagged sameFsd (no invented FSD date)", () => {
+  // AU AI4 already on 2026.14.6.11 / FSD v14.3.4 → next build 2026.20.3 ALSO carries v14.3.4
+  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4", earliness: 0.45, earlinessSource: "default" };
+  const fsd = predictNextFSD(car);
+  assert.equal(fsd.sameFsd, true, "next software update carries no newer FSD");
+  assert.ok(!fsd.medianDate, "we must NOT fabricate an FSD date when nothing newer is in the pipeline");
+  assert.equal(fsd.current, "v14.3.4");
+});
+
+test("predictNextOS reports whether the next software build changes FSD", () => {
+  const bumps = predictNextOS(auAI4); // v13.2.9 → next build carries v14.3.4
+  assert.equal(bumps.bringsNewFsd, true);
+  assert.match(bumps.fsdInBuild, /^v14/);
+  const maint = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4", earlinessSource: "default" });
+  assert.equal(maint.bringsNewFsd, false, "a same-FSD build must not claim to bring new FSD");
 });
 
 test("EU HW3 FSD is 'promised' (undelivered, no date) — not a fabricated ETA", () => {

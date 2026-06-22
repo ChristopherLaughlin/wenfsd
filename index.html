@@ -128,6 +128,7 @@
             <div class="hpred-lbl">🔧 Next <strong>software</strong> update <span class="pred-pill">📡 prediction</span><span class="hpred-ver" id="osPredVer"></span></div>
             <div class="hero-date" id="heroDate">—</div>
             <div class="hero-window" id="heroWindow">—</div>
+            <div class="hpred-tag" id="osFsdTag"></div>
             <div class="hpred-quip" id="osPredQuip"></div>
           </div>
           <div class="hpred hpred-fsd">
@@ -137,7 +138,7 @@
             <div class="hpred-quip" id="fsdPredQuip"></div>
           </div>
         </div>
-        <p class="hero-split-hint">Two different things, two different guesses. Your car's <strong>OS/firmware</strong> (2026.x) and its <strong>FSD</strong> version ship — and slip — on totally separate schedules. Both dates are <strong>our predictions</strong>, modelled from rollout data — <em>not</em> Tesla announcements. (Tesla doesn't do those. That's the whole reason this site exists.)</p>
+        <p class="hero-split-hint">Here's the key thing most trackers blur: <strong>every FSD version ships inside a software build — but most software builds don't change your FSD version.</strong> So your next software update might bump FSD too (we'll flag it ✅), or it might be a maintenance build that leaves FSD exactly where it is. We predict both: the next software update, and the next build that actually moves your FSD. Both are <strong>our modelled guesses</strong>, <em>not</em> Tesla announcements.</p>
       </div>
 
       <!-- SOFTWARE-UPDATE detail: the odds + note all describe the OS update above (and the ring) -->
@@ -247,7 +248,7 @@
           <label class="switch-row inline"><input type="checkbox" id="earlyAccessChk"/> <span>I'm in the <strong>Early Access Program</strong></span></label>
           <label class="switch-row inline"><input type="checkbox" id="newCarChk"/> <span>I took delivery <strong>recently</strong> (last ~2 months)</span></label>
         </div>
-        <p class="hint"><strong>Early Access</strong> puts you in the first wave (and on a first-name basis with regression bugs). <strong>Recent delivery</strong> nudges you earlier — fresh cars sit nearer the front of the queue, like the new kid everyone's curious about. (FSD ships <em>inside</em> OS builds, so your next FSD version arrives with your next software update — same date, one parcel, no separate tracking number.)</p>
+        <p class="hint"><strong>Early Access</strong> puts you in the first wave (and on a first-name basis with regression bugs). <strong>Recent delivery</strong> nudges you earlier — fresh cars sit nearer the front of the queue, like the new kid everyone's curious about. (FSD ships <em>inside</em> OS builds — so when a build <em>does</em> carry a new FSD version, the two arrive on the same day. But plenty of builds are maintenance-only and leave FSD untouched.)</p>
 
         <!-- update history -> real earliness estimate -->
         <div class="history">
@@ -343,7 +344,7 @@
       <h2 class="card-h">FSD by region &amp; hardware <span class="card-sub" id="fsdRegSub"></span></h2>
       <label class="explore-pick">Explore <select id="exploreRegionSel" class="inline-sel" aria-label="Region to explore"></select></label>
     </div>
-    <p class="hint">FSD is a <strong>separate track</strong> from the OS version; rollout depends on <strong>region</strong> (regulators, bless them) and <strong>hardware</strong> (HW3/AI3 = capped, pour one out 🫗; HW4/AI4 = latest and greatest). Pick any region above to explore its rollout and feel things about it — your own car's prediction stays pinned at the top.</p>
+    <p class="hint">FSD <strong>versions separately</strong> from the OS but always rides <em>inside</em> an OS build — and only <em>some</em> builds carry a new FSD version. Which one you can get depends on <strong>region</strong> (regulators, bless them) and <strong>hardware</strong> (HW3/AI3 = capped, pour one out 🫗; HW4/AI4 = latest and greatest). Pick any region above to explore its rollout and feel things about it — your own car's prediction stays pinned at the top.</p>
     <details class="glossary">
       <summary>🤓 Wait — software vs firmware vs FSD version?</summary>
       <ul>
