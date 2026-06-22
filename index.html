@@ -36,17 +36,12 @@
   <!-- HERO PREDICTION -->
   <section class="hero card">
     <div class="hero-left">
-      <div class="seg" id="targetSeg" role="tablist" aria-label="Prediction target">
-        <button class="seg-btn active" data-target="standard" role="tab" aria-selected="true" title="Your next OS build — the 2026.x.x version number">Next software update</button>
-        <button class="seg-btn" data-target="fsd" role="tab" aria-selected="false" title="The next Full Self-Driving release — e.g. v13 → v14">Next FSD version</button>
-      </div>
-      <p class="seg-hint" id="segHint"></p>
-      <div class="bundle-banner" id="bundleBanner" hidden></div>
       <div class="hero-head" aria-live="polite" role="status">
         <div class="hero-eyebrow" id="heroEyebrow">Predicted arrival on your car</div>
         <div class="hero-date" id="heroDate">—</div>
         <div class="hero-window" id="heroWindow">—</div>
       </div>
+      <div class="fsd-summary" id="fsdSummary"></div>
       <div class="confidence-row" id="confRow"></div>
       <p class="hero-flavor" id="heroFlavor"></p>
       <p class="hero-note" id="heroNote"></p>

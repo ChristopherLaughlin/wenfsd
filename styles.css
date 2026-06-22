@@ -163,6 +163,12 @@ tr.mx-click:hover td{background:#11161f}
 .seg-hint strong{color:var(--mut)}.seg-hint em{color:var(--cyan);font-style:normal}
 .bundle-banner{font-size:12px;line-height:1.5;color:var(--mut);background:rgba(90,160,255,.08);border:1px solid rgba(90,160,255,.28);border-radius:10px;padding:9px 12px;margin:0 0 16px}
 .bundle-banner strong{color:var(--txt)}.bundle-banner em{font-style:normal;color:var(--cyan)}
+.fsd-summary{margin:12px 0 0}
+.fsum{font-size:12.5px;line-height:1.5;color:var(--mut);background:#0c1019;border:1px solid var(--line2);border-radius:10px;padding:10px 12px}
+.fsum strong{color:var(--txt)}.fsum em{font-style:normal;color:var(--cyan)}
+.fsum-yay{background:rgba(70,180,140,.08);border-color:rgba(70,180,140,.35);color:#bfe9d6}
+.fsum-yay strong{color:#7fe0b8}
+.fsum-capped{background:rgba(220,160,40,.07);border-color:rgba(220,160,40,.28)}
 /* NOW → NEXT bar */
 .you-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 0;padding:11px 16px;background:linear-gradient(90deg,rgba(90,160,255,.08),rgba(70,180,140,.06));border:1px solid var(--line2);border-radius:12px;font-size:13px}
 .yb-region{font-weight:600;color:var(--txt)}

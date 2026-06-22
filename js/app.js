@@ -28,39 +28,34 @@
     };
   }
 
-  function currentPrediction() {
-    return ui.target === "fsd" ? Predict.predictNextFSD(car(), today) : Predict.predictNextOS(car(), today);
-  }
+  // the headline prediction is always your NEXT UPDATE (the OS build) — FSD rides inside it,
+  // and the FSD story is folded into the hero via renderFsdSummary (no confusing toggle).
+  function currentPrediction() { return Predict.predictNextOS(car(), today); }
 
   // ---------------- render ----------------
-  function setSegHint() {
-    const el = $("segHint"); if (!el) return;
-    el.innerHTML = ui.target === "fsd"
-      ? `Showing the <strong>next FSD release</strong> (e.g. v13 → v14) — the self-driving software, on its own track. Tap <em>Next software update</em> for your next firmware build.`
-      : `Showing your <strong>next OS build</strong> (the 2026.x.x firmware number). Tap <em>Next FSD version</em> for the next Full Self-Driving release.`;
-  }
-  // when your next OS update and next FSD version resolve to the SAME build, say so loudly —
-  // that's why the two tabs land on the same date (FSD ships inside the OS build).
-  function renderBundleBanner() {
-    const el = $("bundleBanner"); if (!el) return;
-    const v = av(); if (!v) { el.hidden = true; return; }
-    let os, fsd; try { os = Predict.predictNextOS(car(), today); fsd = Predict.predictNextFSD(car(), today); } catch (e) { el.hidden = true; return; }
-    const bundled = os && fsd && !fsd.capped && !fsd.unavailable && fsd.bundledWith &&
-      (fsd.bundledWith === os.targetLabel || +new Date(fsd.medianDate) === +new Date(os.medianDate));
-    if (!bundled) { el.hidden = true; return; }
-    el.hidden = false;
-    el.innerHTML = `📦 <strong>They're the same drop:</strong> your next software update (<strong>${esc(os.targetLabel)}</strong>) is what brings <strong>${esc(fsd.targetLabel)}</strong> — FSD ships <em>inside</em> the OS build, so both tabs land on the same date.`;
+  // unified FSD line: is the next FSD version bundled into your next update, later, or capped?
+  function renderFsdSummary(osPred) {
+    const el = $("fsdSummary"); if (!el) return;
+    const v = av(); if (!v) { el.innerHTML = ""; return; }
+    let fsd; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { el.innerHTML = ""; return; }
+    if (!fsd || fsd.unavailable) { el.innerHTML = ""; return; }
+    if (fsd.capped) { el.innerHTML = `<div class="fsum fsum-capped">🪚 <strong>FSD:</strong> ${esc(fsd.current || "your version")} is the end of the line for your ${esc(v.hardware)} hardware — Tesla caps it here.</div>`; return; }
+    const bundled = fsd.bundledWith && osPred && (fsd.bundledWith === osPred.targetLabel || +new Date(fsd.medianDate) === +new Date(osPred.medianDate));
+    if (bundled) {
+      el.innerHTML = `<div class="fsum fsum-yay">🎉 <strong>This update brings FSD ${esc(fsd.targetLabel)}.</strong> It's bundled inside ${esc(osPred.targetLabel)} — your next software update <em>is</em> your next FSD version. One drop, one date.</div>`;
+    } else if (fsd.mode === "current") {
+      el.innerHTML = `<div class="fsum">🧭 You're on the newest FSD (<strong>${esc(fsd.current)}</strong>). Next point release (${esc(fsd.targetLabel)}) projected around <strong>${shortDate(fsd.medianDate)}</strong>.</div>`;
+    } else {
+      el.innerHTML = `<div class="fsum">🎯 Your <strong>FSD ${esc(fsd.targetLabel)}</strong> jump lands a little later than this update — around <strong>${shortDate(fsd.medianDate)}</strong> (it ships in a newer build than your next one).</div>`;
+    }
   }
 
   function render() {
-    setSegHint();
-    renderBundleBanner();
     const a0 = av();
     setTopConnect(!!(a0 && a0.connected), !!(a0 && a0.connected && a0.optedIn));
     if (!av()) { renderEmptyState(); return; }
     const pred = currentPrediction();
-    const isFSD = ui.target === "fsd";
-    $("curveVer").textContent = pred.targetLabel || (isFSD ? "FSD" : "OS");
+    $("curveVer").textContent = pred.targetLabel || "OS";
 
     if (pred.capped || pred.unavailable) { renderNoPrediction(pred); return pred; }
 
@@ -126,6 +121,7 @@
     if (!(key in _flavorCache)) _flavorCache[key] = arr[Math.floor(Math.random() * arr.length)];
     return _flavorCache[key];
   }
+  function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; } // fresh every call (transient msgs)
   const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter."];
   const REGION_FLAVOR = {
     "Australia": { flag: "🇦🇺",
@@ -154,12 +150,11 @@
   }
 
   function renderHero(pred) {
-    const isFSD = ui.target === "fsd";
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
-    const what = pred.targetLabel || (isFSD ? "next FSD" : "next update");
-    $("heroEyebrow").textContent = `Predicted arrival of ${what} on ${av().nickname || "your car"}`;
+    $("heroEyebrow").textContent = `Your next update${pred.targetLabel ? " — " + pred.targetLabel : ""} on ${av().nickname || "your car"}`;
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
     $("heroWindow").textContent = "80% window: " + shortDate(pred.p10Date) + " → " + shortDate(pred.p90Date);
+    renderFsdSummary(pred);
 
     const ring = $("ringFg"), C = 2 * Math.PI * 78, d = pred.daysToMedian;
     const frac = Math.max(0.04, Math.min(1, 1 - Math.min(d, 120) / 120));
@@ -337,9 +332,9 @@
     const reg = region || (av() ? av().market : "Australia");
     const sel = $("lbRegion");
     if (sel) { if (!sel.dataset.filled) { sel.innerHTML = Object.keys(WEN.regions).map(m => `<option>${esc(m)}</option>`).join(""); sel.dataset.filled = "1"; } sel.value = reg; sel.onchange = () => renderLeaderboard(sel.value); }
-    body.innerHTML = `<p class="lb-empty">Loading ${esc(reg)}…</p>`;
+    body.innerHTML = `<p class="lb-empty">${esc(rnd(["Summoning the legends of", "Tallying bragging rights across", "Polling the group chat in", "Counting who's furthest ahead in"]))} ${esc(reg)}…</p>`;
     fetch(`/api/leaderboard?region=${encodeURIComponent(reg)}`, { headers: { Accept: "application/json" } })
-      .then(r => r.json()).then(paintLeaderboard).catch(() => { body.innerHTML = `<p class="lb-empty">Leaderboard unavailable right now.</p>`; });
+      .then(r => r.json()).then(paintLeaderboard).catch(() => { body.innerHTML = `<p class="lb-empty">${esc(rnd(["Leaderboard's asleep. Like your Tesla.", "The board's having a moment — try again.", "Couldn't load it. Blame the regulators. 📋"]))}</p>`; });
   }
   function paintLeaderboard(d) {
     const body = $("leaderboardBody"); if (!body || !d) return;
@@ -680,7 +675,7 @@
     const guessStr = $("guessDate").value;
     if (!guessStr || isNaN(new Date(guessStr + "T00:00:00Z"))) {
       $("guessResult").classList.add("show");
-      $("guessResult").innerHTML = `<div class="muted">Pick a valid date first 📅</div>`;
+      $("guessResult").innerHTML = `<div class="muted">${esc(rnd(["Pick a valid date first 📅", "Bold of you to bet on 'whenever'. Pick a day. 📅", "We need an actual date, prophet. 🔮"]))}</div>`;
       return;
     }
     const risk = RISK[ui.guessRisk] || RISK.bold;
@@ -1062,15 +1057,6 @@
     if (mBack) mBack.onclick = closeVersionModal;
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeVersionModal(); });
 
-    document.querySelectorAll("#targetSeg .seg-btn").forEach(btn => {
-      btn.onclick = () => {
-        document.querySelectorAll("#targetSeg .seg-btn").forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); });
-        btn.classList.add("active"); btn.setAttribute("aria-selected", "true"); ui.target = btn.dataset.target;
-        ui.guessDays = null; clearGuess(); render();
-        $("fsdCard").classList.toggle("spotlight", ui.target === "fsd");
-        if (ui.target === "fsd") $("fsdCard").scrollIntoView({ behavior: "smooth", block: "nearest" });
-      };
-    });
     $("guessBtn").onclick = () => lockInGuess(currentPrediction());
     window.addEventListener("resize", debounce(() => render(), 150));
   }
