@@ -93,10 +93,13 @@ export function predictNextOS(car, opts = {}) {
     const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
     const stale = noHistory && weeksBehind >= 9;
     if (stale) {
-      // bimodal arrival (offline → never; online → soon); push the midpoint out + widen hard
-      eff = Math.min(0.95, Math.max(eff, weeksBehind >= 15 ? 0.9 : 0.82));
-      t0Days += Math.min(120, Math.round(weeksBehind * 2.5));
-      t0Sigma = Math.max(21, Math.min(70, Math.round(weeksBehind * 1.8)));
+      // far-behind + no history: the newest build still reaches an online car on its own rollout
+      // schedule (a laggard catches the next wave like everyone else), so keep the MEDIAN near
+      // normal arrival + a modest nudge, and express uncertainty by widening hard + low confidence
+      // (the wide late tail covers "might be offline for ages"). Don't shove the midpoint months out.
+      eff = Math.min(0.8, Math.max(eff, 0.55));
+      t0Days += Math.min(21, Math.round(weeksBehind * 0.6));
+      t0Sigma = Math.max(18, Math.min(60, Math.round(weeksBehind * 1.6)));
     }
     const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, floorDays: 0, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") });
     out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = stale; out.weeksBehind = weeksBehind;

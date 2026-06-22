@@ -16,14 +16,20 @@ test("a car on an old build (2026.8.3.10) still predicts the newest rolling buil
   assert.equal(p.targetLabel, "2026.20.3");
 });
 
-test("a deep laggard (months-behind build, no history) is flagged stale + predicted much later", () => {
+test("a deep laggard is flagged stale + WIDE, but its median stays near the next wave (not months out)", () => {
   const lag = predictNextOS({ market: "Australia", hardware: "AI3", installedVersion: "2026.2.6.1", earliness: 0.5, earlinessSource: "default" });
   const near = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "default" });
+  const veryFar = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2025.20", earliness: 0.5, earlinessSource: "default" });
   assert.equal(lag.stale, true, "a ~18-week-behind car should be flagged stale");
   assert.ok(lag.weeksBehind >= 15);
-  assert.ok(lag.daysToMedian > near.daysToMedian + 14, `laggard should predict far later (lag ${lag.daysToMedian}d vs near ${near.daysToMedian}d)`);
+  assert.ok(lag.daysToMedian > near.daysToMedian, "laggard predicts a bit later than a near-current car");
+  // the bug we're guarding against: an online laggard catches the next rollout wave like everyone
+  // else, so the MEDIAN must stay near-term (weeks), never get shoved months out.
+  assert.ok(lag.daysToMedian < 45, `laggard median must stay near the next wave, got ${lag.daysToMedian}d`);
+  assert.ok(veryFar.daysToMedian < 60, `even a year-behind car must not predict months out, got ${veryFar.daysToMedian}d`);
+  // the uncertainty shows up as a WIDE window, not a late median
   const widthDays = (new Date(lag.p90Date) - new Date(lag.p10Date)) / 86400000;
-  assert.ok(widthDays >= 14, `stale window should be wide, got ${Math.round(widthDays)}d`);
+  assert.ok(widthDays >= 40, `stale window should be wide, got ${Math.round(widthDays)}d`);
   assert.equal(near.stale, false, "a 1-branch-behind car is not stale");
 });
 
