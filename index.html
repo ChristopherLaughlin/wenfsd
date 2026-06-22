@@ -319,6 +319,12 @@
           </label>
           <p class="hint" id="connectHint">Linking uses Tesla's official OAuth — you log in on Tesla's page, we never see your password. <strong>Heads-up:</strong> Tesla's permission screen looks alarmingly broad because it's one coarse “read vehicle data” scope (there's no “version only” option) — but our code only ever reads your <strong>software version</strong>, never your location or trips. Rather grant nothing? <strong>Add by VIN</strong> works with no login at all.<br/><button type="button" class="sec-link js-open-security">🔒 Exactly what we read, store &amp; deliberately ignore →</button></p>
 
+          <!-- notify-on-arrival (connected cars only — we can only watch a car you've linked) -->
+          <label class="switch-row notify-row" id="notifyRow" hidden>
+            <input type="checkbox" id="notifyToggle"/>
+            <span>📨 <strong>Tell me the moment my update lands.</strong> We'll ping you when your car actually moves to a new build — no more refreshing the software menu at 2am.</span>
+          </label>
+
           <!-- social profile (connected cars only) -->
           <div class="profile-block" id="profileBlock" hidden>
             <div class="pf-h">🏆 Join the leaderboard</div>

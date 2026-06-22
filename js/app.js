@@ -763,6 +763,17 @@
     const block = $("profileBlock"); if (!block) return;
     const connected = !!(v && v.connected) && /^https?:$/.test(location.protocol);
     block.hidden = !connected;
+    // notify-on-arrival toggle (connected cars only)
+    const nRow = $("notifyRow"), nChk = $("notifyToggle");
+    if (nRow) nRow.hidden = !connected;
+    if (connected && nChk && !nChk._wired) {
+      nChk._wired = true;
+      fetch("/api/me/notify", { headers: { Accept: "application/json" }, credentials: "same-origin" })
+        .then(r => r.ok ? r.json() : null).then(d => { if (d) nChk.checked = !!d.enabled; }).catch(() => {});
+      nChk.onchange = () => {
+        fetch("/api/me/notify", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ enabled: nChk.checked }) }).catch(() => {});
+      };
+    }
     if (!connected) return;
     if (!_profileLoaded) {
       _profileLoaded = true;

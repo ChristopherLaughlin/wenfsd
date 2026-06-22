@@ -329,6 +329,20 @@ apiRouter.delete("/me/vehicle/:vin", ah(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// opt-in: be notified the moment a new software version lands on your car (connected cars only)
+apiRouter.get("/me/notify", ah(async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "not linked" });
+  if (config.mockMode || !hasDb()) return res.json({ enabled: false, hasEmail: false, mock: true });
+  const u = (await query(`SELECT notify_on_update, email FROM users WHERE id=$1`, [req.session.userId])).rows[0];
+  res.json({ enabled: !!(u && u.notify_on_update), hasEmail: !!(u && u.email) });
+}));
+apiRouter.post("/me/notify", ah(async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "not linked" });
+  const enabled = !!(req.body && req.body.enabled === true);
+  if (!config.mockMode && hasDb()) await query(`UPDATE users SET notify_on_update=$1 WHERE id=$2`, [enabled, req.session.userId]);
+  res.json({ ok: true, enabled });
+}));
+
 // delete the whole account (vehicles, snapshots cascade, tokens, user)
 apiRouter.delete("/me", ah(async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: "not linked" });
