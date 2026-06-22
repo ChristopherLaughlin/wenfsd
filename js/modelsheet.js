@@ -40,9 +40,12 @@
       ["Window spread σ (days)", sigma, "Gaussian spread → the 80% confidence window."],
       [],
       [B("OUTPUTS"), B("days from today"), B("date")],
-      ["Predicted arrival (median)", F("LN(B5/(1-B5))/B6 + B7 + B8", offsetCached), F('TEXT(TODAY()+C12,"yyyy-mm-dd")', null)],
-      ["Earliest — p10 (80% window)", F("C12 - 1.2816*B9", r2(offsetCached - 1.2816 * sigma)), F('TEXT(TODAY()+C13,"yyyy-mm-dd")', null)],
-      ["Latest — p90 (80% window)", F("C12 + 1.2816*B9", r2(offsetCached + 1.2816 * sigma)), F('TEXT(TODAY()+C14,"yyyy-mm-dd")', null)],
+      // column B = days-from-today (numbers); column C = the date string (TEXT of TODAY()+B).
+      // C cells reference B in the SAME row, and the p10/p90 offsets reference the median offset B12
+      // (NOT the date text in C12) — otherwise the cells refer to themselves → circular references.
+      ["Predicted arrival (median)", F("LN(B5/(1-B5))/B6 + B7 + B8", offsetCached), F('TEXT(TODAY()+B12,"yyyy-mm-dd")', null)],
+      ["Earliest — p10 (80% window)", F("B12 - 1.2816*B9", r2(offsetCached - 1.2816 * sigma)), F('TEXT(TODAY()+B13,"yyyy-mm-dd")', null)],
+      ["Latest — p90 (80% window)", F("B12 + 1.2816*B9", r2(offsetCached + 1.2816 * sigma)), F('TEXT(TODAY()+B14,"yyyy-mm-dd")', null)],
       [],
       [{ t: "Formula: arrival = t0 + ln(p / (1 − p)) / k + region_lag.  Band = arrival ± 1.2816·σ (the 10th/90th percentiles of a normal)." }],
       [{ t: "Prefilled for your car: " + (v ? `${v.year} ${v.model} · ${hw} · ${market}, on build ${inRegion.version}` : `a typical ${market} ${hw} car, build ${inRegion.version}`) + ". Edit any input above." }],
