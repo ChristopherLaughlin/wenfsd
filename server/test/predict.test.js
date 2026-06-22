@@ -105,6 +105,26 @@ test("a maintenance build that keeps the same FSD is flagged sameFsd (no invente
   assert.equal(fsd.current, "v14.3.4");
 });
 
+test("a connected car's PENDING update overrides the model (observed, confident, near-term)", () => {
+  // car reports it's downloading 2026.20.3 right now — that's reality, not a guess
+  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.2.6.1", earlinessSource: "default", pendingUpdate: { version: "2026.20.3", status: "downloading" } };
+  const p = predictNextOS(car);
+  assert.equal(p.confirmed, true, "pending update → confirmed");
+  assert.equal(p.kind, "confirmed");
+  assert.equal(p.targetLabel, "2026.20.3");
+  assert.ok(p.daysToMedian <= 3, `confirmed update is imminent, got ${p.daysToMedian}d`);
+  const widthDays = (new Date(p.p90Date) - new Date(p.p10Date)) / 86400000;
+  assert.ok(widthDays < 12, `confirmed window is tight, got ${Math.round(widthDays)}d`);
+  // and it ignores the staleness path even though the car is far behind
+  assert.ok(!p.stale);
+});
+
+test("a pending update for a version you already have does NOT override (no false confirm)", () => {
+  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.20.3", earlinessSource: "default", pendingUpdate: { version: "2026.14.6", status: "available" } };
+  const p = predictNextOS(car);
+  assert.ok(!p.confirmed, "an older/stale pending version must not hijack the prediction");
+});
+
 test("INVARIANT: FSD never predicted before the next software update (it ships inside a build)", () => {
   // live-data path: trackers often omit per-build FSD. A car on v13 whose region is actively
   // rolling v14 must BUNDLE with the next software update — never get an earlier, separate date.

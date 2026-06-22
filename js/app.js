@@ -26,6 +26,7 @@
       earlinessPercentile: effEarliness(v), installedVersion: v.installedVersion,
       earlinessSource: v.earlinessSource, fsdVersion: v.fsdVersion, earlyAccess: v.earlyAccess, newCar: !!v.newCar,
       fsdEntitlement: v.fsdEntitlement || "unknown",
+      pendingUpdate: v.connected ? v.pendingUpdate : null,   // observed OTA from the car (connected only)
     };
   }
   // the FSD version YOUR car is actually on (its own reading, else its region's typical current).
@@ -596,9 +597,15 @@
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
     $("osPredVer").textContent = pred.targetLabel ? "· " + pred.targetLabel : "";
     const hw = $("heroWindow");
-    hw.textContent = (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
+    hw.textContent = pred.confirmed
+      ? `✓ confirmed by your car — ${pred.pendingStatus || "incoming"}`
+      : (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
     hw.classList.toggle("hw-stale", !!pred.stale);
-    if ($("osPredQuip")) $("osPredQuip").textContent = osPredQuip();
+    hw.classList.toggle("hw-confirmed", !!pred.confirmed);
+    // the software card's "📡 prediction" pill becomes "✓ confirmed" when the car itself reported it
+    const osPill = document.querySelector(".hpred-os .pred-pill");
+    if (osPill) { osPill.textContent = pred.confirmed ? "✓ confirmed" : "📡 prediction"; osPill.classList.toggle("pill-confirmed", !!pred.confirmed); }
+    if ($("osPredQuip")) $("osPredQuip").textContent = pred.confirmed ? "" : osPredQuip();
     let fsd = null; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { fsd = null; }
     renderOsFsdTag(pred, fsd);
     renderFsdPred(pred, fsd);

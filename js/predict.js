@@ -97,10 +97,31 @@ const Predict = (function () {
     return (region && region.fsd && region.fsd[car.hardware]) ? region.fsd[car.hardware].current : null;
   }
 
+  // OBSERVED override: a connected car that reports a pending OTA isn't a guess — it's reality.
+  // status maps to a tight, high-confidence window so the prediction card agrees with the live
+  // "update incoming" banner instead of showing a stale modelled date. Only fires when the car
+  // itself reported a newer version pending (so it never touches modelled/VIN cars).
+  function pendingOverride(car, region, today) {
+    const pu = car.pendingUpdate;
+    if (!pu || !pu.version || WEN.verKey(pu.version) <= WEN.verKey(car.installedVersion || "0")) return null;
+    const st = String(pu.status || "").toLowerCase();
+    const t0 = st.includes("install") ? 0 : (st.includes("download") || st.includes("schedul")) ? 1 : 3;
+    const out = mcPredict({ t0Days: t0, k: 0.5, L: 0.95, earliness: 0.5, t0Sigma: 1.5, floorDays: 0, today, seedStr: "PU" + pu.version + st });
+    const build = WEN.versions.find(v => v.version === pu.version);
+    out.targetLabel = pu.version; out.kind = "confirmed"; out.branch = "os"; out.confirmed = true; out.pendingStatus = pu.status;
+    out._t0Days = t0; out._k = 0.5;
+    out.fsdCurrent = curFsd(car, region);
+    out.fsdInBuild = (build && build.fsdBuild && build.fsdBuild[car.hardware]) || null;
+    out.bringsNewFsd = !!(out.fsdInBuild && out.fsdInBuild !== "—" && WEN.fsdKey(out.fsdInBuild) > WEN.fsdKey(out.fsdCurrent));
+    out.note = `✓ Confirmed by your car: ${pu.version} is ${pu.status || "on its way"} right now. This is read straight from your vehicle — observed, not a model estimate.`;
+    return out;
+  }
+
   // ---- NEXT OS UPDATE ----
   function predictNextOS(car, today) {
     const region = WEN.regions[car.market] || { osLagDays: AU_LAG };
     const delta = region.osLagDays - AU_LAG;
+    const confirmed = pendingOverride(car, region, today); if (confirmed) return confirmed;
     const myKey = WEN.verKey(car.installedVersion);
 
     // newest distributed version strictly newer than yours — restricted to builds your REGION
