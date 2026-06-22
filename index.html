@@ -36,6 +36,15 @@
 <main>
   <div id="sampleBanner" class="sample-banner" hidden></div>
 
+  <!-- funny, rotating "connect your Tesla" nudge — shown only when not yet linked -->
+  <div id="connectNudge" class="connect-nudge" hidden>
+    <div class="cn-text"><span class="cn-emoji" id="cnEmoji">🔗</span><span id="cnLine"></span></div>
+    <div class="cn-actions">
+      <button class="btn cn-btn" id="cnConnect" type="button">Connect Tesla</button>
+      <button class="cn-dismiss" id="cnDismiss" type="button" title="Fine, ignore me">not now 🙄</button>
+    </div>
+  </div>
+
   <!-- HERO PREDICTION -->
   <section class="hero card">
     <div class="hero-left">

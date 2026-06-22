@@ -32,6 +32,17 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .sample-banner{background:rgba(255,181,71,.10);border:1px solid rgba(255,181,71,.30);color:var(--amber);font-size:12.5px;line-height:1.55;padding:11px 14px;border-radius:11px;margin:14px 0 0}
 .sample-banner strong{color:#ffd591}
 
+/* funny connect-your-Tesla nudge */
+.connect-nudge{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 0;padding:13px 16px;border-radius:12px;
+  background:linear-gradient(90deg,rgba(230,57,75,.12),rgba(57,212,255,.08));border:1px solid rgba(230,57,75,.35)}
+.cn-text{display:flex;align-items:center;gap:10px;flex:1;min-width:240px;font-size:13.5px;line-height:1.5;color:var(--txt)}
+.cn-emoji{font-size:20px;flex-shrink:0}
+.cn-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.cn-btn{margin:0;white-space:nowrap;padding:9px 18px}
+.cn-dismiss{background:none;border:none;color:var(--mut2);font-size:12px;cursor:pointer;font:inherit;font-size:12px;padding:6px}
+.cn-dismiss:hover{color:var(--mut);text-decoration:underline}
+@media(max-width:560px){.cn-actions{width:100%}.cn-btn{flex:1}}
+
 /* top bar */
 .topbar{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:20px 18px 14px;
   display:flex; justify-content:space-between; align-items:center}
