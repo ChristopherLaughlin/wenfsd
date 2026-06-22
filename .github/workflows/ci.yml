@@ -2,8 +2,12 @@ name: CI
 on:
   push: { branches: [main] }
   pull_request: { branches: [main] }
+  schedule:
+    - cron: "17 5 * * *" # daily: re-run the audit so a newly-disclosed CVE fails even with no push
+
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -17,3 +21,21 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+
+  # Dependency vulnerability gate. A high/critical advisory fails this job, which (with branch
+  # protection on `main`) blocks the merge — and the daily run surfaces newly-disclosed CVEs.
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - name: Audit production dependencies (fail on high/critical)
+        run: npm audit --omit=dev --audit-level=high

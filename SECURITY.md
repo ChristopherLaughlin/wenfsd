@@ -61,6 +61,22 @@ If you *do* connect your Tesla account:
 - The creator dashboard (`/admin`) is gated by an `ADMIN_TOKEN` (constant-time comparison) and is
   disabled entirely when that variable is unset.
 
+## Automated security checks (CI)
+
+Every push and pull request to `main` runs, via GitHub Actions:
+
+- **Test suite** (`npm test`) — including [`server/test/security.test.js`](server/test/security.test.js),
+  which asserts token encryption round-trips + tamper-detection, PKCE/`state` correctness, that the
+  authorize URL never carries the client secret, and that only a read-only scope is requested.
+- **Dependency audit** (`npm audit --audit-level=high`) — a high/critical advisory fails the build;
+  this also runs on a **daily schedule** so a newly-disclosed CVE is caught even without a push.
+- **CodeQL** static analysis (`security-extended` queries) — results in the repo's
+  **Security → Code scanning** tab.
+- **Dependabot** opens PRs for vulnerable/outdated npm packages and GitHub Actions.
+
+With branch protection on `main`, a failing check blocks the merge (rather than auto-disabling the
+live site, which would turn any false positive into self-inflicted downtime).
+
 ---
 
 ## Reporting a vulnerability

@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # backend dependencies (Express, pg, helmet, jose, …)
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "security"]
+    groups:
+      # batch routine bumps into one PR; security fixes still come through promptly
+      backend-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # root package (thin wrapper that installs + starts the server)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+
+  # keep the GitHub Actions we pin (checkout, setup-node, codeql) patched
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "ci"]

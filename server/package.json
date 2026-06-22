@@ -4,7 +4,9 @@
   "private": true,
   "description": "wenFSD backend — Tesla Fleet API OAuth, vehicle polling, fleet aggregation + prediction API",
   "type": "module",
-  "engines": { "node": ">=18.17" },
+  "engines": {
+    "node": ">=18.17"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
@@ -21,8 +23,7 @@
     "express-rate-limit": "^7.4.0",
     "helmet": "^8.0.0",
     "jose": "^5.9.6",
-    "node-cron": "^3.0.3",
+    "node-cron": "^4.5.0",
     "pg": "^8.12.0"
-  },
-  "devDependencies": {}
+  }
 }
