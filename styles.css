@@ -611,6 +611,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .foot p{margin:6px 0}
 .foot-links a{color:var(--mut);text-decoration:underline}
 .foot-links a:hover{color:var(--cyan)}
+.foot-quip{font-style:italic;color:var(--mut2)}
+.foot-made{color:var(--mut2);font-style:italic}
 
 /* mobile */
 .table-wrap,.mx-wrap,.chart-wrap{max-width:100%}

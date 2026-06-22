@@ -200,6 +200,14 @@
     osRegSub: ["how far behind the US wave each market runs", "the official suffering rankings 🏅", "geography is destiny (and lag)", "who waits longest, scientifically", "the 'sorry, you're RHD' tax, charted"],
     calSub: ["back-tested against real tracker history", "we keep the receipts 🧾", "proof we're not just vibing", "yes, we grade our own homework — in public", "the part where we admit we can be wrong"],
     paceScope: ["how many cars are updating", "the fleet, in motion", "someone's updating right now. not you.", "rollout, by the numbers", "cars getting lucky, per day"],
+    footQuip: [
+      "Built by people who also check the software menu every morning. We are not well.",
+      "No Teslas were woken in anger during the making of this site. A few were gently asked their version.",
+      "If this site is wrong, remember: so was every \"two weeks\" since 2016. We're in good company.",
+      "Powered by hope, S-curves, and an unhealthy relationship with the refresh button.",
+      "wenFSD: because \"soon\" was not a satisfying answer and neither was \"trust me bro\".",
+      "Disclaimer: staring at the prediction will not make the update arrive faster. We've tested this. Extensively.",
+    ],
   };
   function renderHumour() {
     for (const id in SUBS) { const el = $(id); if (el) el.textContent = flavorPick("sub:" + id, SUBS[id]); }
@@ -970,8 +978,8 @@
       banner.hidden = false;
       banner.className = live ? "sample-banner sb-live" : "sample-banner";
       banner.innerHTML = live
-        ? `✓ Showing live fleet data aggregated from connected cars + public trackers.`
-        : `Showing <strong>your real car data</strong> plus <em>modelled estimates</em> for the fleet-wide views below — each one clearly badged. Estimates become live figures as real Teslas connect and we aggregate the public trackers. No figure is presented as observed unless it is.`;
+        ? `✓ Showing live fleet data aggregated from connected cars + public trackers. ${rnd(["Real numbers. No vibes.", "Freshly scraped, ethically sourced. 🌿", "As live as Tesla lets anyone be.", "These are real. The ETAs are still hopeful."])}`
+        : `Showing <strong>your real car data</strong> plus <em>modelled estimates</em> for the fleet-wide views below — each one clearly badged. Estimates become live figures as real Teslas connect and we aggregate the public trackers. No figure is presented as observed unless it is. (We'd rather be honestly vague than confidently wrong.)`;
     }
   }
 
@@ -984,7 +992,7 @@
     const haveAcc = acc && acc.scored > 0;
     if (!haveLive && !haveAcc) {
       const openNote = acc && acc.open ? ` <strong>${acc.open} prediction${acc.open === 1 ? "" : "s"}</strong> currently open, awaiting the next update.` : "";
-      el.innerHTML = `<p class="cal-note">Calibration appears once live sources are enabled. It back-tests the engine against real release history from the public trackers — cadence, rollout velocity and coverage. No fabricated accuracy figure is shown: per-car hit-rate is published only once enough connected cars provide ground truth.${openNote}</p>`;
+      el.innerHTML = `<p class="cal-note">Calibration appears once live sources are enabled. It back-tests the engine against real release history — cadence, rollout velocity and coverage. We will <em>not</em> print a made-up accuracy figure to look clever; the per-car hit-rate shows up only once enough connected cars give us actual ground truth. (Radical honesty: it's the whole brand.) 🧾${openNote}</p>`;
       return;
     }
     const c = cal.cadence, v = cal.velocity, cov = cal.coverage, tiles = [];
@@ -1165,7 +1173,7 @@
       `</div>` +
       (regions.length ? `<div class="vm-regions"><span class="vm-k">Seen in:</span> ${regions.map(r => `<span class="rn-region">${esc(r)}</span>`).join("")}</div>` : "") +
       (d && d.sources && d.sources.length ? `<div class="vm-src">via ${d.sources.map(esc).join(" · ")}</div>` : "") +
-      (notesItems ? `<div class="vm-notes-h">Release notes${rn.source ? ` <span class="mut-i">via ${esc(rn.source)}</span>` : ""}</div><ul class="rn-items">${notesItems}</ul>` : `<p class="vm-nonotes">No release notes captured for this build yet.</p>`);
+      (notesItems ? `<div class="vm-notes-h">Release notes${rn.source ? ` <span class="mut-i">via ${esc(rn.source)}</span>` : ""}</div><ul class="rn-items">${notesItems}</ul>` : `<p class="vm-nonotes">${esc(rnd(["No release notes captured for this build yet. Tesla's keeping this one mysterious. 🤫", "No notes yet — the changelog is still 'two weeks' away. Of course it is.", "Notes pending. The dog ate Tesla's changelog, allegedly.", "No release notes captured. Assume it 'improves stability' — they always say that."]))}</p>`);
     $("verModal").hidden = false;
     document.body.style.overflow = "hidden";
     const cl = $("verModalClose"); if (cl) cl.focus();

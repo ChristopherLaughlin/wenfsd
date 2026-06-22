@@ -131,13 +131,13 @@
           <input type="range" id="earlySlider" min="3" max="97" value="42" aria-label="How early you usually get updates, as a rollout percentile" />
           <div class="slider-ends"><small>first wave</small><small>last wave</small></div>
         </label>
-        <p class="hint" id="earlyHint">Your <strong>rollout percentile</strong> — where your car lands in each wave. Log your update history below and wenFSD estimates it for you.</p>
+        <p class="hint" id="earlyHint">Your <strong>rollout percentile</strong> — where your car sits in the queue while Tesla decides if you're worthy. Log your update history below and wenFSD estimates it, so you can find out if you're "first wave royalty" or "perpetually last, with the HW3 crowd". 👑</p>
 
         <div class="channel-row">
           <label class="switch-row inline"><input type="checkbox" id="earlyAccessChk"/> <span>I'm in the <strong>Early Access Program</strong></span></label>
           <label class="switch-row inline"><input type="checkbox" id="newCarChk"/> <span>I took delivery <strong>recently</strong> (last ~2 months)</span></label>
         </div>
-        <p class="hint"><strong>Early Access</strong> puts you in the first wave. <strong>Recent delivery</strong> nudges you earlier — newer cars tend to sit nearer the front of the rollout queue. (FSD ships <em>inside</em> OS builds, so your next FSD version arrives with your next software update — same date.)</p>
+        <p class="hint"><strong>Early Access</strong> puts you in the first wave (and on a first-name basis with regression bugs). <strong>Recent delivery</strong> nudges you earlier — fresh cars sit nearer the front of the queue, like the new kid everyone's curious about. (FSD ships <em>inside</em> OS builds, so your next FSD version arrives with your next software update — same date, one parcel, no separate tracking number.)</p>
 
         <!-- update history -> real earliness estimate -->
         <div class="history">
@@ -161,7 +161,7 @@
             <input type="checkbox" id="optInToggle"/>
             <span>Contribute this car's anonymised version data to wenFSD fleet stats</span>
           </label>
-          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only) so wenFSD reads your software version automatically — no manual logging. Opting in improves predictions for everyone. You can disconnect or opt out anytime.</p>
+          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only — we can see your software version, not drive your car into a lake). No manual logging. Opting in improves predictions for everyone, which is basically charity. You can disconnect or opt out anytime, no hard feelings. 🤝</p>
 
           <!-- social profile (connected cars only) -->
           <div class="profile-block" id="profileBlock" hidden>
@@ -205,7 +205,7 @@
     <!-- GUESS GAME -->
     <section class="card guess-card">
       <h2 class="card-h">Call your shot 🎯 <span class="card-sub" id="shotSub">wen, exactly?</span></h2>
-      <p class="hint">Bet on the day <strong>your</strong> car updates. Pick your nerve — the bolder the call, the bigger the bragging rights (and the harder the fall).</p>
+      <p class="hint">Bet on the day <strong>your</strong> car updates. Pick your nerve — the bolder the call, the bigger the bragging rights (and the more spectacular the faceplant). It's "two weeks, trust me bro" but with a paper trail. 🎲</p>
       <label class="field">
         <span>Your predicted date</span>
         <input type="date" id="guessDate" />
@@ -226,7 +226,7 @@
       <h2 class="card-h">FSD by region &amp; hardware <span class="card-sub" id="fsdRegSub"></span></h2>
       <label class="explore-pick">Explore <select id="exploreRegionSel" class="inline-sel" aria-label="Region to explore"></select></label>
     </div>
-    <p class="hint">FSD is a <strong>separate track</strong> from the OS version; rollout depends on <strong>region</strong> (regulatory approval) and <strong>hardware</strong> (HW3/AI3 capped; HW4/AI4 latest). Pick any region above to explore its rollout — your own car's prediction stays at the top.</p>
+    <p class="hint">FSD is a <strong>separate track</strong> from the OS version; rollout depends on <strong>region</strong> (regulators, bless them) and <strong>hardware</strong> (HW3/AI3 = capped, pour one out 🫗; HW4/AI4 = latest and greatest). Pick any region above to explore its rollout and feel things about it — your own car's prediction stays pinned at the top.</p>
     <details class="glossary">
       <summary>🤓 Wait — software vs firmware vs FSD version?</summary>
       <ul>
@@ -261,7 +261,7 @@
   <!-- PER-REGION OS ROLLOUT -->
   <section class="card fleet-card" id="regionCard">
     <h2 class="card-h">OS rollout by region <span class="card-sub" id="osRegSub">how far behind the US wave each market runs</span></h2>
-    <p class="hint">Tesla seeds new builds in the US first, then expands geographically (partly to surface road-sign / regulation differences). Right-hand-drive markets typically lag. ETA shown is for a <em>typical</em> car (50th percentile) in each region.</p>
+    <p class="hint">Tesla seeds new builds in the US first, then expands geographically (partly to discover that other countries have different road signs, roundabouts, and feelings about lane markings). Right-hand-drive markets lag, as is tradition. ETA shown is for a <em>typical</em> car (50th percentile) — your mileage, and patience, may vary.</p>
     <div id="regionPanel" class="region-panel"></div>
   </section>
 
@@ -325,22 +325,24 @@
   <!-- METHODOLOGY (collapsed — reference, not needed every visit) -->
   <section class="card">
     <details class="why-details">
-      <summary class="card-h">Why wenFSD beats the trackers</summary>
+      <summary class="card-h">Why wenFSD beats the trackers <span class="card-sub">(humbly)</span></summary>
       <ul class="why">
-        <li><strong>Teslascope · TeslaFi · Tessie · fleetctrl · teslaupdates</strong> are all <em>observational</em> — install counts, % of fleet, daily velocity, status. None tell <em>you</em> when <em>your</em> car is next.</li>
-        <li><strong>wenFSD predicts</strong>: a logistic S-curve (matching Tesla's staged, VIN-based A/B rollout), placed by your rollout percentile, then Monte&nbsp;Carlo → a real date <strong>distribution</strong> + 80% band.</li>
-        <li><strong>It models what actually moves your spot in line</strong>: your Early Access setting, your hardware (HW3 capped, HW4 latest), your region's regulatory status, and Tesla's measured cadence.</li>
-        <li><strong>Two tracks, tied together</strong>: next OS build and next FSD version — and since FSD ships <em>inside</em> OS builds, FSD can't arrive before the build that carries it.</li>
-        <li><strong>You can guess</strong> and get scored against the model's probability distribution.</li>
+        <li><strong>Teslascope · TeslaFi · Tessie · fleetctrl · teslaupdates</strong> are all <em>observational</em> — install counts, % of fleet, daily velocity, status. Wonderful data. But they tell you what already happened to <em>other</em> people. That's a history book. You wanted a fortune teller. 🔮</li>
+        <li><strong>wenFSD predicts</strong>: a logistic S-curve (matching Tesla's staged, VIN-based A/B rollout), placed by your rollout percentile, then Monte&nbsp;Carlo'd into a real date <strong>distribution</strong> + 80% band. It's maths cosplaying as hope.</li>
+        <li><strong>It models what actually moves your spot in line</strong>: your Early Access setting, your hardware (HW3 = capped, sorry; HW4 = latest), your region's regulatory mood, and Tesla's measured cadence. Everything except Elon's Twitter feelings — those are unmodellable.</li>
+        <li><strong>Two tracks, tied together</strong>: next OS build and next FSD version — and since FSD rides <em>inside</em> OS builds, FSD literally cannot arrive before the build carrying it. Anyone promising otherwise is selling something. 🐍</li>
+        <li><strong>You can guess</strong> and get scored against the model's probability distribution — then take your bragging rights to the forums where they belong. 🏆</li>
+        <li><strong>Honest to a fault</strong>: every modelled number is badged as modelled. We will not look you in the eye and invent a fleet statistic. That's a different company's job. 📦</li>
       </ul>
       <div class="stats-strip" id="statsStrip"></div>
     </details>
   </section>
 
   <footer class="foot">
-    <p>wenFSD is an independent project. Predictions are <strong>modelled statistical estimates</strong>, not Tesla commitments, and confidence bands are not yet empirically back-tested. Figures marked “sample” are illustrative, not live counts.</p>
-    <p>Not affiliated with, endorsed by, or sponsored by Tesla, Inc. — Tesla, Model Y, and FSD are trademarks of Tesla, Inc. Not affiliated with Teslascope, TeslaFi, Tessie, FleetCtrl, or Tesla Updates.</p>
-    <p class="foot-links"><a href="PRIVACY.md">Privacy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a></p>
+    <p>wenFSD is an independent project. Predictions are <strong>modelled statistical estimates</strong>, not Tesla commitments, and confidence bands are not yet empirically back-tested. Figures marked “sample” are illustrative, not live counts. If your update doesn't arrive on the predicted day, please direct your disappointment at Tesla, the regulators, or the heat death of the universe — not at us. 🙏</p>
+    <p>Not affiliated with, endorsed by, or sponsored by Tesla, Inc. — Tesla, Model Y, and FSD are trademarks of Tesla, Inc. Not affiliated with Teslascope, TeslaFi, Tessie, FleetCtrl, or Tesla Updates. We just admire their data and occasionally borrow it (politely, robots.txt and all).</p>
+    <p class="foot-quip" id="footQuip"></p>
+    <p class="foot-links"><a href="PRIVACY.md">Privacy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a> · <span class="foot-made">made by someone refreshing the software menu at 2am</span></p>
   </footer>
 </main>
 
