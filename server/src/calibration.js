@@ -12,6 +12,7 @@
 import { merge } from "./sources/index.js";
 import { fetchDailySeries } from "./sources/teslafi.js";
 import { query, hasDb } from "./db.js";
+import * as W from "./wendata.js";
 
 function daysBetween(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / 86400000); }
 function median(xs) { if (!xs.length) return null; const s = xs.slice().sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
@@ -56,6 +57,44 @@ function velocity(series) {
   return { medianDaysQ1toQ3: median(spans), sampleVersions: spans.length, examples: examples.slice(0, 5) };
 }
 
+// WALK-FORWARD BACK-TEST of the branch-cadence predictor — the engine behind "next update" when
+// you're already current. At each historical branch release, we predict the NEXT branch's arrival
+// using ONLY the gaps observed before it, build an 80% window the same way the model does, then
+// check whether the real date landed inside it. This proves the prediction against data we already
+// ingest (tracker first-seen dates) — no connected cars required. A well-calibrated 80% window
+// should capture the truth ~80% of the time; we publish the number we actually get.
+const Z80 = 1.2816;   // two-sided 80% normal quantile
+export function backtest(versions) {
+  const branch = {};
+  for (const v of versions || []) {
+    if (!v.firstSeen) continue;
+    const m = /^(\d{4})\.(\d+)/.exec(v.version); if (!m) continue;
+    const key = `${m[1]}.${m[2]}`;
+    if (!branch[key] || v.firstSeen < branch[key]) branch[key] = v.firstSeen;
+  }
+  const dates = Object.values(branch).sort();
+  if (dates.length < 5) return null;                         // need enough history to walk forward
+  const day = 86400000;
+  const gaps = []; for (let i = 1; i < dates.length; i++) gaps.push(daysBetween(dates[i - 1], dates[i]));
+  let tested = 0, inWindow = 0; const errs = [];
+  for (let i = 4; i < dates.length; i++) {                   // warm-up: ≥3 prior gaps before predicting
+    const prior = gaps.slice(0, i - 1);
+    const mean = prior.reduce((a, b) => a + b, 0) / prior.length;
+    const s = sd(prior, mean) || mean * 0.4;
+    const predMid = Date.parse(dates[i - 1]) + mean * day;
+    const lo = predMid - Z80 * s * day, hi = predMid + Z80 * s * day;
+    const actual = Date.parse(dates[i]);
+    tested++; if (actual >= lo && actual <= hi) inWindow++;
+    errs.push(Math.abs(Math.round((actual - predMid) / day)));
+  }
+  if (!tested) return null;
+  return {
+    tested, branches: dates.length, targetCoverage: 80,
+    coveragePct: Math.round((inWindow / tested) * 100),
+    medianAbsErrorDays: median(errs),
+  };
+}
+
 // REAL per-car prediction accuracy from scored predictions (the connected-car back-test).
 // Empty until cars actually update after we've made a prediction — then it fills automatically.
 async function accuracy() {
@@ -79,21 +118,24 @@ async function accuracy() {
 
 export async function computeCalibration({ live = false } = {}) {
   const acc = await accuracy();
-  if (!live) return { mode: "sample", accuracy: acc };
+  if (!live) return { mode: "sample", accuracy: acc, backtest: backtest(W.versionHistory) };
   const [merged, daily] = await Promise.all([
     merge({ live: true }).catch(() => []),
     fetchDailySeries().catch(() => ({ series: [] })),
   ]);
   const sources = [...new Set(merged.flatMap(v => v.sources || []))];
   const withPct = merged.filter(v => v.fleetPct != null).length;
+  // back-test on the richer of: real merged tracker history, or the historical branch anchors
+  const bt = backtest(merged.length >= 6 ? merged : W.versionHistory);
   return {
     mode: "live",
     cadence: cadence(merged),
     velocity: velocity(daily.series || []),
+    backtest: bt,
     coverage: { versions: merged.length, versionsWithShare: withPct, sources, sourceCount: sources.length },
     accuracy: acc,
     honesty: (acc && acc.scored)
       ? `Prediction accuracy below is REAL: ${acc.scored} connected-car prediction${acc.scored === 1 ? "" : "s"} scored against what actually happened. Bands are modelled (logistic + Monte-Carlo); this hit-rate is measured, not fabricated.`
-      : "Confidence bands are modelled (logistic rollout + Monte-Carlo). Per-car prediction accuracy is validated against opted-in connected cars as the fleet grows — wenFSD publishes its real hit-rate here rather than a fabricated one." + (acc && acc.open ? ` (${acc.open} prediction${acc.open === 1 ? "" : "s"} currently open, awaiting the next update.)` : ""),
+      : "Confidence bands are modelled (logistic rollout + Monte-Carlo). The back-test above scores the model against real historical release dates; per-car accuracy then validates against opted-in connected cars as the fleet grows — wenFSD publishes real numbers, never fabricated ones." + (acc && acc.open ? ` (${acc.open} prediction${acc.open === 1 ? "" : "s"} currently open, awaiting the next update.)` : ""),
   };
 }

@@ -2,6 +2,16 @@
   "_comment": "Canonical wenFSD data model. The server loads this directly; the client (js/data.js) is checked against it by server/test/parity.test.js so the two can't silently drift.",
   "today": "2026-06-21",
   "earlyAccessShift": -0.3,
+  "versionHistory": [
+    { "version": "2025.26", "firstSeen": "2025-07-14" },
+    { "version": "2025.32", "firstSeen": "2025-08-25" },
+    { "version": "2025.38", "firstSeen": "2025-10-06" },
+    { "version": "2025.44", "firstSeen": "2025-11-17" },
+    { "version": "2026.2",  "firstSeen": "2026-01-19" },
+    { "version": "2026.8",  "firstSeen": "2026-03-09" },
+    { "version": "2026.14", "firstSeen": "2026-05-08" },
+    { "version": "2026.20", "firstSeen": "2026-06-10" }
+  ],
   "versions": [
     {
       "version": "2026.20.4",

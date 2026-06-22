@@ -122,7 +122,8 @@
     // --- model calibration / back-test against real tracker history ---
     try {
       const cal = await getJSON("/api/calibration?live=1");
-      if (cal && cal.mode === "live" && window.WENFSD && window.WENFSD.setCalibration) {
+      // surface whenever there's something real to show — live calibration OR the historical back-test
+      if (cal && (cal.mode === "live" || cal.backtest) && window.WENFSD && window.WENFSD.setCalibration) {
         window.WENFSD.setCalibration(cal);
       }
     } catch (e) { /* keep placeholder */ }

@@ -141,6 +141,20 @@ const WEN = (function () {
     { date: "later (est.)", label: "HW3 'v14 lite' (limited city-streets Autosteer), if it ships", kind: "projected" },
   ];
 
+  // Historical OS-branch first-seen anchors (illustrative in sample mode; the LIVE site back-tests
+  // against the real first-seen dates aggregated from the trackers). Used only by the model
+  // back-test in the calibration card — NOT shown in the firmware table / feed.
+  const versionHistory = [
+    { version: "2025.26", firstSeen: "2025-07-14" },
+    { version: "2025.32", firstSeen: "2025-08-25" },
+    { version: "2025.38", firstSeen: "2025-10-06" },
+    { version: "2025.44", firstSeen: "2025-11-17" },
+    { version: "2026.2",  firstSeen: "2026-01-19" },
+    { version: "2026.8",  firstSeen: "2026-03-09" },
+    { version: "2026.14", firstSeen: "2026-05-08" },
+    { version: "2026.20", firstSeen: "2026-06-10" },
+  ];
+
   const feedSeeds = [
     { region: "Sydney, AU", model: "Model Y Juniper", hw: "AI4", from: "2026.14.6", to: "2026.20.3" },
     { region: "Melbourne, AU", model: "Model 3 Highland", hw: "AI4", from: "2026.14.6.11", to: "2026.20.3" },
@@ -207,7 +221,7 @@ const WEN = (function () {
              list };
   }
 
-  return { today, carPreset, versions, regions, regionLag, fsdMilestones, releaseNotes, feedSeeds, stats,
+  return { today, carPreset, versions, versionHistory, regions, regionLag, fsdMilestones, releaseNotes, feedSeeds, stats,
            // 'sample' until a live backend hydrates real data (api.js flips this to 'live').
            dataMode: "sample", versionSuggestions, allMarkets: ALL_MARKETS,
            marketsFor, inRegion, versionsForRegion, regionFirstSeen, neighborsForRegion,

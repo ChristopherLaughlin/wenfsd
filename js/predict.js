@@ -84,7 +84,10 @@ const Predict = (function () {
     const gaps = []; for (let i = 1; i < dates.length; i++) gaps.push(daysBetween(dates[i - 1], dates[i]));
     const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
     const sd = Math.sqrt(gaps.reduce((a, b) => a + (b - mean) ** 2, 0) / gaps.length) || mean * 0.4;
-    return { mean, sd: Math.max(3, sd) };
+    // Branch cadence is genuinely variable; a tiny small-sample sd makes the projected "next
+    // update" window absurdly overconfident (the historical back-test flagged this). Floor sigma
+    // at ~30% of the mean gap so the 80% window honestly reflects cadence variance.
+    return { mean, sd: Math.max(sd, mean * 0.3, 5) };
   }
 
   // ---- NEXT OS UPDATE ----

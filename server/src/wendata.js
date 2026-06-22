@@ -12,6 +12,7 @@ const MODEL = JSON.parse(readFileSync(path.join(__dirname, "..", "..", "shared",
 export const today = MODEL.today;
 export const earlyAccessShift = MODEL.earlyAccessShift;
 export const versions = MODEL.versions;
+export const versionHistory = MODEL.versionHistory || [];
 export const regions = MODEL.regions;
 
 export function parseOS(v) {

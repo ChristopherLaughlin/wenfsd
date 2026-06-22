@@ -59,7 +59,9 @@ function osCadence(versions) {
   const gaps = []; for (let i = 1; i < dates.length; i++) gaps.push(daysBetween(dates[i - 1], dates[i]));
   const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
   const sd = Math.sqrt(gaps.reduce((a, b) => a + (b - mean) ** 2, 0) / gaps.length) || mean * 0.4;
-  return { mean, sd: Math.max(3, sd) };
+  // Floor sigma at ~30% of the mean gap so the projected "next update" 80% window honestly
+  // reflects Tesla's variable branch cadence (the historical back-test flagged over-confidence).
+  return { mean, sd: Math.max(sd, mean * 0.3, 5) };
 }
 
 // car: { market, hardware, installedVersion, earliness, earlinessSource, earlyAccess }

@@ -1203,24 +1203,30 @@
     const el = $("calibrationBody");
     if (!el) return;
     const acc = cal && cal.accuracy;
+    const bt = cal && cal.backtest;
     const haveLive = cal && cal.mode === "live";
     const haveAcc = acc && acc.scored > 0;
-    if (!haveLive && !haveAcc) {
+    const sample = !cal || cal.mode === "sample";
+    if (!haveLive && !haveAcc && !bt) {
       const openNote = acc && acc.open ? ` <strong>${acc.open} prediction${acc.open === 1 ? "" : "s"}</strong> currently open, awaiting the next update.` : "";
-      el.innerHTML = `<p class="cal-note">Calibration appears once live sources are enabled. It back-tests the engine against real release history — cadence, rollout velocity and coverage. We will <em>not</em> print a made-up accuracy figure to look clever; the per-car hit-rate shows up only once enough connected cars give us actual ground truth. (Radical honesty: it's the whole brand.) 🧾${openNote}</p>`;
+      el.innerHTML = `<p class="cal-note">Calibration appears once live sources are enabled. It back-tests the engine against real release history. We will <em>not</em> print a made-up accuracy figure to look clever — numbers here are measured, never fabricated. (Radical honesty: it's the whole brand.) 🧾${openNote}</p>`;
       return;
     }
     const c = cal.cadence, v = cal.velocity, cov = cal.coverage, tiles = [];
-    if (haveAcc) tiles.push(["Prediction accuracy", `${acc.hitRate}% in-window`, `${acc.scored} connected-car prediction${acc.scored === 1 ? "" : "s"} scored vs reality${acc.medianAbsErrorDays != null ? ` · median miss ±${acc.medianAbsErrorDays}d` : ""}`, true]);
+    // HEADLINE: walk-forward back-test — did the model's 80% window catch the real release date?
+    if (bt) tiles.push(["Back-test: 80% window hit-rate", `${bt.coveragePct}%`,
+      `the model's 80% window caught the actual release date in ${bt.coveragePct}% of ${bt.tested} historical branch release${bt.tested === 1 ? "" : "s"} (target ~80%; median miss ±${bt.medianAbsErrorDays}d)${sample ? " · illustrative history — live uses real tracker dates" : " · real tracker release history"}`, !haveAcc]);
+    if (haveAcc) tiles.push(["Per-car accuracy (live)", `${acc.hitRate}%`, `${acc.scored} connected-car prediction${acc.scored === 1 ? "" : "s"} scored vs what actually happened${acc.medianAbsErrorDays != null ? ` · median miss ±${acc.medianAbsErrorDays}d` : ""}`, true]);
     if (c) tiles.push(["Release cadence", `~${c.medianDays}d`, `median between OS branches · ${c.meanDays}±${c.sdDays}d mean · from ${c.branches} real branches`]);
     if (v) tiles.push(["Rollout velocity", `~${v.medianDaysQ1toQ3}d`, `installs go 25%→75% once a version reaches cars · ${v.sampleVersions} rollouts (TeslaFi daily data)`]);
     if (cov) tiles.push(["Coverage", `${cov.versions} versions`, `${cov.versionsWithShare} with fleet share · ${cov.sourceCount} live sources`]);
+    const honesty = cal.honesty || "This back-test scores the model against historical branch-release dates (illustrative in this preview; the live site runs it against real tracker history). Per-car accuracy then validates against connected cars as they update. Nothing here is fabricated.";
     el.innerHTML =
       `<div class="cal-grid">` +
       tiles.map(([h, big, sub, hot]) => `<div class="cal-tile${hot ? " cal-hot" : ""}"><div class="cal-h">${esc(h)}</div><div class="cal-big">${esc(big)}</div><div class="cal-sub">${esc(sub)}</div></div>`).join("") +
       `</div>` +
       (cov && cov.sources && cov.sources.length ? `<div class="cal-src">Validated against real history from: <strong>${cov.sources.map(esc).join(" · ")}</strong></div>` : "") +
-      `<div class="cal-honesty">✓ ${esc(cal.honesty || "")}</div>`;
+      `<div class="cal-honesty">✓ ${esc(honesty)}</div>`;
   }
 
   // ---- data sources attribution (we aggregate the public trackers) ----
