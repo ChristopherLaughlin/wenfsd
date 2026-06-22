@@ -128,11 +128,15 @@ const Predict = (function () {
       // doing anything wrong. We frame the lag honestly by cause rather than blaming the car.
       const slowRegion = (region.osLagDays || 0) >= 9;
       if (stale) {
-        // a car this far back lands on no predictable cadence — push the midpoint well out and
-        // widen hard. We are NOT confident it lands soon.
-        earliness = Math.min(0.95, Math.max(earliness, weeksBehind >= 15 ? 0.9 : 0.82));
-        t0Days += Math.min(120, Math.round(weeksBehind * 2.5));
-        t0Sigma = Math.max(21, Math.min(70, Math.round(weeksBehind * 1.8)));
+        // A car far behind with no history: we can't tell if it's actively updating or sitting
+        // offline. KEY: the newest build reaches a car on its own rollout schedule regardless of
+        // how stale the car currently is — an online laggard catches the next wave like everyone
+        // else. So keep the MEDIAN near the normal arrival (only a modest late nudge) and express
+        // the uncertainty by WIDENING hard + flagging low confidence (the wide late tail covers
+        // the "might be offline for ages" case). Don't shove the midpoint months out.
+        earliness = Math.min(0.8, Math.max(earliness, 0.55));
+        t0Days += Math.min(21, Math.round(weeksBehind * 0.6));
+        t0Sigma = Math.max(18, Math.min(60, Math.round(weeksBehind * 1.6)));
       }
       const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness, t0Sigma, floorDays: 0, today, seedStr: "OS" + v.version + car.market + earliness + (stale ? "s" : "") });
       out.targetLabel = v.version; out.kind = stale ? "stale" : "distributed"; out.branch = "os"; out._t0Days = t0Days; out._k = v.k;
