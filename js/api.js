@@ -126,6 +126,9 @@
       if (cal && (cal.mode === "live" || cal.backtest) && window.WENFSD && window.WENFSD.setCalibration) {
         window.WENFSD.setCalibration(cal);
       }
+      // self-calibrating windows: feed the empirical band factor into the predictor (no-op until
+      // there's enough real history to compute one)
+      if (cal && cal.backtest && cal.backtest.bandFactor) WEN.cadenceBandFactor = cal.backtest.bandFactor;
     } catch (e) { /* keep placeholder */ }
 
     try { if (window.WENFSD && window.WENFSD.rerender) window.WENFSD.rerender(); } catch (e) { console.warn("[wenFSD] rerender failed:", e && e.message); }

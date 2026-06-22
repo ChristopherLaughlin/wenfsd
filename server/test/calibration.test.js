@@ -36,6 +36,29 @@ test("backtest coverage + median error are sane bounds", () => {
   assert.ok(bt.medianAbsErrorDays >= 0);
 });
 
+test("backtest derives a sane conformal bandFactor once there's enough history", () => {
+  // 11 distinct branches → ≥6 tested points → a bandFactor should be computed and clamped
+  const labels = ["2024.20", "2024.26", "2024.33", "2024.40", "2024.46", "2025.1", "2025.8", "2025.14", "2025.22", "2025.30", "2025.38"];
+  const gaps = [40, 45, 35, 50, 30, 48, 38, 52, 33, 44];   // irregular but bounded cadence
+  const hist = []; let d = Date.parse("2024-06-01");
+  hist.push({ version: labels[0], firstSeen: new Date(d).toISOString().slice(0, 10) });
+  for (let i = 0; i < gaps.length; i++) { d += gaps[i] * 86400000; hist.push({ version: labels[i + 1], firstSeen: new Date(d).toISOString().slice(0, 10) }); }
+  const bt = backtest(hist);
+  assert.ok(bt && bt.tested >= 6, `expected ≥6 tested, got ${bt && bt.tested}`);
+  assert.ok(bt.bandFactor != null, "expected a bandFactor with enough history");
+  assert.ok(bt.bandFactor >= 0.6 && bt.bandFactor <= 2.5, `bandFactor out of clamp: ${bt.bandFactor}`);
+});
+
+test("backtest withholds bandFactor when history is too thin", () => {
+  const bt = backtest([
+    { version: "2026.2", firstSeen: "2026-01-19" }, { version: "2026.8", firstSeen: "2026-03-09" },
+    { version: "2026.14", firstSeen: "2026-05-08" }, { version: "2026.20", firstSeen: "2026-06-10" },
+    { version: "2026.26", firstSeen: "2026-07-15" },
+  ]);
+  assert.ok(bt, "5 branches still back-tests");
+  assert.equal(bt.bandFactor, null, "too few tested points → no bandFactor (avoids overfitting)");
+});
+
 test("computeCalibration (sample) includes a back-test from versionHistory", async () => {
   const cal = await computeCalibration({ live: false });
   assert.equal(cal.mode, "sample");

@@ -76,7 +76,7 @@ export function backtest(versions) {
   if (dates.length < 5) return null;                         // need enough history to walk forward
   const day = 86400000;
   const gaps = []; for (let i = 1; i < dates.length; i++) gaps.push(daysBetween(dates[i - 1], dates[i]));
-  let tested = 0, inWindow = 0; const errs = [];
+  let tested = 0, inWindow = 0; const errs = [], zs = [];
   for (let i = 4; i < dates.length; i++) {                   // warm-up: ≥3 prior gaps before predicting
     const prior = gaps.slice(0, i - 1);
     const mean = prior.reduce((a, b) => a + b, 0) / prior.length;
@@ -85,14 +85,32 @@ export function backtest(versions) {
     const lo = predMid - Z80 * s * day, hi = predMid + Z80 * s * day;
     const actual = Date.parse(dates[i]);
     tested++; if (actual >= lo && actual <= hi) inWindow++;
-    errs.push(Math.abs(Math.round((actual - predMid) / day)));
+    const errDays = Math.round((actual - predMid) / day);
+    errs.push(Math.abs(errDays));
+    if (s > 0) zs.push(Math.abs((actual - predMid) / day) / s);   // standardized residual
   }
   if (!tested) return null;
+  // CONFORMAL band-calibration: the empirical 80th-percentile standardized residual is the
+  // half-width (in sigmas) that WOULD have captured 80% of real releases. bandFactor scales the
+  // model's assumed normal half-width (1.2816σ) to that empirical value → self-calibrating windows.
+  // Only trust it with enough points; clamp so a noisy sample can't distort the live model.
+  let bandFactor = null;
+  if (tested >= 6) {
+    const q80 = quantile(zs, 0.8);
+    if (q80 > 0) bandFactor = Math.round(Math.min(2.5, Math.max(0.6, q80 / Z80)) * 100) / 100;
+  }
   return {
     tested, branches: dates.length, targetCoverage: 80,
     coveragePct: Math.round((inWindow / tested) * 100),
     medianAbsErrorDays: median(errs),
+    bandFactor,   // null until enough history; the client widens/narrows its 80% window by this
   };
+}
+function quantile(xs, q) {
+  if (!xs || !xs.length) return null;
+  const s = xs.slice().sort((a, b) => a - b);
+  const i = (s.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i);
+  return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (i - lo);
 }
 
 // REAL per-car prediction accuracy from scored predictions (the connected-car back-test).

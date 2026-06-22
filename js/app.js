@@ -1214,8 +1214,11 @@
     }
     const c = cal.cadence, v = cal.velocity, cov = cal.coverage, tiles = [];
     // HEADLINE: walk-forward back-test — did the model's 80% window catch the real release date?
-    if (bt) tiles.push(["Back-test: 80% window hit-rate", `${bt.coveragePct}%`,
-      `the model's 80% window caught the actual release date in ${bt.coveragePct}% of ${bt.tested} historical branch release${bt.tested === 1 ? "" : "s"} (target ~80%; median miss ±${bt.medianAbsErrorDays}d)${sample ? " · illustrative history — live uses real tracker dates" : " · real tracker release history"}`, !haveAcc]);
+    if (bt) {
+      const cal2 = bt.bandFactor ? ` · self-calibrated: window ×${bt.bandFactor} to match real history` : "";
+      tiles.push(["Back-test: 80% window hit-rate", `${bt.coveragePct}%`,
+        `the model's 80% window caught the actual release date in ${bt.coveragePct}% of ${bt.tested} historical branch release${bt.tested === 1 ? "" : "s"} (target ~80%; median miss ±${bt.medianAbsErrorDays}d)${cal2}${sample ? " · illustrative history — live uses real tracker dates" : " · real tracker release history"}`, !haveAcc]);
+    }
     if (haveAcc) tiles.push(["Per-car accuracy (live)", `${acc.hitRate}%`, `${acc.scored} connected-car prediction${acc.scored === 1 ? "" : "s"} scored vs what actually happened${acc.medianAbsErrorDays != null ? ` · median miss ±${acc.medianAbsErrorDays}d` : ""}`, true]);
     if (c) tiles.push(["Release cadence", `~${c.medianDays}d`, `median between OS branches · ${c.meanDays}±${c.sdDays}d mean · from ${c.branches} real branches`]);
     if (v) tiles.push(["Rollout velocity", `~${v.medianDaysQ1toQ3}d`, `installs go 25%→75% once a version reaches cars · ${v.sampleVersions} rollouts (TeslaFi daily data)`]);

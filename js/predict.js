@@ -119,7 +119,10 @@ const Predict = (function () {
     const t0Days = Math.max(2, cad.mean - sinceLast) + delta + 6; // midpoint a touch after first appearance
     const p = WEN.parseOS(WEN.versions[0].version);
     const projWeek = (p.week + Math.round(cad.mean / 7)) % 52 || p.week + 3;
-    const out = mcPredict({ t0Days, k: 0.33, L: 0.95, earliness: car.earlinessPercentile, t0Sigma: cad.sd, today, seedStr: "OSproj" + car.market + car.earlinessPercentile });
+    // self-calibrating window: widen/narrow the cadence spread by the empirical band factor the
+    // back-test derived from real history (defaults to 1 until there's enough history).
+    const bandF = Math.min(2.5, Math.max(0.6, +WEN.cadenceBandFactor || 1));
+    const out = mcPredict({ t0Days, k: 0.33, L: 0.95, earliness: car.earlinessPercentile, t0Sigma: cad.sd * bandF, today, seedStr: "OSproj" + car.market + car.earlinessPercentile });
     out.targetLabel = `2026.${projWeek}.x (projected)`; out.kind = "projected"; out.branch = "os"; out._t0Days = t0Days; out._k = 0.33;
     out.note = `You're on the newest build. Projected from Tesla's cadence (~${Math.round(cad.mean)}±${Math.round(cad.sd)} days between branches).`;
     return out;
