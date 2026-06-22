@@ -142,28 +142,34 @@ export function predictNextFSD(car, opts = {}) {
   // FSD rides inside OS builds, but most builds keep the same FSD version. Does the next software
   // update actually CHANGE the FSD version? (mirrors client predict.js exactly)
   const osNext = predictNextOS(car, opts);
+  const nextIsConcrete = osNext.kind !== "projected";
   const buildFsd = osNext.fsdInBuild;
   const buildKey = (buildFsd && buildFsd !== "—") ? W.fsdKey(buildFsd) : null;
 
-  // (1) next software update carries a NEWER FSD → bundled, same build, same day
-  if (osNext.kind !== "projected" && buildKey != null && buildKey > curKey) {
-    const carrierLabel = osNext.targetLabel;
-    osNext.bundledWith = carrierLabel;
-    osNext.targetLabel = buildFsd; osNext.current = cur; osNext.mode = "bundled"; osNext.branch = "fsd"; osNext.fsdChanges = true;
+  // INVARIANT: FSD ships INSIDE an OS build, so it can never reach you before your next software
+  // update — the soonest is bundled with it. Reuse the OS prediction so they can't invert.
+  const bundleWithNext = (label) => {
+    osNext.bundledWith = osNext.targetLabel;
+    osNext.targetLabel = label; osNext.current = cur; osNext.mode = "bundled"; osNext.branch = "fsd"; osNext.fsdChanges = true;
     return osNext;
-  }
+  };
 
-  // (2) region has a newer FSD modelled that no in-region build carries yet (e.g. US 'v14 Lite')
+  // (1) the build we know you're getting carries a NEWER FSD → bundled, same day
+  if (nextIsConcrete && buildKey != null && buildKey > curKey) return bundleWithNext(buildFsd);
+
   const configHasNewer = nextMajor != null && nextMajor > (W.fsdMajor(cur) || 0) && (f.t0 || f.mode === "rolling" || f.mode === "early" || f.mode === "current");
   if (configHasNewer) {
+    // a current in-region build already carries it (carrier ≤ the newest build you're getting) →
+    // you receive it WITH your next software update → bundled. Also covers live data with no per-build FSD.
     const carrier = carrierBuild(car.hardware, nextMajor, versions, car.market);
-    let out;
-    if (carrier) {
-      out = mcPredict({ t0Days: daysBetween(today, carrier.t0) + regionDelta(car.market), k: carrier.k || 0.33, L: 0.95, earliness, today, seedStr: "FSDcar" + f.next + car.market + earliness });
-      out.laterBuild = carrier.version;
-    } else {
-      out = mcPredict({ t0Days: f.t0 ? daysBetween(today, f.t0) : 30, k: f.k || 0.1, L: 0.9, earliness, t0Sigma: f.t0Sigma || 14, today, seedStr: "FSDfb" + car.market });
-    }
+    const carrierBundles = nextIsConcrete && carrier && W.verKey(carrier.version) <= W.verKey(osNext.targetLabel);
+    const unknownButRolling = nextIsConcrete && buildKey == null && (f.mode === "rolling" || f.mode === "early" || f.mode === "current");
+    if (carrierBundles || unknownButRolling) return bundleWithNext(f.next);
+    // (2) genuinely forthcoming FSD (no build carries it yet) → later, separate build; floor it at
+    //     the next-OS midpoint so it can never land before your next software update.
+    const floorDays = nextIsConcrete && osNext.daysToMedian != null ? osNext.daysToMedian + 7 : 0;
+    const t0Days = Math.max(f.t0 ? daysBetween(today, f.t0) : 30, floorDays);
+    const out = mcPredict({ t0Days, k: f.k || 0.1, L: 0.9, earliness, t0Sigma: f.t0Sigma || 14, today, seedStr: "FSDfb" + car.market });
     out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness; out.fsdChanges = true;
     return out;
   }

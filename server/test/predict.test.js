@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { predictNextOS, predictNextFSD } from "../src/predict.js";
-import { parseOS, verKey } from "../src/wendata.js";
+import { parseOS, verKey, versions } from "../src/wendata.js";
 
 test("verKey parses + orders multi-part versions (incl. 2026.8.3.10)", () => {
   assert.deepEqual(parseOS("2026.8.3.10").parts, [8, 3, 10]);
@@ -97,6 +97,25 @@ test("a maintenance build that keeps the same FSD is flagged sameFsd (no invente
   assert.equal(fsd.sameFsd, true, "next software update carries no newer FSD");
   assert.ok(!fsd.medianDate, "we must NOT fabricate an FSD date when nothing newer is in the pipeline");
   assert.equal(fsd.current, "v14.3.4");
+});
+
+test("INVARIANT: FSD never predicted before the next software update (it ships inside a build)", () => {
+  // live-data path: trackers often omit per-build FSD. A car on v13 whose region is actively
+  // rolling v14 must BUNDLE with the next software update — never get an earlier, separate date.
+  const liveVersions = versions.map((v) => ({ ...v, fsdBuild: undefined }));
+  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", earlinessSource: "default" };
+  const os = predictNextOS(car, { versions: liveVersions });
+  const fsd = predictNextFSD(car, { versions: liveVersions });
+  assert.equal(fsd.bundledWith, os.targetLabel, "unknown per-build FSD + region rolling → bundle with next update");
+  assert.equal(+new Date(fsd.medianDate), +new Date(os.medianDate), "bundled → identical date");
+});
+
+test("a forthcoming FSD (US v14 Lite) lands on/after the next software update, never before", () => {
+  const car = { market: "United States", hardware: "AI3", installedVersion: "2026.14.6", fsdVersion: "v12.6.4", earlinessSource: "default" };
+  const os = predictNextOS(car);
+  const fsd = predictNextFSD(car);
+  assert.ok(fsd.medianDate, "US HW3 Lite has a modelled date");
+  assert.ok(new Date(fsd.medianDate) >= new Date(os.medianDate), "FSD must not precede the next software update");
 });
 
 test("predictNextOS reports whether the next software build changes FSD", () => {
