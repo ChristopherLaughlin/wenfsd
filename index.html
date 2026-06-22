@@ -514,6 +514,32 @@
     </details>
   </section>
 
+  <!-- OPEN MODEL — see it, download it, tinker with it, challenge it -->
+  <section class="card" id="modelCard">
+    <details class="why-details" id="modelDetails">
+      <summary class="card-h">🔬 The model — open, and yours to tinker with <span class="card-sub">no black box</span></summary>
+      <div class="why-body">
+        <p class="hint">We don't want you to trust us — we want you to <strong>check us</strong>. The whole prediction model is open. Pull it apart, find where it's wrong, and help make it better.</p>
+        <div class="model-actions">
+          <button class="btn" id="dlModelBtn" type="button">📥 Download the model (Excel / Google&nbsp;Sheets)</button>
+          <a class="btn-ghost" href="/model.json" target="_blank" rel="noopener">View the raw model (JSON)</a>
+          <a class="btn-ghost" href="https://github.com/ChristopherLaughlin/wenfsd" target="_blank" rel="noopener">Read the source on GitHub</a>
+        </div>
+        <p class="hint">The spreadsheet has a <strong>live calculator</strong>: change your rollout percentile, the curve steepness, or the region lag, and the predicted date recomputes. It's the real model, simplified to closed form so you can play with it.</p>
+        <details class="glossary">
+          <summary>🤓 How the prediction works (the actual maths)</summary>
+          <ul>
+            <li><strong>The curve.</strong> Tesla pushes each build as a staged, VIN-based rollout — slow start, steep middle, long tail. We fit a <strong>logistic S-curve</strong>: a build reaches ~50% of the eligible fleet at its <em>midpoint</em> <code>t0</code>, with steepness <code>k</code>.</li>
+            <li><strong>Your spot.</strong> Your <strong>rollout percentile <code>p</code></strong> is where your car tends to land in each wave (first-wave ≈ 0.1, last-wave ≈ 0.9). We read it from your update history, or fall back to a typical-owner prior.</li>
+            <li><strong>The date.</strong> Arrival ≈ <code>t0 + ln(p / (1 − p)) / k + region_lag</code>. The 80% window is that ± <code>1.2816·σ</code> (the 10th/90th percentiles of a normal). In the app we also run a <strong>Monte-Carlo</strong> simulation for the full distribution; the median + window match the formula.</li>
+            <li><strong>FSD.</strong> A new FSD version ships <em>inside</em> a specific OS build — so FSD timing is the OS prediction for whichever build carries it, never earlier. Most builds don't change FSD at all.</li>
+            <li><strong>Honesty.</strong> Bands are <em>modelled</em>, not yet fully back-tested against real per-car timing — treat dates as educated estimates, not promises.</li>
+          </ul>
+        </details>
+      </div>
+    </details>
+  </section>
+
   <!-- SECURITY & PRIVACY (for the reasonably-suspicious) -->
   <section class="card" id="securityCard">
     <details class="why-details" id="securityDetails">
@@ -558,12 +584,14 @@
   </div>
 </div>
 
+<script src="js/xlsx.js"></script>
 <script src="js/data.js"></script>
 <script src="js/vin.js"></script>
 <script src="js/garage.js"></script>
 <script src="js/predict.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/app.js"></script>
+<script src="js/modelsheet.js"></script>
 <script src="js/api.js"></script>
 </body>
 </html>
