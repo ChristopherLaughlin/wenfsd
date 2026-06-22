@@ -34,9 +34,59 @@
 
   // ---------------- render ----------------
   // unified FSD line: is the next FSD version bundled into your next update, later, or capped?
+  // Brutally honest (but very funny) treatment for HW3 cars in Australia / New Zealand —
+  // RHD + our regulators + capped hardware ⇒ realistically, FSD v14 is never landing here.
+  const DOOM_HEAD = [
+    "let's be upfront: this is realistically <strong>never</strong> happening on your car. 🪦",
+    "the honest answer is <strong>no</strong>. Not soon. Not late. <em>No.</em>",
+    "we modelled it. The model laughed, then gently closed its laptop. 💻",
+    "FSD v14 on HW3 in {mkt}? That's not a rollout, that's a hostage situation with no demands.",
+    "you have a better chance of Tesla mailing you a HW4 board personally signed by Elon.",
+    "the ETA is best expressed in geological epochs. 🪨",
+  ];
+  const BETTER_LUCK = [
+    "You'd have better luck teaching a magpie to parallel park. 🐦🚗",
+    "You'd have better luck getting the Cybertruck street-legal in {mkt}. 🔺",
+    "You'd have better luck summoning rain by washing your car. 🌧️",
+    "You'd have better luck asking a wombat to co-sign your mortgage. 🐾",
+    "You'd have better luck waiting for the second Roadster. (Remember that?) 🏎️",
+    "You'd have better luck winning Powerball, twice, on the same ticket. 🎟️",
+    "You'd have better luck training your cat to supervise the supervision. 🐱",
+    "You'd have better luck spotting a Tasmanian tiger doing donuts in a car park. 🐅",
+    "You'd have better luck convincing the regulator that roundabouts are 'basically optional'. 🔄",
+    "You'd have better luck if the car identified as a HW4 and committed to the bit. 🎭",
+  ];
+  const DOOM_ADVICE = [
+    "Our official recommendation: enjoy the Autopilot you've got, and make peace. 🧘",
+    "Consider channelling the wait into a hobby. Sourdough. Macramé. Grief. 🍞",
+    "Set expectations to zero and you can only be pleasantly surprised. (You won't be.)",
+    "Maybe sell it to someone in California before they find out. We didn't say that.",
+    "Honestly? Buy a HW4 car. We'll wait. We have nothing but time, and so do you.",
+  ];
+  function isDownUnderHW3(v) { return v && v.hardware === "AI3" && (v.market === "Australia" || v.market === "New Zealand"); }
+  function renderDoom(el, v, fresh) {
+    const fill = (s) => s.replace(/\{mkt\}/g, esc(v.market));
+    const head = fill(fresh ? rnd(DOOM_HEAD) : flavorPick("doomHead", DOOM_HEAD));
+    const luck = fill(fresh ? rnd(BETTER_LUCK) : flavorPick("doomLuck", BETTER_LUCK));
+    const adv = fill(fresh ? rnd(DOOM_ADVICE) : flavorPick("doomAdvice", DOOM_ADVICE));
+    el.innerHTML = `<div class="fsum fsum-doom" id="doomBox" role="button" tabindex="0" title="Tap for more bad news">` +
+      `<div class="doom-h">💀 FSD on your HW3 ${esc(v.market)} car — ${head}</div>` +
+      `<div class="doom-why">The upfront truth: HW3 (AI3) is compute-capped, ${esc(v.market)} is right-hand-drive, and FSD here needs regulators who move at the speed of a council DA. The trifecta of doom. v14 (Supervised) is built for HW4 — your car will almost certainly never run it. We're not being mean; we're being <em>accurate</em>, which is worse.</div>` +
+      `<div class="doom-luck">${luck}</div>` +
+      `<div class="doom-adv">${adv}</div>` +
+      `<div class="doom-foot">…but hey, <strong>maybe</strong>. Tap for more bad news. 🔁</div>` +
+    `</div>`;
+    const box = $("doomBox");
+    if (box) {
+      const go = (e) => { e.preventDefault(); renderDoom(el, v, true); };
+      box.addEventListener("click", go);
+      box.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") go(e); });
+    }
+  }
   function renderFsdSummary(osPred) {
     const el = $("fsdSummary"); if (!el) return;
     const v = av(); if (!v) { el.innerHTML = ""; return; }
+    if (isDownUnderHW3(v)) { renderDoom(el, v, false); return; }   // 🇦🇺/🇳🇿 + HW3 → the give-up special
     let fsd; try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { el.innerHTML = ""; return; }
     if (!fsd || fsd.unavailable) { el.innerHTML = ""; return; }
     if (fsd.capped) { el.innerHTML = `<div class="fsum fsum-capped">🪚 <strong>FSD:</strong> ${esc(fsd.current || "your version")} is the end of the line for your ${esc(v.hardware)} hardware — Tesla caps it here.</div>`; return; }
@@ -209,8 +259,46 @@
       "Disclaimer: staring at the prediction will not make the update arrive faster. We've tested this. Extensively.",
     ],
   };
+  // "Why wenFSD beats the trackers?" → "It doesn't. But at least…" (cycles on click + per load)
+  const AT_LEAST = [
+    "we admit it.",
+    "it's free.",
+    "it won't give you an STD.",
+    "it won't turn your Tesla into a Ford Ranger.",
+    "it never said \"funding secured.\"",
+    "it won't phantom-brake on the freeway.",
+    "it doesn't cost $99 a month to be disappointed.",
+    "it won't try to summon itself into a parked Kia.",
+    "it's never once said \"two weeks\" and meant it — but at least it's honest about lying.",
+    "it won't get recalled by the regulator.",
+    "it didn't promise you a robotaxi in 2020.",
+    "it won't brick over-the-air during a thunderstorm.",
+    "it won't deduct the FSD price from your car's resale value overnight.",
+    "it won't slam the brakes for a plastic bag and call it 'safety'.",
+    "it doesn't have a yoke.",
+    "it won't open a falcon-wing door into your garage ceiling.",
+    "it won't ask you to keep your hands on the wheel while it drives.",
+    "it never tweeted anything that moved a stock price.",
+    "it won't update itself at 3am and move all your buttons into a submenu.",
+    "it can't be repossessed by an app.",
+    "it won't ship a feature, remove it, then sell it back to you.",
+    "your insurance premium won't read this site and panic.",
+  ];
+  function rollWhyAnswer(fresh) {
+    const el = $("whyAnswer"); if (!el) return;
+    const pick = fresh ? rnd(AT_LEAST) : flavorPick("whyAnswer", AT_LEAST);
+    el.innerHTML = `It doesn't. <span class="wa-but">But at least <em>${pick}</em></span>`;
+  }
   function renderHumour() {
     for (const id in SUBS) { const el = $(id); if (el) el.textContent = flavorPick("sub:" + id, SUBS[id]); }
+    rollWhyAnswer(false);
+    const wa = $("whyAnswer");
+    if (wa && !wa._wired) {
+      wa._wired = true;
+      const go = (e) => { e.preventDefault(); rollWhyAnswer(true); };
+      wa.addEventListener("click", go);
+      wa.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") go(e); });
+    }
   }
 
   function renderHero(pred) {
