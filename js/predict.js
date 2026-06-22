@@ -206,6 +206,15 @@ const Predict = (function () {
       return out;
     }
 
+    // ENTITLEMENT — FSD features only ACTIVATE on cars that have FSD purchased or subscribed.
+    // A car with no FSD plan still receives the software builds that carry FSD, but the module
+    // stays dormant. So we don't hand out an "FSD arrives on X" date; we explain it needs a plan.
+    if (car.fsdEntitlement === "none") {
+      const capable = f.next || f.current || "FSD";
+      return { notEntitled: true, current: cur, targetLabel: capable, mode: "notEntitled", branch: "fsd",
+        note: `Your ${car.hardware} in ${car.market} is capable of ${capable}, but FSD only activates with a purchase or subscription. Your software updates still arrive on schedule — the FSD features stay dormant until you add FSD.` };
+    }
+
     // ── FSD rides INSIDE OS builds, but most builds keep the SAME FSD version ───────────────
     // The real question is whether the software update you're about to get actually changes your
     // FSD version. Compare your current FSD to the FSD the build carries.
