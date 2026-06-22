@@ -194,7 +194,7 @@
   <div class="grid2">
     <!-- DISTRIBUTION -->
     <section class="card">
-      <h2 class="card-h">When exactly? <span class="card-sub">probability by day</span></h2>
+      <h2 class="card-h">When exactly? <span class="card-sub" id="whenSub">probability by day</span></h2>
       <div id="distChart" class="chart-wrap"></div>
       <div class="legend">
         <span><i class="sw sw-median"></i>model's best guess</span>
@@ -204,7 +204,7 @@
 
     <!-- GUESS GAME -->
     <section class="card guess-card">
-      <h2 class="card-h">Call your shot 🎯 <span class="card-sub">wen, exactly?</span></h2>
+      <h2 class="card-h">Call your shot 🎯 <span class="card-sub" id="shotSub">wen, exactly?</span></h2>
       <p class="hint">Bet on the day <strong>your</strong> car updates. Pick your nerve — the bolder the call, the bigger the bragging rights (and the harder the fall).</p>
       <label class="field">
         <span>Your predicted date</span>
@@ -223,7 +223,7 @@
   <!-- FSD AUSTRALIA REGULATORY TRACKER -->
   <section class="card fleet-card" id="fsdCard">
     <div class="card-h-row">
-      <h2 class="card-h">FSD by region &amp; hardware</h2>
+      <h2 class="card-h">FSD by region &amp; hardware <span class="card-sub" id="fsdRegSub"></span></h2>
       <label class="explore-pick">Explore <select id="exploreRegionSel" class="inline-sel" aria-label="Region to explore"></select></label>
     </div>
     <p class="hint">FSD is a <strong>separate track</strong> from the OS version; rollout depends on <strong>region</strong> (regulatory approval) and <strong>hardware</strong> (HW3/AI3 capped; HW4/AI4 latest). Pick any region above to explore its rollout — your own car's prediction stays at the top.</p>
@@ -257,7 +257,7 @@
 
   <!-- PER-REGION OS ROLLOUT -->
   <section class="card fleet-card" id="regionCard">
-    <h2 class="card-h">OS rollout by region <span class="card-sub">how far behind the US wave each market runs</span></h2>
+    <h2 class="card-h">OS rollout by region <span class="card-sub" id="osRegSub">how far behind the US wave each market runs</span></h2>
     <p class="hint">Tesla seeds new builds in the US first, then expands geographically (partly to surface road-sign / regulation differences). Right-hand-drive markets typically lag. ETA shown is for a <em>typical</em> car (50th percentile) in each region.</p>
     <div id="regionPanel" class="region-panel"></div>
   </section>
@@ -298,7 +298,7 @@
 
     <!-- MODEL CALIBRATION / BACK-TEST -->
     <section class="card fleet-card" id="calibrationCard">
-      <h2 class="card-h">Model calibration <span class="card-sub">back-tested against real tracker history</span></h2>
+      <h2 class="card-h">Model calibration <span class="card-sub" id="calSub">back-tested against real tracker history</span></h2>
       <div id="calibrationBody"></div>
     </section>
   </div>

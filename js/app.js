@@ -68,6 +68,7 @@
     renderRegions();
     renderReleaseNotes();
     renderRolloutPace();
+    renderHumour();
     return pred;
   }
 
@@ -94,6 +95,7 @@
     renderRegions();
     renderReleaseNotes();
     renderRolloutPace();
+    renderHumour();
   }
   function svgEmpty(msg) {
     return `<div class="chart-empty">${esc(msg)}</div>`;
@@ -114,6 +116,7 @@
     renderRegions();
     renderReleaseNotes();
     renderRolloutPace();
+    renderHumour();
   }
 
   // ---- regional humour (the wenFSD meme = "wen FSD? two weeks, trust me bro") ----
@@ -125,7 +128,8 @@
     return _flavorCache[key];
   }
   function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; } // fresh every call (transient msgs)
-  const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter.", "Coming right after the robotaxis. 🚕", "Soon™ — on Elon Time™.", "Two more weeks. (The two weeks renew automatically.)"];
+  const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter.", "Coming right after the robotaxis. 🚕", "Soon™ — on Elon Time™.", "Two more weeks. (The two weeks renew automatically.)",
+    "It's in the next build. The one after the next one.", "Leaked on X by a guy with a rocket emoji. Ironclad.", "The wizard said two weeks. The wizard always says two weeks. 🧙", "Your car can feel you refreshing. It's getting embarrassed.", "So close you can almost taste the regression bugs.", "Optimus will hand-deliver it. Standby. 🤖", "Imminent. In the geological sense.", "The OTA gods are merely buffering. 🙏", "Any minute now. For a generous definition of 'minute'."];
   // region-agnostic Tesla/FSD meme one-liners — mixed into the hero flavour for variety
   const GENERIC = [
     "Still on {ver}? It's fine. FSD is 'two weeks' away. It's always two weeks away.",
@@ -139,23 +143,43 @@
     "Elon said 'this year.' He didn't say which year. ⏳",
     "HW3 owners typing 'wen retrofit' into the void. We see you. 🫡",
     "The update is coming. The over-the-air gods are merely… buffering.",
+    "{ver} → still no robotaxi, still no flying car, still refreshing. The dream lives. ✨",
+    "Tesla Time conversion: stated ETA × π, rounded up to the next quarter.",
+    "The car drove itself to the shops. Then it parked across two bays. Supervised! 🅿️",
+    "Smart Summon is on its way. It took the scenic route. Through a hedge. 🌳",
+    "Your yoke has opinions about roundabouts. The update has opinions about your patience.",
+    "$99/month for the privilege of supervising a computer that's smarter than you. Bargain.",
+    "It saw a plastic bag and slammed the brakes. World-changing technology. 🛍️",
+    "Buy now — the price goes up Tuesday. (It always goes up Tuesday. There's always a Tuesday.)",
+    "Cybertruck owners got it first. They've suffered enough; let them have this. 🔺",
+    "The visualisation rendered three traffic cones that weren't there. Vibes-based driving.",
+    "Regenerative braking gives energy back. The waiting gives nothing back. 🔋",
+    "Grok was asked wen FSD. Grok also said two weeks. The machines have unionised. 🤝",
+    "It's coming in the same update as the Roadster, the van, and world peace.",
+    "Your Tesla has more compute than the Apollo missions and uses it to ignore you.",
+    "Autopark found a spot, considered it, and emotionally withdrew. Relatable.",
   ];
   const REGION_FLAVOR = {
     "Australia": { flag: "🇦🇺",
-      soon: ["Two weeks. Trust me, mate. 🦘", "She'll be right — a fortnight, tops.", "Basically here. Crack a tinnie. 🍺", "Soon-ish, bruz. Trust."],
-      quips: ["Strewth — still on {ver}? She'll be right.", "Your car's more behind than a tradie on a Friday arvo.", "No dramas, wen FSD is basically here. *distant kangaroo noises*", "Still on {ver}? Yeah-nah, the update's comin', mate.", "Hooroo to {ver} — eventually.", "Tell 'em they're dreamin'… then check again tomorrow.", "Carn, Tesla. We're not getting any younger down here.", "It's coming faster than a magpie in September. 🐦"] },
+      soon: ["Two weeks. Trust me, mate. 🦘", "She'll be right — a fortnight, tops.", "Basically here. Crack a tinnie. 🍺", "Soon-ish, bruz. Trust.", "Won't be a sec — go put the snags on. 🌭", "It's comin' quicker than a bin chicken on a chip. 🐦"],
+      quips: ["Strewth — still on {ver}? She'll be right.", "Your car's more behind than a tradie on a Friday arvo.", "No dramas, wen FSD is basically here. *distant kangaroo noises*", "Still on {ver}? Yeah-nah, the update's comin', mate.", "Hooroo to {ver} — eventually.", "Tell 'em they're dreamin'… then check again tomorrow.", "Carn, Tesla. We're not getting any younger down here.", "It's coming faster than a magpie in September. 🐦",
+        "Still on {ver}? Reckon it'll land between smoko and knock-off.", "Your update's doing a Bradbury — last in the queue, might still win. ⛸️", "Fair dinkum, {ver}'s older than a servo pie under the heat lamp. 🥧", "She's flat out like a lizard drinkin', that rollout. 🦎", "Yeah-nah it's close, but also yeah-nah it's RHD, so… nah. 🚗", "Drier than the Nullarbor out here on {ver}. Send update.", "Bit of a wait, but that's just Straya tax on everything, eh."] },
     "New Zealand": { flag: "🇳🇿",
-      soon: ["Two weeks. Trust me, bro. 🥝", "Sweet as, basically rolling out.", "Yeah-nah-yeah, real soon.", "Chur, won't be long now."],
-      quips: ["Still on {ver}? Sweet as, it's coming.", "Yeah nah yeah, it's basically rolling out, bro.", "Chur — won't be long now, eh.", "Still on {ver}? Hard. Hang in there, bro.", "She's a good keen update. Coming. Promise.", "Choice. Now we wait. Choice."] },
+      soon: ["Two weeks. Trust me, bro. 🥝", "Sweet as, basically rolling out.", "Yeah-nah-yeah, real soon.", "Chur, won't be long now.", "Munted wait, but she's coming, bro.", "Bee's knees — any day now, eh."],
+      quips: ["Still on {ver}? Sweet as, it's coming.", "Yeah nah yeah, it's basically rolling out, bro.", "Chur — won't be long now, eh.", "Still on {ver}? Hard. Hang in there, bro.", "She's a good keen update. Coming. Promise.", "Choice. Now we wait. Choice.",
+        "Aussie gets it first again? Yeah, nah, classic. 🐑", "Still on {ver}? Egg, mate. The update's the same egg. 🥚", "Stink one, bro — {ver}'s ancient. But she'll come right.", "Jandals on, kettle's boiled, still no update. 🩴", "Population: 5 million. Teslas updated this week: possibly 3.", "Box of birds once it lands. Just gotta wait for Aus to finish, eh."] },
     "United States": { flag: "🇺🇸",
-      soon: ["Two weeks. Trust me bro. 🦅", "It's coming. Probably this OTA. 🫡", "Soon™. Very soon™.", "Faster than you can say 'supervised'."],
-      quips: ["Still on {ver}? That's downright un-American. 🦅", "Freedom units of patience required.", "Refresh harder. That always works.", "Still on {ver}? Elon tweeted, so… any minute now.", "It's coming faster than you can say 'Full Self-Driving (Supervised, terms apply)'.", "Manifest the update. Believe.", "Your neighbor has it. Of course they do."] },
+      soon: ["Two weeks. Trust me bro. 🦅", "It's coming. Probably this OTA. 🫡", "Soon™. Very soon™.", "Faster than you can say 'supervised'.", "Locked, loaded, and rolling. Allegedly. 🇺🇸", "Elon tweeted a rocket. That counts. 🚀"],
+      quips: ["Still on {ver}? That's downright un-American. 🦅", "Freedom units of patience required.", "Refresh harder. That always works.", "Still on {ver}? Elon tweeted, so… any minute now.", "It's coming faster than you can say 'Full Self-Driving (Supervised, terms apply)'.", "Manifest the update. Believe.", "Your neighbor has it. Of course they do.",
+        "You get builds first and you STILL complain. Bald eagle sheds a tear. 🦅", "Still on {ver}? Texas got it last Tuesday. Texas gets everything.", "Drive-thru's faster than this rollout, and that's saying something. 🍔", "It's your god-given right to a point release. Demand it.", "Stuck on {ver}? Tweet at Elon. Worked for that one guy, probably.", "Robotaxi's launching in your city any day. So's the update. Same energy."] },
     "Canada": { flag: "🇨🇦",
-      soon: ["Two weeks. Trust me, bud. 🍁", "It'll be here before the next Tims run. ☕", "For sure for sure, soon.", "Give'r — almost there."],
-      quips: ["Still on {ver}, eh? Sorry aboot that.", "Patience, bud — it's coming, for sure for sure.", "It'll be here before the next double-double. ☕", "Still on {ver}? Beauty. Hang tight, bud.", "Take off, {ver}. Eventually, eh.", "It's coming, dontcha know."] },
+      soon: ["Two weeks. Trust me, bud. 🍁", "It'll be here before the next Tims run. ☕", "For sure for sure, soon.", "Give'r — almost there.", "Soon, bud. Sorry for the wait. 🙏", "Beauty — basically out, eh."],
+      quips: ["Still on {ver}, eh? Sorry aboot that.", "Patience, bud — it's coming, for sure for sure.", "It'll be here before the next double-double. ☕", "Still on {ver}? Beauty. Hang tight, bud.", "Take off, {ver}. Eventually, eh.", "It's coming, dontcha know.",
+        "Update's frozen solid out here. Give'r a sec to thaw. ❄️", "Still on {ver}? It's a real gong show, bud.", "Coming slower than a Zamboni between periods. 🏒", "Sorry. Sorry. It's late. Sorry. (Very Canadian apology.)", "Two-four says it lands this weekend. 🍺", "It'll be here, bud — right after the Leafs win the Cup. So… eventually."] },
     "Europe": { flag: "🇪🇺",
-      soon: ["Two weeks*. (*pending homologation) 📋", "Soon — once 17 agencies sign off. 🇪🇺", "Approval imminent. Allegedly.", "Bald. (That's 'soon' in German. Cope.)"],
-      quips: ["Still on {ver}? Blame the regulators. 📋", "Approval pending since approximately forever.", "It's coming — after a public consultation period.", "Still on {ver}? The paperwork is, how you say, in progress.", "Coming soon to a TÜV-approved vehicle near you.", "GDPR-compliant patience required."] },
+      soon: ["Two weeks*. (*pending homologation) 📋", "Soon — once 17 agencies sign off. 🇪🇺", "Approval imminent. Allegedly.", "Bald. (That's 'soon' in German. Cope.)", "Soon, after the consultation period. 📝", "Imminent — in three official languages. 🗣️"],
+      quips: ["Still on {ver}? Blame the regulators. 📋", "Approval pending since approximately forever.", "It's coming — after a public consultation period.", "Still on {ver}? The paperwork is, how you say, in progress.", "Coming soon to a TÜV-approved vehicle near you.", "GDPR-compliant patience required.",
+        "FSD in Europe: a beautiful theoretical concept, like a balanced budget.", "Still on {ver}? The UNECE working group will get back to you. Eventually. 📚", "Roundabout handling pending approval from every roundabout individually. 🔄", "Your update is stuck in committee. The committee is stuck in another committee.", "It'll arrive precisely when the regulators mean it to. ⏳🧙", "Autobahn-ready software, delivered at the speed of bureaucracy. 🐌"] },
   };
   function flavorFor(market) { return REGION_FLAVOR[market] || REGION_FLAVOR["United States"]; }
   function heroFlavorLine(pred) {
@@ -164,6 +188,20 @@
     if (d != null && d >= 8 && d <= 18) return `${fl.flag} ${flavorPick("soon:" + v.market, fl.soon.concat(MEME))}`;   // the meme zone
     const q = flavorPick("quip:" + v.market, fl.quips.concat(GENERIC)).replace(/\{ver\}/g, esc(v.installedVersion || "your build"));
     return `${fl.flag} ${q}`;
+  }
+
+  // Rotating funny card subtitles — picked stable-per-load (fresh on refresh) so the whole
+  // page reads differently every visit. Set the text content of decorative .card-sub spans.
+  const SUBS = {
+    whenSub: ["probability by day (science!)", "your wen, quantified", "a graph of pure hope 📈", "statistically: soon-ish", "the suspense, plotted", "every day's odds, ranked by cope", "maths, but make it anxious"],
+    shotSub: ["wen, exactly? Put a date on it.", "no take-backs, hero 🎯", "easy to say 'two weeks' — prove it", "stake your bragging rights", "the model is watching 👀", "calling it is free; being wrong is forever"],
+    fsdRegSub: ["who gets it first (probably not you)", "the global FSD pecking order", "a leaderboard of smugness", "spoiler: the US, again 🇺🇸", "geography decides your autonomy", "find out exactly how jealous to be"],
+    osRegSub: ["how far behind the US wave each market runs", "the official suffering rankings 🏅", "geography is destiny (and lag)", "who waits longest, scientifically", "the 'sorry, you're RHD' tax, charted"],
+    calSub: ["back-tested against real tracker history", "we keep the receipts 🧾", "proof we're not just vibing", "yes, we grade our own homework — in public", "the part where we admit we can be wrong"],
+    paceScope: ["how many cars are updating", "the fleet, in motion", "someone's updating right now. not you.", "rollout, by the numbers", "cars getting lucky, per day"],
+  };
+  function renderHumour() {
+    for (const id in SUBS) { const el = $(id); if (el) el.textContent = flavorPick("sub:" + id, SUBS[id]); }
   }
 
   function renderHero(pred) {
@@ -179,7 +217,7 @@
     $("ringDays").textContent = d <= 0 ? "now" : d;
 
     const w7 = Math.round(pred.probWithin(7) * 100), w14 = Math.round(pred.probWithin(14) * 100), w30 = Math.round(pred.probWithin(30) * 100);
-    $("confRow").innerHTML = [chip("7 days", w7), chip("14 days", w14), chip("30 days", w30)].join("");
+    $("confRow").innerHTML = [chip("a week", w7), chip("two weeks 🙏", w14), chip("a month", w30)].join("");
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
     renderBasis(pred);
     renderTips(pred);
@@ -1072,6 +1110,7 @@
         ui.paceWindow = b.dataset.pace;
         tog.querySelectorAll(".pace-btn").forEach(x => x.classList.toggle("is-on", x === b));
         renderRolloutPace();
+        renderHumour();
       });
     }
   }
@@ -1149,7 +1188,7 @@
       const barW = (lag / maxLag) * 100;
       return `<div class="rp-row ${isShown ? "rp-active" : ""} rp-click" data-explore-region="${esc(name)}" title="Explore ${esc(name)}">` +
         `<div class="rp-name">${esc(name)}${isCar ? ' <span class="tag-you">you</span>' : ''} <span class="rp-drive">${r.drive}</span></div>` +
-        `<div class="rp-lag">${lag === 0 ? "US baseline" : "+" + lag + "d behind US"}</div>` +
+        `<div class="rp-lag" title="${esc(lag === 0 ? "First dibs. The rest of the planet waits on you." : lag <= 3 ? "Barely waiting. Insufferable." : lag <= 10 ? "A polite, civilised wait." : "Certified suffering. Hang in there.")}">${lag === 0 ? "🥇 US baseline" : "+" + lag + "d " + (lag <= 3 ? "😎" : lag <= 10 ? "😬" : "🐌")}</div>` +
         `<div class="rp-bar"><span style="width:${Math.max(2, barW)}%"></span></div>` +
         `<div class="rp-eta">${esc(p.targetLabel)} in <strong>~${Math.max(0, p.daysToMedian)}d</strong></div>` +
         `</div>`;
@@ -1186,7 +1225,7 @@
   }
   function renderStats() {
     if (WEN.dataMode !== "live") {
-      $("statsStrip").innerHTML = `<div class="stats-sample">Fleet totals appear here once real cars connect — wenFSD shows no invented numbers.</div>`;
+      $("statsStrip").innerHTML = `<div class="stats-sample">${rnd(["Fleet totals show up here once real cars connect. We refuse to make up numbers — that's Tesla's delivery-date job. 📦", "Big fleet stats appear once cars connect. Until then, this space is as empty as a robotaxi's driver seat. 🚕", "Real numbers land here when cars connect. We don't do vibes-based statistics (unlike some range estimates we could mention). 🔋", "Connect a car and the counters wake up. Like Sentry Mode, but useful."])}</div>`;
       return;
     }
     const s = WEN.stats; // real DB-derived counts in live mode
