@@ -2,7 +2,7 @@
 :root{
   --bg:#0a0c10; --bg2:#0e1117; --card:#141821; --card2:#1a1f2b;
   --line:#232a38; --line2:#2e3647;
-  --txt:#e8edf6; --mut:#8b95a8; --mut2:#5f6878;
+  --txt:#e8edf6; --mut:#8b95a8; --mut2:#7a8498;  /* --mut2 raised from #5f6878 for WCAG AA contrast */
   --acc:#e62937;            /* tesla red */
   --acc2:#ff5a4d;
   --cyan:#39d4ff; --green:#37d67a; --amber:#ffb547; --violet:#9b8cff;
@@ -64,9 +64,16 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .brand{display:flex; gap:12px; align-items:center}
 .logo{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#fff;
   background:linear-gradient(135deg,var(--acc),#a3121f); box-shadow:0 6px 18px rgba(230,41,55,.4)}
-.brand-name{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.brand-name{display:inline-block;font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--fg);text-decoration:none}
 .brand-name span{color:var(--acc2)}
 .brand-sub{font-size:12px;color:var(--mut);margin-top:-2px}
+/* static, crawlable value-prop lede (SEO + AI engines see this without JS) */
+.lede{max-width:760px;margin:14px auto 0;padding:0 2px}
+.lede h1{font-size:20px;line-height:1.3;font-weight:800;margin:0 0 6px;color:var(--fg)}
+.lede p{font-size:13.5px;line-height:1.6;color:var(--mut);margin:0}
+.lede strong{color:var(--fg)} .lede em{font-style:normal;color:var(--cyan)}
+.lede-skip{color:var(--cyan);text-decoration:underline;white-space:nowrap}
+@media(max-width:680px){.lede h1{font-size:18px}}
 .topbar-right{display:flex;gap:18px;align-items:center}
 .today{font-size:11px;color:var(--mut);text-align:right;line-height:1.3}
 .today strong{color:var(--txt);font-size:13px}
@@ -101,7 +108,9 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .seg-btn:not(.active):hover{color:var(--txt)}
 .hero-eyebrow{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:600}
 .hero-date{font-size:38px;font-weight:800;letter-spacing:-1px;margin:6px 0 2px;line-height:1.05}
-.hero-window{font-size:13px;color:var(--cyan);font-family:var(--mono)}
+.hero-window{display:inline-block;margin-top:6px;font-size:14px;font-weight:600;color:var(--cyan);font-family:var(--mono);
+  background:rgba(57,212,255,.08);border:1px solid rgba(57,212,255,.22);border-radius:8px;padding:4px 10px}
+.hero-window:empty{display:none}
 .hero-countdown{display:flex;align-items:flex-end;gap:14px;margin:18px 0}
 .cd{text-align:center}
 .cd-num{font-size:30px;font-weight:800;line-height:1;font-family:var(--mono)}
@@ -431,6 +440,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 /* firmware table */
 .table-wrap{overflow-x:auto}
 .fw-table{width:100%;border-collapse:collapse;font-size:13px}
+/* mobile: drop 7-day velocity (4), first seen (5) & notes (7); keep version/status/share/FSD build */
+@media(max-width:560px){
+  .fw-table th:nth-child(4),.fw-table td:nth-child(4),
+  .fw-table th:nth-child(5),.fw-table td:nth-child(5),
+  .fw-table th:nth-child(7),.fw-table td:nth-child(7){display:none}
+  .fw-table td{padding:10px 8px}
+}
 .fw-table th{text-align:left;color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;
   letter-spacing:.5px;padding:0 12px 10px;border-bottom:1px solid var(--line)}
 .fw-table td{padding:12px;border-bottom:1px solid var(--line)}
@@ -730,3 +746,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   .rn-regions{margin-left:0;flex-basis:100%}
   .data-sources{font-size:11px}
 }
+
+/* Respect users who prefer reduced motion (WCAG 2.3.3): kill the infinite pulse + long
+   transitions/animations; keep instant state changes. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .dot, .live .dot { animation: none !important; }
+}
+
+/* collapsible "fleet data & methodology" wrapper (audit C1 — un-bury the prediction) */
+.more-data{display:block;margin:0}
+.more-data > summary{cursor:pointer;list-style:none;user-select:none;padding:15px 18px;margin:0;
+  border:1px solid var(--line);border-radius:13px;background:#0b0e14;font-weight:700;font-size:15px;color:var(--txt)}
+.more-data > summary::-webkit-details-marker{display:none}
+.more-data > summary::after{content:"  ▸";color:var(--mut)}
+.more-data[open] > summary::after{content:"  ▾"}
+.more-data > summary:hover{border-color:var(--cyan)}
+.more-data[open] > summary{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:18px}
+.md-hint{font-weight:400;font-size:12.5px;color:var(--mut)}
+@media(max-width:560px){.md-hint{display:none}}

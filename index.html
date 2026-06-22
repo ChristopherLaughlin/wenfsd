@@ -3,7 +3,64 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>wenFSD — predict your next Tesla update</title>
+<title>wenFSD — predict your next Tesla software &amp; FSD update by VIN</title>
+<meta name="description" content="Predict when your Tesla gets its next software update and FSD (Supervised) v14 — by VIN, free, no login. A rollout-prediction model gives a probability date with an 80% confidence window, not just 'two weeks'." />
+<link rel="canonical" href="https://wenfsd.info/" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+<meta name="theme-color" content="#e6394b" />
+<meta name="author" content="wenFSD" />
+<meta name="keywords" content="Tesla update predictor, wen FSD, FSD v14 rollout, Tesla software update tracker, Tesla firmware, when will my Tesla update, FSD Supervised Australia" />
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="wenFSD" />
+<meta property="og:url" content="https://wenfsd.info/" />
+<meta property="og:title" content="wenFSD — predict your next Tesla update" />
+<meta property="og:description" content="Predict when your Tesla gets its next software update and FSD v14, by VIN. Probability dates with an 80% confidence window — not guesses. Free, open-source, no login." />
+<meta property="og:image" content="https://wenfsd.info/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="1200" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:alt" content="wenFSD — predict your next Tesla software and FSD update" />
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="wenFSD — predict your next Tesla update" />
+<meta name="twitter:description" content="Predict when your Tesla gets its next software update and FSD v14, by VIN. Probability dates, not guesses." />
+<meta name="twitter:image" content="https://wenfsd.info/og.png" />
+<!-- Structured data for search + AI answer engines -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "wenFSD",
+      "url": "https://wenfsd.info/",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web",
+      "browserRequirements": "Requires JavaScript",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "description": "Predicts when a specific Tesla will receive its next over-the-air software update, including FSD (Supervised) v14, identified by VIN. Models Tesla's staged VIN-based rollout as a logistic S-curve and runs a Monte Carlo simulation to produce a probability distribution of arrival dates with an 80% confidence window.",
+      "creator": { "@type": "Organization", "name": "wenFSD", "url": "https://github.com/ChristopherLaughlin/wenfsd" },
+      "isAccessibleForFree": true
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "How does wenFSD predict my Tesla's next update?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It models Tesla's staged, VIN-based A/B rollout as a logistic S-curve, places your car by its rollout percentile (hardware, region, and how early you usually update), then runs a Monte Carlo simulation to produce a probability distribution of arrival dates with an 80% confidence window — not a single guess." } },
+        { "@type": "Question", "name": "Is wenFSD free, and do I need to log in?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes, it is free. You do not need to log in: add your car by VIN and you get the full prediction with no account access. Connecting your Tesla account is optional and only automates reading your software version." } },
+        { "@type": "Question", "name": "What data does connecting my Tesla account give wenFSD?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Read-only access to your software version only. wenFSD requests just the vehicle_device_data scope, never the location or command scopes, only ever reads the vehicle_state endpoint, and stores only your version, region, and hardware. It cannot drive, unlock, or locate your car. It is open source." } },
+        { "@type": "Question", "name": "Does FSD update separately from the Tesla software update?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. FSD (Supervised) ships bundled inside the OS/software build, so a new FSD version arrives with a software update — it cannot arrive before the build that carries it. wenFSD ties the two together." } },
+        { "@type": "Question", "name": "What is the difference between software, firmware, and FSD version?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Software and firmware are the same thing — your car's whole operating system, numbered like 2026.20.3 (year.week.point). FSD version is just the Full Self-Driving AI, on its own line (v12, v13, v14). Each software build carries a specific FSD version inside it." } }
+      ]
+    }
+  ]
+}
+</script>
 <!-- Favicon: the eternal question, in brand red. The whole site, in 32 pixels. -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e6394b'/%3E%3Ctext x='16' y='25' font-family='Arial,Helvetica,sans-serif' font-size='25' font-weight='bold' text-anchor='middle' fill='white'%3E?%3C/text%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e6394b'/%3E%3Ctext x='16' y='25' font-family='Arial,Helvetica,sans-serif' font-size='25' font-weight='bold' text-anchor='middle' fill='white'%3E?%3C/text%3E%3C/svg%3E" />
@@ -22,7 +79,7 @@
       </svg>
     </div>
     <div>
-      <div class="brand-name">wen<span>FSD</span></div>
+      <a class="brand-name" href="/" aria-label="wenFSD home">wen<span>FSD</span></a>
       <div class="brand-sub">Tesla update &amp; FSD rollout intelligence · global</div>
     </div>
   </div>
@@ -34,6 +91,17 @@
 </header>
 
 <main>
+  <!-- Static, crawlable value proposition (in raw HTML so search engines + AI answer engines
+       see it without running JavaScript). The live, interactive prediction renders below. -->
+  <section class="lede">
+    <h1>Predict your next Tesla software &amp; FSD update — by VIN</h1>
+    <p>wenFSD is a free, open-source tool that predicts when <em>your</em> Tesla will get its next
+    over-the-air software update, including FSD&nbsp;(Supervised) v14. It models Tesla's staged,
+    VIN-based rollout as a logistic S-curve and runs a Monte&nbsp;Carlo simulation to give you a
+    probability <strong>date</strong> with an 80% confidence window — not just “two weeks.”
+    Add your car by VIN (no login), or connect your Tesla account read-only to auto-track. <a class="lede-skip" href="#securityCard">How your data is handled →</a></p>
+  </section>
+
   <div id="sampleBanner" class="sample-banner" hidden></div>
 
   <!-- funny, rotating "connect your Tesla" nudge — shown only when not yet linked -->
@@ -48,7 +116,7 @@
   </div>
 
   <!-- LIVE pending-update alert (connected cars only — the actual answer, from the car) -->
-  <div class="update-alert" id="updateAlert" hidden></div>
+  <div class="update-alert" id="updateAlert" role="status" aria-live="polite" hidden></div>
 
   <!-- HERO PREDICTION -->
   <section class="hero card">
@@ -140,7 +208,7 @@
         </label>
         <div class="refresh-row" id="refreshRow" hidden>
           <button class="btn-sm" id="refreshCarBtn" type="button">🔄 Wake car &amp; read version</button>
-          <span class="refresh-status" id="refreshStatus"></span>
+          <span class="refresh-status" id="refreshStatus" role="status" aria-live="polite"></span>
         </div>
 
         <label class="field">
@@ -233,7 +301,7 @@
         <button class="nerve-btn" data-risk="yolo" type="button"><b>🎲 Trust me bro</b><small>±2 days · 6×</small></button>
       </div>
       <button class="btn" id="guessBtn">Lock in my call 🔒</button>
-      <div id="guessResult" class="guess-result"></div>
+      <div id="guessResult" class="guess-result" role="status" aria-live="polite"></div>
     </section>
   </div>
 
@@ -281,6 +349,10 @@
     <div id="dataSources" class="data-sources"></div>
     <div id="releaseNotes" class="rn-list"></div>
   </section>
+
+  <!-- COMMODITY FLEET DATA — collapsed by default so the prediction isn't buried (audit C1) -->
+  <details class="more-data" id="moreData">
+    <summary class="more-data-sum">📊 Fleet data &amp; methodology <span class="md-hint">— rollout by region, pace, firmware tracker, activity feed &amp; model calibration. Show your work.</span></summary>
 
   <!-- PER-REGION OS ROLLOUT -->
   <section class="card fleet-card" id="regionCard">
@@ -336,6 +408,7 @@
       <div id="calibrationBody"></div>
     </section>
   </div>
+  </details>
 
   <!-- wen LEADERBOARD -->
   <section class="card" id="leaderboardCard">

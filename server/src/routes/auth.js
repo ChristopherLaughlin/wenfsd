@@ -80,9 +80,9 @@ authRouter.get("/callback", async (req, res, next) => {
     req.session.userId = userId;
     res.redirect("/?linked=1");
   } catch (e) {
-    // surface the failing step to the owner so setup issues are diagnosable
+    // log the detail server-side; show the browser a generic message (no internal leak)
     console.error(`OAuth callback failed at [${step}]:`, (e && e.stack) || e);
-    res.status(500).send(`Connect failed at step "${step}": ${(e && e.message) || e}`);
+    res.status(500).type("text/plain").send("Couldn't complete the Tesla connection. Please try again, or use Add by VIN instead. If this keeps happening, the sign-in link may have expired — start over from the site.");
   }
 });
 

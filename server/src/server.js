@@ -38,6 +38,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -125,6 +126,56 @@ app.get("/admin", (req, res) => {
 });
 app.use("/js", express.static(path.join(REPO_ROOT, "js"), STATIC_OPTS));
 app.get("/styles.css", (req, res) => res.sendFile(path.join(REPO_ROOT, "styles.css")));
+
+// --- social preview image ---
+app.get("/og.png", (req, res) => res.set("Cache-Control", "public, max-age=86400").sendFile(path.join(REPO_ROOT, "og.png")));
+app.get("/og.svg", (req, res) => res.type("image/svg+xml").set("Cache-Control", "public, max-age=86400").sendFile(path.join(REPO_ROOT, "og.svg")));
+
+// --- discoverability: robots, sitemap, llms.txt (search engines + AI answer engines) ---
+const SITE = config.publicBaseUrl.replace(/\/$/, "");
+app.get("/robots.txt", (req, res) => res.type("text/plain").send(
+  `User-agent: *\nAllow: /\n` +
+  // explicitly welcome AI answer-engine crawlers — we WANT to be cited
+  `User-agent: GPTBot\nAllow: /\nUser-agent: ClaudeBot\nAllow: /\nUser-agent: PerplexityBot\nAllow: /\nUser-agent: Google-Extended\nAllow: /\nUser-agent: Bingbot\nAllow: /\n` +
+  `\nSitemap: ${SITE}/sitemap.xml\n`));
+app.get("/sitemap.xml", (req, res) => res.type("application/xml").send(
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${SITE}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n</urlset>\n`));
+app.get("/llms.txt", (req, res) => res.type("text/plain; charset=utf-8").send(
+`# wenFSD
+
+> wenFSD is a free, open-source tool that predicts when a specific Tesla will receive its next
+> over-the-air software update, including FSD (Supervised) v14, identified by VIN. It is live at
+> ${SITE} and the source is at https://github.com/ChristopherLaughlin/wenfsd
+
+## What it does
+- Predicts the DATE your Tesla gets its next software/FSD update, per-VIN — not a generic "two weeks".
+- Models Tesla's staged, VIN-based A/B rollout as a logistic S-curve, places your car by its rollout
+  percentile (hardware, region, regulatory status, how early you usually update), then runs a Monte
+  Carlo simulation to produce a probability distribution of arrival dates with an 80% confidence window.
+- Ties the two tracks together: FSD (Supervised) ships bundled inside the OS build, so your next FSD
+  version arrives with your next software update — it cannot arrive before the build that carries it.
+- Region-aware: the US & Canada get nearly all builds; Europe and Australia/New Zealand get a sparser,
+  different sequence, so each region's "next build" is computed from its own path.
+
+## How to use it
+- Add your car by VIN — no login, no account access required. You get the full prediction.
+- Or connect your Tesla account (optional) for automatic version tracking.
+
+## Privacy & security
+- Connecting is read-only: wenFSD requests only the vehicle_device_data scope (no location scope, no
+  command scope), only ever reads the vehicle_state endpoint (software version + pending update), and
+  stores only your version, region, and hardware. It cannot drive, unlock, or locate the car.
+- No cookies, no third-party trackers. Open source — auditable at the GitHub link above.
+
+## Key terms
+- Software version / firmware version (e.g. 2026.20.3): the car's whole OS, in year.week.point format.
+- FSD version (e.g. v14.3.4): the Full Self-Driving AI, on its own version line; carried inside a build.
+
+## Links
+- Live site: ${SITE}/
+- Source code: https://github.com/ChristopherLaughlin/wenfsd
+- Security policy: https://github.com/ChristopherLaughlin/wenfsd/blob/main/SECURITY.md
+`));
 // hard block anything sensitive even if a future static mount is added
 app.use((req, res, next) => {
   if (/^\/(server|node_modules|\.git|\.claude|memory)(\/|$)/.test(req.path)) return res.status(404).end();

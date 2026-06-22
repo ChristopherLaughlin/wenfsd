@@ -80,7 +80,7 @@ const Charts = (function () {
     const m = { l: 40, r: 12, t: 14, b: 30 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart", role: "img",
-      "aria-label": "Probability distribution of which day your car receives the update." });
+      "aria-label": `Probability distribution of which day your car receives the update. Most likely about ${Math.max(0, pred.daysToMedian)} days from now.` });
 
     const lo = Math.max(0, Math.floor(pred.p10) - 2);
     const hi = Math.ceil(pred.p90) + 2;
@@ -139,9 +139,9 @@ const Charts = (function () {
     const W = container.clientWidth || 680, H = 200;
     const m = { l: 46, r: 12, t: 16, b: 28 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
-    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart", role: "img",
-      "aria-label": "Estimated vehicles receiving a newer build per day over the coming weeks." });
     const maxV = Math.max(1, ...series.map(s => s.cars));
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart", role: "img",
+      "aria-label": `Estimated vehicles receiving a newer build per day over the coming weeks. Peak about ${Math.round(maxV).toLocaleString()} cars per day.` });
     const n = series.length, bw = iw / n;
     const y = v => m.t + ih - (v / maxV) * ih;
     // y gridlines (3)

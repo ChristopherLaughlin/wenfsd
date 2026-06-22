@@ -253,9 +253,8 @@
     whenSub: ["probability by day (science!)", "your wen, quantified", "a graph of pure hope 📈", "statistically: soon-ish", "the suspense, plotted", "every day's odds, ranked by cope", "maths, but make it anxious"],
     shotSub: ["wen, exactly? Put a date on it.", "no take-backs, hero 🎯", "easy to say 'two weeks' — prove it", "stake your bragging rights", "the model is watching 👀", "calling it is free; being wrong is forever"],
     fsdRegSub: ["who gets it first (probably not you)", "the global FSD pecking order", "a leaderboard of smugness", "spoiler: the US, again 🇺🇸", "geography decides your autonomy", "find out exactly how jealous to be"],
-    osRegSub: ["how far behind the US wave each market runs", "the official suffering rankings 🏅", "geography is destiny (and lag)", "who waits longest, scientifically", "the 'sorry, you're RHD' tax, charted"],
-    calSub: ["back-tested against real tracker history", "we keep the receipts 🧾", "proof we're not just vibing", "yes, we grade our own homework — in public", "the part where we admit we can be wrong"],
-    paceScope: ["how many cars are updating", "the fleet, in motion", "someone's updating right now. not you.", "rollout, by the numbers", "cars getting lucky, per day"],
+    // NOTE: the data/trust cards (OS rollout, calibration, rollout pace) deliberately keep their
+    // plain static subtitles from the HTML — humour there reads as less credible (per the audit).
     footQuip: [
       "Built by people who also check the software menu every morning. We are not well.",
       "No Teslas were woken in anger during the making of this site. A few were gently asked their version.",
@@ -330,7 +329,10 @@
     // distinct line per card this page-load (stride coprime with pool size ⇒ no repeats);
     // start index is stable per load but re-rolls on refresh, so the page stays fresh.
     const start = flavorPick("kickStart", KICK.map((_, i) => i));
-    const cards = [...document.querySelectorAll("section.fleet-card, section.guess-card")].filter(c => c.id !== "griefCard");
+    // Keep kickers on the playful/engaging cards only; the data & trust cards stay plainly
+    // authoritative (firmware, calibration, region rollout, pace, release notes) — per the audit.
+    const SKIP_KICK = new Set(["griefCard", "firmwareCard", "calibrationCard", "regionCard", "paceCard", "releaseNotesCard"]);
+    const cards = [...document.querySelectorAll("section.fleet-card, section.guess-card")].filter(c => !SKIP_KICK.has(c.id));
     cards.forEach((card, idx) => {
       const hdr = card.querySelector(":scope > .card-h, :scope > .card-h-row");
       if (!hdr) return;
@@ -388,7 +390,7 @@
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
     $("heroEyebrow").textContent = `Your next update${pred.targetLabel ? " — " + pred.targetLabel : ""} on ${av().nickname || "your car"}`;
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
-    $("heroWindow").textContent = "80% window: " + shortDate(pred.p10Date) + " → " + shortDate(pred.p90Date);
+    $("heroWindow").textContent = "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + " · 80% confidence";
     renderFsdSummary(pred);
 
     const ring = $("ringFg"), C = 2 * Math.PI * 78, d = pred.daysToMedian;
@@ -629,7 +631,11 @@
   }
   function renderConnectNudge(connected) {
     const el = $("connectNudge"); if (!el) return;
-    if (connected || _nudgeDismissed) { el.hidden = true; return; }
+    // When the garage is empty, the garage card's own two-option CTA owns onboarding — don't
+    // also show this banner (avoids the same pitch appearing three times). Show it once the
+    // user has a car but hasn't connected.
+    const empty = !gstate.vehicles || !gstate.vehicles.length;
+    if (connected || _nudgeDismissed || empty) { el.hidden = true; return; }
     el.hidden = false;
     const line = $("cnLine"); if (line) line.textContent = flavorPick("nudge", NUDGE);
     const em = $("cnEmoji"); if (em) em.textContent = flavorPick("nudgeEmoji", ["🚗", "🔢", "🪪", "🔮", "🫶", "⚡", "🛡️"]);
@@ -666,7 +672,7 @@
     $("garageList").innerHTML = gstate.vehicles.map(v => {
       const isA = v.id === gstate.activeId;
       const verText = v.installedVersion ? "on " + esc(v.installedVersion) : "version unknown — waiting for first Tesla read";
-      return `<div class="gcar ${isA ? "active" : ""}" data-id="${v.id}">` +
+      return `<div class="gcar ${isA ? "active" : ""}" data-id="${v.id}" role="button" tabindex="0" aria-pressed="${isA}" aria-label="Select ${esc(v.nickname || v.model)}">` +
         `<div class="gcar-main"><div class="gcar-name">${esc(v.nickname || v.model)}${v.connected ? ' <span class="gcar-link" title="Connected to your Tesla account">🔗 connected</span>' : ''}</div>` +
         `<div class="gcar-sub">${v.year} ${esc(v.model)}${v.generation ? " " + v.generation : ""} · ${v.hardware} · ${esc(v.market)}</div>` +
         `<div class="gcar-ver">${verText}</div></div>` +
@@ -675,12 +681,14 @@
     }).join("");
 
     $("garageList").querySelectorAll(".gcar").forEach(node => {
-      node.onclick = (e) => {
+      const select = (e) => {
         if (e.target.dataset.del) return;
         gstate = Garage.setActive(node.dataset.id);
         ui.guessDays = null; clearGuess();
         renderActiveControls(); render();
       };
+      node.onclick = select;
+      node.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(e); } };
     });
     $("garageList").querySelectorAll("[data-del]").forEach(b => {
       b.onclick = (e) => { e.stopPropagation(); gstate = Garage.remove(b.dataset.del); renderActiveControls(); renderGarage(); render(); };
@@ -1140,7 +1148,7 @@
         return `<td><div class="mx-cur">${esc(x.current)}</div><div class="mx-mode mode-${x.mode}">${MODE_LABEL[x.mode] || x.mode}</div>${next}</td>`;
       };
       const isShown = rname === rname0, isCar = v && rname === v.market;
-      return `<tr class="${isShown ? "mx-active" : ""} mx-click" data-explore-region="${esc(rname)}" title="Explore ${esc(rname)}"><td class="mx-region">${esc(rname)}${isCar ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;
+      return `<tr class="${isShown ? "mx-active" : ""} mx-click" data-explore-region="${esc(rname)}" role="button" tabindex="0" aria-label="Explore ${esc(rname)} FSD rollout" title="Explore ${esc(rname)}"><td class="mx-region">${esc(rname)}${isCar ? ' <span class="tag-you">you</span>' : ''}</td>${cell("AI4")}${cell("AI3")}</tr>`;
     }).join("");
     $("fsdMatrix").innerHTML =
       `<table class="mx-table"><thead><tr><th>Region</th><th>HW4 / AI4</th><th>HW3 / AI3</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -1227,7 +1235,8 @@
       list.map(s => {
         const inner = `${esc(s.name)}${s.ok !== false && s.versions ? " · " + s.versions : ""}`;
         const cls = `ds-pill ${s.ok === false ? "ds-down" : ""}`;
-        return s.homepage ? `<a class="${cls}" href="${esc(s.homepage)}" target="_blank" rel="noopener" title="Open ${esc(s.name)}">${inner} ↗</a>` : `<span class="${cls}">${inner}</span>`;
+        const safeHref = /^https?:\/\//i.test(String(s.homepage || "")) ? s.homepage : null;  // only http(s); blocks javascript:/data:
+        return safeHref ? `<a class="${cls}" href="${esc(safeHref)}" target="_blank" rel="noopener" title="Open ${esc(s.name)}">${inner} ↗</a>` : `<span class="${cls}">${inner}</span>`;
       }).join("") +
       `<span class="ds-note">wenFSD merges these (fleet-weighted) and adds the prediction layer none of them have.</span>`;
   }
@@ -1511,11 +1520,27 @@
       (regions.length ? `<div class="vm-regions"><span class="vm-k">Seen in:</span> ${regions.map(r => `<span class="rn-region">${esc(r)}</span>`).join("")}</div>` : "") +
       (d && d.sources && d.sources.length ? `<div class="vm-src">via ${d.sources.map(esc).join(" · ")}</div>` : "") +
       (notesItems ? `<div class="vm-notes-h">Release notes${rn.source ? ` <span class="mut-i">via ${esc(rn.source)}</span>` : ""}</div><ul class="rn-items">${notesItems}</ul>` : `<p class="vm-nonotes">${esc(rnd(["No release notes captured for this build yet. Tesla's keeping this one mysterious. 🤫", "No notes yet — the changelog is still 'two weeks' away. Of course it is.", "Notes pending. The dog ate Tesla's changelog, allegedly.", "No release notes captured. Assume it 'improves stability' — they always say that."]))}</p>`);
+    _modalReturnFocus = document.activeElement;          // remember what to restore focus to
     $("verModal").hidden = false;
     document.body.style.overflow = "hidden";
     const cl = $("verModalClose"); if (cl) cl.focus();
   }
-  function closeVersionModal() { const m = $("verModal"); if (m) m.hidden = true; document.body.style.overflow = ""; }
+  let _modalReturnFocus = null;
+  function closeVersionModal() {
+    const m = $("verModal"); if (!m || m.hidden) return;
+    m.hidden = true; document.body.style.overflow = "";
+    if (_modalReturnFocus && _modalReturnFocus.focus) { try { _modalReturnFocus.focus(); } catch (e) {} }  // restore focus to the trigger
+    _modalReturnFocus = null;
+  }
+  // keep Tab focus inside the open dialog (simple focus trap)
+  function trapModalFocus(e) {
+    const m = $("verModal"); if (!m || m.hidden || e.key !== "Tab") return;
+    const f = m.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
 
   // explore a region's data (FSD card + region highlights) — independent of your car
   function exploreRegion(name) {
@@ -1536,7 +1561,7 @@
       const p = Predict.predictNextOS({ market: name, hardware: "AI4", installedVersion: "2026.14.6", earlinessPercentile: 0.5 }, today);
       const isShown = name === shown, isCar = name === carMarket;
       const barW = (lag / maxLag) * 100;
-      return `<div class="rp-row ${isShown ? "rp-active" : ""} rp-click" data-explore-region="${esc(name)}" title="Explore ${esc(name)}">` +
+      return `<div class="rp-row ${isShown ? "rp-active" : ""} rp-click" data-explore-region="${esc(name)}" role="button" tabindex="0" aria-label="Explore ${esc(name)} rollout" title="Explore ${esc(name)}">` +
         `<div class="rp-name">${esc(name)}${isCar ? ' <span class="tag-you">you</span>' : ''} <span class="rp-drive">${r.drive}</span></div>` +
         `<div class="rp-lag" title="${esc(lag === 0 ? "First dibs. The rest of the planet waits on you." : lag <= 3 ? "Barely waiting. Insufferable." : lag <= 10 ? "A polite, civilised wait." : "Certified suffering. Hang in there.")}">${lag === 0 ? "🥇 US baseline" : "+" + lag + "d " + (lag <= 3 ? "😎" : lag <= 10 ? "😬" : "🐌")}</div>` +
         `<div class="rp-bar"><span style="width:${Math.max(2, barW)}%"></span></div>` +
@@ -1586,6 +1611,8 @@
     const miss = missing.length ? ` <span class="track-miss">Skipped here: ${missing.map(esc).join(", ")}.</span>` : "";
     return `Showing the <strong>${list.length}</strong> build${list.length === 1 ? "" : "s"} that actually reach <strong>${esc(region)}</strong>, with dates shifted to when ${esc(region)} typically sees them.${miss} ${rnd(["This is YOUR build path — not North America's wishlist.", "Fewer builds, more character. 🫡", "What you see is what you (eventually) get."])}`;
   }
+  const KNOWN_STATUS = new Set(["rolling", "tapering", "mature", "legacy"]);
+  function statusClass(s) { return KNOWN_STATUS.has(String(s)) ? String(s) : "legacy"; }  // allowlist → safe CSS class
   function renderTable() {
     syncTrackRegion();
     const region = trackRegion();
@@ -1599,12 +1626,12 @@
       const isNext = showYouTags && nextVer && v.version === nextVer;
       const seen = region ? WEN.regionFirstSeen(v, region) : v.firstSeen;
       return `<tr class="${isMine ? "mine" : ""}${isNext ? " fw-next" : ""}">` +
-        `<td>${mktChip(v)} <strong class="fw-verlink" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${v.version}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}${isNext ? ' <span class="tag-next">next</span>' : ''}</td>` +
-        `<td><span class="status status-${v.status}">${v.status}</span></td>` +
+        `<td>${mktChip(v)} <strong class="fw-verlink" data-goto-version="${esc(v.version)}" role="button" tabindex="0" title="Details for ${esc(v.version)}">${esc(v.version)}</strong>${isMine ? ' <span class="tag-you">you</span>' : ''}${isNext ? ' <span class="tag-next">next</span>' : ''}</td>` +
+        `<td><span class="status status-${esc(statusClass(v.status))}">${esc(v.status)}</span></td>` +
         `<td>${v.fleetPct != null ? `<div class="pctcell"><span class="pctbar" style="width:${Math.min(100, v.fleetPct * 2.2)}%"></span><em>${v.fleetPct}%</em></div>` : `<span class="mut-i">not reported</span>`}</td>` +
         `<td>${v.fleetPct != null ? sparkSVG(v) : "—"}</td>` +
-        `<td>${seen ? shortDate(seen) : "—"}</td><td>${(v.fsdBuild && v.fsdBuild.AI4) || "—"}</td>` +
-        `<td class="notes">${v.recentInstalls ? `<span class="fw-active">🔥 ${Number(v.recentInstalls).toLocaleString()} installs this week</span>` : (v.notes || "")}</td></tr>`;
+        `<td>${seen ? shortDate(seen) : "—"}</td><td>${esc((v.fsdBuild && v.fsdBuild.AI4) || "—")}</td>` +
+        `<td class="notes">${v.recentInstalls ? `<span class="fw-active">🔥 ${Number(v.recentInstalls).toLocaleString()} installs this week</span>` : esc(v.notes || "")}</td></tr>`;
     }).join("");
   }
   function renderStats() {
@@ -1668,9 +1695,13 @@
     const mClose = $("verModalClose"), mBack = $("verModalBackdrop");
     if (mClose) mClose.onclick = closeVersionModal;
     if (mBack) mBack.onclick = closeVersionModal;
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeVersionModal(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeVersionModal(); else if (e.key === "Tab") trapModalFocus(e); });
 
     $("guessBtn").onclick = () => lockInGuess(currentPrediction());
+    // when the collapsed "fleet data" section opens, re-render the pace chart so it sizes to the
+    // now-visible container (charts measured 0 width while the <details> was closed)
+    const moreData = $("moreData");
+    if (moreData) moreData.addEventListener("toggle", () => { if (moreData.open) { try { renderRolloutPace(); renderRegions(); } catch (e) {} } });
     window.addEventListener("resize", debounce(() => render(), 150));
   }
   function debounce(fn, ms) { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; }

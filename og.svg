@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c0f16"/>
+      <stop offset="1" stop-color="#06080c"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e6394b"/>
+      <stop offset="1" stop-color="#39d4ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#bg)"/>
+  <g stroke="#161b26" stroke-width="1">
+    <line x1="0" y1="300" x2="1200" y2="300"/><line x1="0" y1="600" x2="1200" y2="600"/><line x1="0" y1="900" x2="1200" y2="900"/>
+  </g>
+  <!-- rising rollout S-curve motif -->
+  <path d="M90 980 C 380 980, 460 720, 640 600 S 980 380, 1110 360" fill="none" stroke="url(#accent)" stroke-width="9" stroke-linecap="round" opacity="0.5"/>
+  <!-- logo + wordmark -->
+  <rect x="120" y="190" width="104" height="104" rx="24" fill="#e6394b"/>
+  <text x="172" y="270" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700" fill="#ffffff" text-anchor="middle">?</text>
+  <text x="250" y="272" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#f4f6fb">wen<tspan fill="#e6394b">FSD</tspan></text>
+  <!-- headline -->
+  <text x="120" y="480" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#f4f6fb">Predict your</text>
+  <text x="120" y="588" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#f4f6fb">next Tesla</text>
+  <text x="120" y="696" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#39d4ff">software &amp; FSD<tspan fill="#f4f6fb"> update</tspan></text>
+  <!-- subline -->
+  <text x="120" y="800" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="500" fill="#8b95a8">By VIN. A probability date with an 80%</text>
+  <text x="120" y="852" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="500" fill="#8b95a8">confidence window — not “two weeks.”</text>
+  <!-- footer -->
+  <text x="120" y="1010" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#5fd1a0">wenfsd.info</text>
+  <text x="392" y="1010" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="500" fill="#5f6878">·  free  ·  no login  ·  open source</text>
+</svg>
