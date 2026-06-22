@@ -535,6 +535,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .rn-grp .rn-items{border-top:none;padding-top:0}
 .rn-li-fsd{border-left:2px solid rgba(155,140,255,.4);padding-left:8px!important;margin-left:-2px}
 
+/* rollout pace */
+.pace-toggle{display:flex;gap:6px;margin:0 0 14px}
+.pace-btn{font-size:12px;font-weight:600;padding:5px 14px;border-radius:999px;border:1px solid var(--line);background:#0b0e14;color:var(--mut);cursor:pointer}
+.pace-btn.is-on{background:rgba(57,212,255,.12);color:var(--cyan);border-color:var(--cyan)}
+.pace-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 14px}
+@media(max-width:680px){.pace-stats{grid-template-columns:1fr}}
+.pace-stat{background:#0b0e14;border:1px solid var(--line);border-radius:12px;padding:13px 14px;border-left-width:3px;border-left-color:var(--line)}
+.pace-stat.pace-est{border-left-color:var(--cyan)}
+.pace-stat.pace-obs{border-left-color:#5fd1a0}
+.pace-num{font-size:22px;font-weight:800;font-family:var(--mono);color:var(--fg)}
+.pace-num .pace-day{font-size:12px;font-weight:600;color:var(--mut)}
+.pace-lbl{font-size:11.5px;color:var(--mut);margin-top:2px;line-height:1.35}
+.pace-sub{font-size:10px;color:var(--mut2);margin-top:5px;letter-spacing:.2px}
+.pace-chart{margin:4px 0}
+.pace-bar{fill:rgba(57,212,255,.32)}
+.pace-bar.pace-today{fill:var(--cyan)}
+.pace-bar.pace-peak{fill:rgba(155,140,255,.7)}
+.pace-foot{font-size:12.5px;color:var(--mut);line-height:1.5;margin-top:10px;padding-top:11px;border-top:1px solid var(--line)}
+
 /* per-region OS rollout panel */
 .region-panel{display:flex;flex-direction:column;gap:2px}
 .rp-row{display:grid;grid-template-columns:1.4fr 1fr 1.4fr 1.3fr;gap:14px;align-items:center;padding:10px 10px;border-bottom:1px solid var(--line);font-size:13px;border-radius:8px}

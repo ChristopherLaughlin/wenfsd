@@ -4,7 +4,7 @@
   const today = WEN.today;
 
   let gstate = Garage.get();           // { vehicles, activeId }
-  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all" };
+  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all", paceWindow: "day" };
 
   function av() { return Garage.active(gstate); }
 
@@ -67,6 +67,7 @@
     renderTable();
     renderRegions();
     renderReleaseNotes();
+    renderRolloutPace();
     return pred;
   }
 
@@ -92,6 +93,7 @@
     renderTable();
     renderRegions();
     renderReleaseNotes();
+    renderRolloutPace();
   }
   function svgEmpty(msg) {
     return `<div class="chart-empty">${esc(msg)}</div>`;
@@ -111,6 +113,7 @@
     renderTable();
     renderRegions();
     renderReleaseNotes();
+    renderRolloutPace();
   }
 
   // ---- regional humour (the wenFSD meme = "wen FSD? two weeks, trust me bro") ----
@@ -1013,6 +1016,64 @@
         `<div class="rn-src">via ${esc(rn.source || "trackers")}</div></details>`;
     }).join("");
     $("releaseNotes").innerHTML = html || `<p class="hint">No ${filt === "fsd" ? "FSD" : "OS"}-specific notes in the tracked builds.</p>`;
+  }
+
+  // ---- Rollout pace: estimated vehicles/day on a newer build, grounded vs observed share ----
+  const fmtN = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(Math.round(n));
+  function paceSeries(N, horizon) {
+    // sum of each rolling build's logistic *pace* (cars/day = N·share·k·CDF·(1−CDF)).
+    // mature/legacy builds have t0 in the past, so their pace today is ~0 — they fall out naturally.
+    const out = [];
+    const vers = (WEN.versions || []).filter(v => v.t0 && v.k && v.fleetPct);
+    for (let h = 0; h <= horizon; h++) {
+      let cars = 0;
+      for (const v of vers) {
+        const t0off = Predict.daysBetween(today, v.t0);
+        const cdf = 1 / (1 + Math.exp(-v.k * (h - t0off)));
+        cars += N * (v.fleetPct / 100) * v.k * cdf * (1 - cdf);
+      }
+      out.push({ day: h, cars });
+    }
+    return out;
+  }
+  function renderRolloutPace() {
+    const card = $("paceChart"); if (!card) return;
+    const N = (WEN.stats && WEN.stats.carsTracked) || 18000;
+    const horizon = 30;
+    const series = paceSeries(N, horizon);
+    Charts.rolloutPace(card, series, today);
+
+    const sum = (a, b) => series.slice(a, b + 1).reduce((s, x) => s + x.cars, 0);
+    const win = ui.paceWindow || "day";
+    const winN = win === "day" ? series[0].cars : win === "week" ? sum(0, 6) : sum(0, 29);
+    const winLbl = win === "day" ? "today" : win === "week" ? "next 7 days" : "next 30 days";
+    // peak day of the coming wave
+    let peakI = 0; series.forEach((s, i) => { if (s.cars > series[peakI].cars) peakI = i; });
+    const peakDate = peakI === 0 ? "today" : Predict.fmtDate(Predict.addDays(today, peakI)).replace(/^\w+, /, "");
+    // observed: real installed base currently on the actively-rolling builds (trackers' fleetPct × N)
+    const rollingShare = (WEN.versions || []).filter(v => /rolling|tapering/.test(v.status)).reduce((s, v) => s + (v.fleetPct || 0), 0);
+    const observed = Math.min(N, Math.round(N * rollingShare / 100)); // merged tracker %s can sum >100; never claim more than the fleet
+    const newest = (WEN.versions || [])[0];
+
+    $("paceStats").innerHTML =
+      `<div class="pace-stat pace-est"><div class="pace-num">~${fmtN(winN)}</div><div class="pace-lbl">est. cars updating · <b>${winLbl}</b></div><div class="pace-sub">🔮 modelled</div></div>` +
+      `<div class="pace-stat pace-obs"><div class="pace-num">${fmtN(observed)}</div><div class="pace-lbl">cars observed on the current wave</div><div class="pace-sub">✓ real · trackers + connected cars</div></div>` +
+      `<div class="pace-stat"><div class="pace-num">~${fmtN(series[peakI].cars)}<span class="pace-day">/day</span></div><div class="pace-lbl">projected peak · <b>${esc(peakDate)}</b></div><div class="pace-sub">🔮 modelled</div></div>`;
+
+    const monthTot = sum(0, 29);
+    $("paceFoot").innerHTML = `Across ~${fmtN(N)} tracked cars${newest ? `, the current front-runner is <strong>${esc(newest.version)}</strong> (${newest.fleetPct}% of the fleet)` : ""}. ` +
+      `The model expects <strong>~${fmtN(monthTot)}</strong> cars to move onto a newer build over the next month. ${rnd(["Your turn's in there somewhere. 🤞", "Statistically, someone's updating right now and bragging about it.", "Two weeks. For ~" + fmtN(Math.round(winN)) + " of them, maybe literally."])}`;
+
+    // window toggle
+    const tog = $("paceToggle");
+    if (tog && !tog._wired) {
+      tog._wired = true;
+      tog.querySelectorAll(".pace-btn").forEach(b => b.onclick = () => {
+        ui.paceWindow = b.dataset.pace;
+        tog.querySelectorAll(".pace-btn").forEach(x => x.classList.toggle("is-on", x === b));
+        renderRolloutPace();
+      });
+    }
   }
 
   // ---- per-region OS rollout panel (country breakdown) ----

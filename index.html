@@ -262,6 +262,20 @@
     <div id="regionPanel" class="region-panel"></div>
   </section>
 
+  <!-- ROLLOUT PACE -->
+  <section class="card fleet-card" id="paceCard">
+    <h2 class="card-h">Rollout pace <span class="card-sub" id="paceScope">how many cars are updating</span></h2>
+    <p class="hint">How many vehicles are moving onto a <em>newer</em> build. <strong>Observed</strong> counts are real (tracker install activity + connected cars); the <strong>per-day estimate</strong> is the model's rollout curve scaled to fleet size — Tesla doesn't publish these numbers, so the future pace is a projection.</p>
+    <div class="pace-toggle" id="paceToggle" role="tablist" aria-label="Rollout window">
+      <button type="button" class="pace-btn is-on" data-pace="day" role="tab">Daily</button>
+      <button type="button" class="pace-btn" data-pace="week" role="tab">Weekly</button>
+      <button type="button" class="pace-btn" data-pace="month" role="tab">Monthly</button>
+    </div>
+    <div class="pace-stats" id="paceStats"></div>
+    <div id="paceChart" class="pace-chart"></div>
+    <div class="pace-foot" id="paceFoot"></div>
+  </section>
+
   <!-- FIRMWARE TRACKER TABLE -->
   <section class="card fleet-card" id="firmwareCard">
     <h2 class="card-h">Fleet firmware tracker <span class="card-sub" id="fwSub">sample distribution</span></h2>

@@ -131,5 +131,41 @@ const Charts = (function () {
     container.appendChild(svg);
   }
 
-  return { rolloutCurve, distribution };
+  /* Rollout pace: estimated vehicles/day receiving a newer build over the next `horizon`
+   * days. `series` = [{day, cars}], today ISO. Bars = modelled pace; the peak is labelled. */
+  function rolloutPace(container, series, today) {
+    clear(container);
+    if (!series || !series.length) return;
+    const W = container.clientWidth || 680, H = 200;
+    const m = { l: 46, r: 12, t: 16, b: 28 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, class: "chart", role: "img",
+      "aria-label": "Estimated vehicles receiving a newer build per day over the coming weeks." });
+    const maxV = Math.max(1, ...series.map(s => s.cars));
+    const n = series.length, bw = iw / n;
+    const y = v => m.t + ih - (v / maxV) * ih;
+    // y gridlines (3)
+    for (let i = 0; i <= 3; i++) {
+      const v = (maxV / 3) * i;
+      svg.appendChild(el("line", { x1: m.l, y1: y(v), x2: m.l + iw, y2: y(v), class: "grid" }));
+      const t = el("text", { x: m.l - 8, y: y(v) + 4, class: "axis", "text-anchor": "end" });
+      t.textContent = v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v); svg.appendChild(t);
+    }
+    let peakI = 0; series.forEach((s, i) => { if (s.cars > series[peakI].cars) peakI = i; });
+    series.forEach((s, i) => {
+      svg.appendChild(el("rect", { x: m.l + i * bw + 0.5, y: y(s.cars), width: Math.max(1, bw - 1.5),
+        height: m.t + ih - y(s.cars), class: "pace-bar" + (i === 0 ? " pace-today" : i === peakI ? " pace-peak" : "") }));
+    });
+    // x labels (today, +1w, +2w, +3w, +4w-ish)
+    const ticks = Math.min(4, n - 1);
+    for (let i = 0; i <= ticks; i++) {
+      const d = Math.round((n - 1) / ticks * i);
+      const t = el("text", { x: m.l + d * bw + bw / 2, y: H - 9, class: "axis", "text-anchor": "middle" });
+      t.textContent = d === 0 ? "today" : new Date(Predict.addDays(today, d)).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+      svg.appendChild(t);
+    }
+    container.appendChild(svg);
+  }
+
+  return { rolloutCurve, distribution, rolloutPace };
 })();
