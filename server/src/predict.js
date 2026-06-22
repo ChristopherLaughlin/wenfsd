@@ -139,6 +139,12 @@ export function predictNextFSD(car, opts = {}) {
     return out;
   }
 
+  // entitlement — FSD only activates on cars with it purchased/subscribed (mirrors client)
+  if (car.fsdEntitlement === "none") {
+    const capable = f.next || f.current || "FSD";
+    return { notEntitled: true, current: cur, targetLabel: capable, mode: "notEntitled", branch: "fsd" };
+  }
+
   // FSD rides inside OS builds, but most builds keep the same FSD version. Does the next software
   // update actually CHANGE the FSD version? (mirrors client predict.js exactly)
   const osNext = predictNextOS(car, opts);

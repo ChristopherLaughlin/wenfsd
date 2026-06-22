@@ -25,6 +25,7 @@
       market: v.market, drive: v.drive,
       earlinessPercentile: effEarliness(v), installedVersion: v.installedVersion,
       earlinessSource: v.earlinessSource, fsdVersion: v.fsdVersion, earlyAccess: v.earlyAccess, newCar: !!v.newCar,
+      fsdEntitlement: v.fsdEntitlement || "unknown",
     };
   }
   // the FSD version YOUR car is actually on (its own reading, else its region's typical current).
@@ -115,6 +116,8 @@
     if (!v || !fsd || fsd.unavailable) { set("fsd-none", "", "—", "no FSD data for this car", ""); return; }
     if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `promised for HW3 in ${v.market}, never delivered`, "promised"); return; }
     if (fsd.capped) { set("fsd-none", "", "Not coming", `${v.hardware} can't run newer FSD — capped`, "capped"); return; }
+    // car has no FSD plan — feature stays dormant regardless of which build lands
+    if (fsd.notEntitled) { set("fsd-same", fsd.targetLabel, "Needs an FSD plan", `your car can run ${fsd.targetLabel}, but FSD activates only with a purchase/subscription`, "notEntitled"); return; }
     // your upcoming software update is a maintenance build — no FSD change
     if (fsd.sameFsd) { set("fsd-same", fsd.current || "", "No FSD change yet", `your next software update keeps FSD ${fsd.current || "as-is"}`, "same"); return; }
     if (fsdIsBundled(osPred, fsd)) { set("fsd-bundled", fsd.targetLabel, Predict.fmtDate(fsd.medianDate), "🎁 same build as your next software update ↑", "bundled"); return; }
@@ -127,7 +130,10 @@
   // the software card's one-line tag: does THIS software update change your FSD version?
   function renderOsFsdTag(osPred, fsd) {
     const el = $("osFsdTag"); if (!el) return;
-    if (fsdIsBundled(osPred, fsd)) {
+    if (fsd && fsd.notEntitled) {
+      el.className = "hpred-tag tag-fsd-no";
+      el.textContent = "🧠 FSD not enabled on this car";
+    } else if (fsdIsBundled(osPred, fsd)) {
       el.className = "hpred-tag tag-fsd-yes";
       el.innerHTML = `🧠 also bumps <strong>FSD ${esc(fsd.targetLabel)}</strong> — see FSD card`;
     } else {
@@ -144,6 +150,10 @@
     if (!fsd || fsd.unavailable) { el.innerHTML = ""; return; }
     if (fsd.promised) { el.innerHTML = `<div class="fsum fsum-promised">🤷 <strong>FSD ${esc(fsd.targetLabel)} — promised, no timeline.</strong> ${esc(fsd.note || "")}</div>`; return; }
     if (fsd.capped) { el.innerHTML = `<div class="fsum fsum-capped">🪚 <strong>FSD:</strong> ${esc(fsd.current || "your version")} is the end of the line for your ${esc(v.hardware)} hardware — Tesla caps it here.</div>`; return; }
+    if (fsd.notEntitled) {
+      el.innerHTML = `<div class="fsum fsum-same">🔑 <strong>Your car can run FSD ${esc(fsd.targetLabel)}, but it isn't enabled.</strong> FSD activates only with a <strong>purchase or subscription</strong>. Your software updates still arrive on their normal schedule — the FSD features just stay dormant until you add a plan. (Set "Do you have FSD?" to update this.)</div>`;
+      return;
+    }
     if (fsd.sameFsd) {
       el.innerHTML = `<div class="fsum fsum-same">🧰 <strong>No FSD change in your next software update.</strong> Your next build${fsd.bundledWith ? ` (${esc(fsd.bundledWith)})` : ""} is a maintenance release — it keeps <strong>FSD ${esc(fsd.current || "as-is")}</strong>. New FSD versions only arrive in <em>some</em> software builds; a newer one will land in a future build Tesla hasn't shipped yet.</div>`;
       return;
@@ -162,6 +172,7 @@
     if (ui.trackRegion == null) ui.trackRegion = a0 ? a0.market : "";   // default tracking views to YOUR region
     setTopConnect(!!(a0 && a0.connected), !!(a0 && a0.connected && a0.optedIn));
     if (!av()) { renderEmptyState(); return; }
+    if ($("quickStart")) $("quickStart").hidden = true;   // a car exists → the garage takes over
     const pred = currentPrediction();
     $("curveVer").textContent = pred.targetLabel || "OS";
 
@@ -183,6 +194,7 @@
   }
 
   function renderEmptyState() {
+    if ($("quickStart")) { $("quickStart").hidden = false; wireQuickStart(); }   // front-and-centre no-login path
     $("curveVer").textContent = "";
     $("heroEyebrow").textContent = "Welcome to wenFSD";
     $("heroDate").textContent = "wen FSD? Let's find out.";
@@ -206,7 +218,7 @@
       `📡 Your Tesla is out there, asking "wen FSD" into the void. Connect it and let's get answers.`,
       `🍿 Add a vehicle and find out if you're "first wave" or "suffering in silence on {nope}".`.replace("{nope}", "an ancient build"),
     ]);
-    $("heroNote").innerHTML = "Add your car by VIN (we'll decode the model, year &amp; hardware) and wenFSD predicts your next software update and next FSD version — with confidence bands. No vehicles are tracked until you add one. <em>(The answer is always two weeks. But these two weeks are data-driven.)</em>";
+    $("heroNote").innerHTML = "👆 <strong>Use the quick form above</strong> — just your model, year &amp; current software. <strong>No login, no VIN, nothing leaves your browser.</strong> We'll predict your next software update and next FSD version, with confidence bands. (Prefer to auto-track or use your VIN? Those are optional, in the garage below.)";
     $("predictTips").innerHTML = "";
     $("curveChart").innerHTML = svgEmpty("Add a vehicle to see its rollout curve");
     $("distChart").innerHTML = svgEmpty("Add a vehicle to see the probability distribution");
@@ -351,6 +363,7 @@
     bundled: ["Predicted to ride shotgun in your next OS update — same date, same caveats, no guarantees. 🎁", "A guess: it's bundled in, so if the software slips, FSD slips with it. One disappointment, one for free.", "Forecast — it ships inside the build above. Two predictions, one ETA, zero promises."],
     capped: ["Nothing to predict — your hardware tapped out. We can't forecast a ghost. 🪦", "No forecast possible: Tesla capped this hardware. The future arrived for everyone else. 🚪"],
     same: ["Your next software update is bug-fixes and vibes — FSD stays exactly put. 🧰", "Maintenance build incoming. The robotaxi dream rides a *later* parcel. 📦", "No new FSD this round. Most builds are like this; the shiny one comes later.", "FSD holds steady. A newer version lands in a future build Tesla hasn't shipped. ⏳"],
+    notEntitled: ["The hardware's ready and willing. Your wallet has the floor. 💳", "Software updates: free. FSD: a small fortune. The dormant module waits patiently. 😴", "Your car *could* drive itself, if you'd just sign the cheque. 🖊️", "FSD's installed and napping — it wakes up when you buy the alarm clock. ⏰"],
     gated: ["A modelled regulatory window — i.e. a guess about when the bureaucrats finish reading. 📋", "Predicted, not promised, and gated behind regulators who do nothing in a hurry. ⏳"],
     dated: ["A forecast — and FSD dates are Tesla's most theoretical numbers, which is really saying something.", "Predicted, not promised. 'Full Self-Driving' is supervised; so is this estimate. 👀", "Educated guess. FSD ETAs have a half-life shorter than a phantom brake. 🛑", "Modelled, not confirmed — Elon said 'this year', he just declined to specify which one. 📆"],
   };
@@ -849,6 +862,12 @@
     vs.onchange = commitVer;
     vs.oninput = () => setVerHint(vs.value.trim());
 
+    const fe = $("fsdEntitlementSel");
+    if (fe) {
+      fe.value = v.fsdEntitlement || "unknown";
+      fe.onchange = () => { gstate = Garage.update(v.id, { fsdEntitlement: fe.value }); render(); };
+    }
+
     const es = $("earlySlider");
     es.value = Math.round(v.earliness * 100);
     setEarlyLabel();
@@ -1004,28 +1023,12 @@
       const vin = $("vinInput").value.trim().toUpperCase();
       let gen = "";
       if (vin.length === 17) { const d = VIN.decode(vin); if (d.valid) gen = d.generation; }
-      const market = $("f_market").value, hw = $("f_hw").value;
-      const region = WEN.regions[market] || {};
-      const fsdInfo = region.fsd ? region.fsd[hw] : null;
-      const veh = {
-        nickname: $("f_nick").value.trim() || $("f_model").value,
-        vin,
-        model: $("f_model").value,
-        year: +$("f_year").value || 2026,
-        generation: gen,
-        hardware: hw,
-        market,
-        drive: region.drive || "RHD",
-        installedVersion: $("f_ver").value.trim() || (WEN.versions[0] && WEN.versions[0].version) || "2026.14.6",
-        fsdVersion: fsdInfo ? fsdInfo.current : "—",
-        earliness: 0.5, earlinessSource: "default",
-        updateChannel: "standard", earlyAccess: false,
-        optedIn: false, history: [],
-      };
-      gstate = Garage.add(veh);
+      addVehicleAndRender({
+        nickname: $("f_nick").value.trim(), vin, model: $("f_model").value, year: +$("f_year").value,
+        gen, hw: $("f_hw").value, market: $("f_market").value, version: $("f_ver").value.trim(),
+        entitlement: ($("f_fsd") && $("f_fsd").value) || "unknown",
+      });
       $("addForm").hidden = true; $("addVehicleBtn").hidden = false;
-      ui.guessDays = null; clearGuess();
-      renderGarage(); renderActiveControls(); render();
     };
 
     $("connectTeslaBtn").onclick = connectTesla;
@@ -1044,6 +1047,62 @@
   function resetForm() {
     $("vinInput").value = ""; $("vinResult").innerHTML = "";
     $("f_nick").value = ""; $("f_model").value = "Model Y"; $("f_year").value = 2026; $("f_hw").value = "AI4"; $("f_ver").value = "";
+    if ($("f_fsd")) $("f_fsd").value = "unknown";
+  }
+
+  // single place that builds a vehicle from form fields (used by the garage form AND the
+  // top-of-page Quick Predict panel) so the two paths can't drift.
+  function addVehicleAndRender({ nickname, vin, model, year, gen, hw, market, version, entitlement }) {
+    const region = WEN.regions[market] || {};
+    const fsdInfo = region.fsd ? region.fsd[hw] : null;
+    gstate = Garage.add({
+      nickname: (nickname || "").trim() || model,
+      vin: vin || "",
+      model, year: +year || 2026, generation: gen || "",
+      hardware: hw, market, drive: region.drive || "RHD",
+      installedVersion: (version || "").trim() || (WEN.versions[0] && WEN.versions[0].version) || "2026.14.6",
+      fsdVersion: fsdInfo ? fsdInfo.current : "—",
+      fsdEntitlement: entitlement || "unknown",
+      earliness: 0.5, earlinessSource: "default",
+      updateChannel: "standard", earlyAccess: false, optedIn: false, history: [],
+    });
+    ui.guessDays = null; clearGuess();
+    renderGarage(); renderActiveControls(); render();
+    const hero = $("heroDate"); if (hero && hero.scrollIntoView) hero.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // crude hardware inference from model + year so the Quick Predict "Hardware (auto)" is right by
+  // default (HW4 came in from ~2024; Juniper Model Y + Cybertruck are HW4). User can override.
+  function inferHardware(model, year) {
+    const y = +year || 2026;
+    if (/cybertruck/i.test(model)) return "AI4";
+    if (y >= 2024) return "AI4";
+    if (y >= 2019) return "AI3";
+    return "AI2.5";
+  }
+
+  function wireQuickStart() {
+    const go = $("qsGo"); if (!go || go._wired) return; go._wired = true;
+    // populate year + region selects
+    const ySel = $("qs_year");
+    if (ySel && !ySel.options.length) {
+      const years = []; for (let y = 2027; y >= 2017; y--) years.push(y);
+      ySel.innerHTML = years.map(y => `<option ${y === 2026 ? "selected" : ""}>${y}</option>`).join("");
+    }
+    const mSel = $("qs_market");
+    if (mSel && !mSel.options.length) mSel.innerHTML = Object.keys(WEN.regions).map(m => `<option ${m === "Australia" ? "selected" : ""}>${m}</option>`).join("");
+    const syncHw = () => { $("qs_hw").value = inferHardware($("qs_model").value, $("qs_year").value); };
+    syncHw();
+    $("qs_model").onchange = syncHw; $("qs_year").onchange = syncHw;
+    go.onclick = () => {
+      addVehicleAndRender({
+        model: $("qs_model").value, year: +$("qs_year").value, hw: $("qs_hw").value,
+        market: $("qs_market").value, version: $("qs_ver").value.trim(),
+        entitlement: $("qs_fsd").value,
+      });
+    };
+    const c = $("qsConnect"); if (c) c.onclick = connectTesla;
+    const vn = $("qsVin"); if (vn) vn.onclick = openAddByVin;
   }
   function doDecode() {
     const d = VIN.decode($("vinInput").value);
@@ -1869,6 +1928,7 @@
   renderGarage();
   renderActiveControls();
   wireAddForm();
+  wireQuickStart();
   renderFSD();
   renderStats();
   renderDataMode();

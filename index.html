@@ -94,15 +94,47 @@
   <!-- Static, crawlable value proposition (in raw HTML so search engines + AI answer engines
        see it without running JavaScript). The live, interactive prediction renders below. -->
   <section class="lede">
-    <h1>Predict your next Tesla software &amp; FSD update — by VIN</h1>
+    <h1>Predict your next Tesla software &amp; FSD update — no login required</h1>
     <p>wenFSD is a free, open-source tool that predicts when <em>your</em> Tesla will get its next
-    over-the-air software update, including FSD&nbsp;(Supervised) v14. It models Tesla's staged,
-    VIN-based rollout as a logistic S-curve and runs a Monte&nbsp;Carlo simulation to give you a
+    over-the-air software update, including FSD&nbsp;(Supervised) v14. It models Tesla's staged
+    rollout as a logistic S-curve and runs a Monte&nbsp;Carlo simulation to give you a
     probability <strong>date</strong> with an 80% confidence window — not just “two weeks.”
-    Add your car by VIN (no login), or connect your Tesla account read-only to auto-track. <a class="lede-skip" href="#securityCard">How your data is handled →</a></p>
+    <strong>Just pick your model, year and current software</strong> — no login, no VIN, nothing
+    leaves your browser. (Prefer to auto-track? Connect your Tesla read-only, or add your VIN — both
+    optional.) <a class="lede-skip" href="#securityCard">How your data is handled →</a></p>
   </section>
 
   <div id="sampleBanner" class="sample-banner" hidden></div>
+
+  <!-- QUICK PREDICT — the no-login, no-VIN path, front and centre so nervous users don't bail.
+       Shown while the garage is empty; replaced by the live prediction once a car is added. -->
+  <section class="quickstart card" id="quickStart" hidden>
+    <div class="qs-head">
+      <h2 class="qs-h">⚡ Get your prediction in 10 seconds</h2>
+      <p class="qs-sub"><strong>No login. No VIN. Nothing leaves your browser.</strong> Just pick your car and your current software version — that's all we need to predict your next software <em>and</em> FSD update.</p>
+    </div>
+    <div class="qs-grid">
+      <label class="field"><span>Model</span>
+        <select id="qs_model"><option>Model Y</option><option>Model 3</option><option>Model S</option><option>Model X</option><option>Cybertruck</option></select></label>
+      <label class="field"><span>Year</span><select id="qs_year"></select></label>
+      <label class="field"><span>Hardware <em>(auto)</em></span>
+        <select id="qs_hw"><option value="AI4">HW4 / AI4</option><option value="AI3">HW3 / AI3</option><option value="AI2.5">HW2.5</option></select></label>
+      <label class="field"><span>Region</span><select id="qs_market"></select></label>
+      <label class="field"><span>Current software version</span>
+        <input id="qs_ver" list="versionOptions" placeholder="e.g. 2026.14.6 — find it in your car under Software" autocomplete="off" spellcheck="false" inputmode="decimal" aria-label="Currently installed software version"/></label>
+      <label class="field"><span>Do you have FSD?</span>
+        <select id="qs_fsd">
+          <option value="unknown">Not sure</option>
+          <option value="owned">Yes — purchased</option>
+          <option value="subscription">Yes — subscription</option>
+          <option value="none">No / not yet</option>
+        </select></label>
+    </div>
+    <div class="qs-actions">
+      <button class="btn qs-go" id="qsGo" type="button">See my prediction →</button>
+      <span class="qs-alt">Want it to update itself? <button class="qs-link" id="qsConnect" type="button">Connect Tesla, read-only 🔗</button> · or <button class="qs-link" id="qsVin" type="button">add by VIN</button>. <button class="qs-link js-open-security" type="button">Is this safe? 🔒</button></span>
+    </div>
+  </section>
 
   <!-- funny, rotating "connect your Tesla" nudge — shown only when not yet linked -->
   <div id="connectNudge" class="connect-nudge" hidden>
@@ -206,6 +238,8 @@
             <select id="f_hw"><option>AI4</option><option>AI3</option><option>AI2.5</option></select></label>
           <label class="field"><span>Market</span><select id="f_market"></select></label>
           <label class="field"><span>Current version</span><input id="f_ver" list="versionOptions" placeholder="e.g. 2026.8.3.10" autocomplete="off" spellcheck="false" inputmode="decimal" aria-label="Currently installed software version"/></label>
+          <label class="field"><span>FSD?</span>
+            <select id="f_fsd"><option value="unknown">Not sure</option><option value="owned">Purchased</option><option value="subscription">Subscription</option><option value="none">No / not yet</option></select></label>
         </div>
         <div class="form-actions">
           <button class="btn" id="saveVehicleBtn" type="button">Save vehicle</button>
@@ -231,6 +265,16 @@
         <label class="field">
           <span>Currently installed version <em id="verHint"></em></span>
           <input id="versionSel" list="versionOptions" placeholder="type your exact version, e.g. 2026.8.3.10" autocomplete="off" spellcheck="false" aria-label="Currently installed software version"/>
+        </label>
+
+        <label class="field">
+          <span>Do you have FSD? <em>— gates the FSD prediction</em></span>
+          <select id="fsdEntitlementSel">
+            <option value="unknown">Not sure</option>
+            <option value="owned">Yes — purchased</option>
+            <option value="subscription">Yes — subscription</option>
+            <option value="none">No / not yet</option>
+          </select>
         </label>
         <div class="refresh-row" id="refreshRow" hidden>
           <button class="btn-sm" id="refreshCarBtn" type="button">🔄 Wake car &amp; read version</button>

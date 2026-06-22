@@ -118,6 +118,24 @@ test("a forthcoming FSD (US v14 Lite) lands on/after the next software update, n
   assert.ok(new Date(fsd.medianDate) >= new Date(os.medianDate), "FSD must not precede the next software update");
 });
 
+test("FSD entitlement: a car with no FSD plan gets no FSD date (feature stays dormant)", () => {
+  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "none", earlinessSource: "default" };
+  const fsd = predictNextFSD(car);
+  assert.equal(fsd.notEntitled, true, "no plan → not entitled");
+  assert.ok(!fsd.medianDate, "must not invent an FSD arrival date for a car that can't activate it");
+  // the software update is unaffected by entitlement
+  const os = predictNextOS(car);
+  assert.ok(os.medianDate, "software update still predicted regardless of FSD entitlement");
+});
+
+test("FSD entitlement: an owned/subscription car still gets a normal FSD prediction", () => {
+  for (const ent of ["owned", "subscription", "unknown", undefined]) {
+    const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: ent, earlinessSource: "default" };
+    const fsd = predictNextFSD(car);
+    assert.ok(!fsd.notEntitled, `entitlement ${ent} should predict normally`);
+  }
+});
+
 test("predictNextOS reports whether the next software build changes FSD", () => {
   const bumps = predictNextOS(auAI4); // v13.2.9 → next build carries v14.3.4
   assert.equal(bumps.bringsNewFsd, true);
