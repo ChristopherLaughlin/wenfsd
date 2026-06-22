@@ -146,6 +146,10 @@ app.get("/styles.css", (req, res) => res.sendFile(path.join(REPO_ROOT, "styles.c
 app.get("/og.png", (req, res) => res.set("Cache-Control", "public, max-age=86400").sendFile(path.join(REPO_ROOT, "og.png")));
 app.get("/og.svg", (req, res) => res.type("image/svg+xml").set("Cache-Control", "public, max-age=86400").sendFile(path.join(REPO_ROOT, "og.svg")));
 
+// --- open model: serve the canonical prediction-model parameters so anyone can inspect/tinker ---
+app.get("/model.json", (req, res) => res.type("application/json").set("Cache-Control", "public, max-age=3600")
+  .sendFile(path.join(REPO_ROOT, "shared", "wenmodel.json")));
+
 // --- discoverability: robots, sitemap, llms.txt (search engines + AI answer engines) ---
 const SITE = config.publicBaseUrl.replace(/\/$/, "");
 app.get("/robots.txt", (req, res) => res.type("text/plain").send(
