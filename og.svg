@@ -10,23 +10,24 @@
     </linearGradient>
   </defs>
   <rect width="1200" height="1200" fill="url(#bg)"/>
+  <!-- content lives in the centre 1200x630 band (y 285..915); the PNG is cropped to that band -->
   <g stroke="#161b26" stroke-width="1">
-    <line x1="0" y1="300" x2="1200" y2="300"/><line x1="0" y1="600" x2="1200" y2="600"/><line x1="0" y1="900" x2="1200" y2="900"/>
+    <line x1="0" y1="443" x2="1200" y2="443"/><line x1="0" y1="601" x2="1200" y2="601"/><line x1="0" y1="759" x2="1200" y2="759"/>
   </g>
-  <!-- rising rollout S-curve motif -->
-  <path d="M90 980 C 380 980, 460 720, 640 600 S 980 380, 1110 360" fill="none" stroke="url(#accent)" stroke-width="9" stroke-linecap="round" opacity="0.5"/>
+  <path d="M80 800 C 360 800, 420 650, 600 565 S 900 435, 1120 420" fill="none" stroke="url(#accent)" stroke-width="7" stroke-linecap="round" opacity="0.5"/>
   <!-- logo + wordmark -->
-  <rect x="120" y="190" width="104" height="104" rx="24" fill="#e6394b"/>
-  <text x="172" y="270" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700" fill="#ffffff" text-anchor="middle">?</text>
-  <text x="250" y="272" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#f4f6fb">wen<tspan fill="#e6394b">FSD</tspan></text>
+  <rect x="80" y="333" width="80" height="80" rx="19" fill="#e6394b"/>
+  <text x="120" y="392" font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="700" fill="#ffffff" text-anchor="middle">?</text>
+  <text x="178" y="392" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="800" fill="#f4f6fb">wen<tspan fill="#e6394b">FSD</tspan></text>
   <!-- headline -->
-  <text x="120" y="480" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#f4f6fb">Predict your</text>
-  <text x="120" y="588" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#f4f6fb">next Tesla</text>
-  <text x="120" y="696" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#39d4ff">software &amp; FSD<tspan fill="#f4f6fb"> update</tspan></text>
+  <text x="80" y="540" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="800" fill="#f4f6fb">Predict your next Tesla</text>
+  <text x="80" y="620" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="800" fill="#39d4ff">software &amp; FSD<tspan fill="#f4f6fb"> update</tspan></text>
   <!-- subline -->
-  <text x="120" y="800" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="500" fill="#8b95a8">By VIN. A probability date with an 80%</text>
-  <text x="120" y="852" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="500" fill="#8b95a8">confidence window — not “two weeks.”</text>
+  <text x="80" y="685" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="500" fill="#8b95a8">By VIN. A probability date with an 80% confidence window.</text>
+  <!-- call to action -->
+  <rect x="80" y="735" width="430" height="62" rx="31" fill="#e6394b"/>
+  <text x="295" y="775" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#ffffff" text-anchor="middle">Add by VIN — it's free →</text>
+  <text x="540" y="775" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="500" fill="#5fd1a0">wenfsd.info</text>
   <!-- footer -->
-  <text x="120" y="1010" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#5fd1a0">wenfsd.info</text>
-  <text x="392" y="1010" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="500" fill="#5f6878">·  free  ·  no login  ·  open source</text>
+  <text x="80" y="868" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="500" fill="#5f6878">no login  ·  read-only  ·  open source</text>
 </svg>
