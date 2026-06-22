@@ -177,7 +177,7 @@
             <input type="checkbox" id="optInToggle"/>
             <span>Contribute this car's anonymised version data to wenFSD fleet stats</span>
           </label>
-          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth (read-only — we can see your software version, not drive your car into a lake). No manual logging. Opting in improves predictions for everyone, which is basically charity. You can disconnect or opt out anytime, no hard feelings. 🤝<br/><button type="button" class="sec-link js-open-security">🔒 Exactly what we can &amp; can't access →</button></p>
+          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth — you log in on Tesla's page, we never see your password. <strong>Heads-up:</strong> Tesla's permission screen looks alarmingly broad because it's one coarse “read vehicle data” scope (there's no “version only” option) — but our code only ever reads your <strong>software version</strong>, never your location or trips. Rather grant nothing? <strong>Add by VIN</strong> works with no login at all.<br/><button type="button" class="sec-link js-open-security">🔒 Exactly what we read, store &amp; deliberately ignore →</button></p>
 
           <!-- social profile (connected cars only) -->
           <div class="profile-block" id="profileBlock" hidden>
@@ -366,19 +366,26 @@
   <!-- SECURITY & PRIVACY (for the reasonably-suspicious) -->
   <section class="card" id="securityCard">
     <details class="why-details" id="securityDetails">
-      <summary class="card-h">🔒 Security &amp; privacy <span class="card-sub">for the reasonably suspicious</span></summary>
-      <p class="why-sub">Short version: you should be skeptical of giving any third-party app access to your Tesla. Good. Here's exactly what wenFSD can and can't do — decide for yourself.</p>
+      <summary class="card-h">🔒 Security &amp; privacy <span class="card-sub">no spin, no understating it</span></summary>
+      <p class="why-sub">You should be skeptical of giving any app access to your Tesla. Good. So here's the straight version — including the scary part.</p>
+
+      <div class="sec-callout">
+        <div class="sec-callout-h">😬 “Why does Tesla's screen ask for location, ownership, superchargers…?!”</div>
+        <p>Because <strong>Tesla's permissions are all-or-nothing</strong>. There is no “just the software version” option — <code>vehicle_device_data</code> is the <em>narrowest</em> read scope that includes your version, and Tesla bundles everything else into it. That consent screen lists everything the scope <strong>could</strong> cover, <strong>not</strong> what wenFSD actually touches. We ask for that one scope and nothing more — <strong>no</strong> location scope, <strong>no</strong> command scope. We don't love how broad Tesla made it either.</p>
+      </div>
+
       <ul class="why sec-list">
-        <li>🔑 <strong>We never see your Tesla password.</strong> You log in on Tesla's own page — the same OAuth handshake as “Sign in with Google.” We only ever receive a token.</li>
-        <li>👀 <strong>Read-only. Truly.</strong> The single scope we request is <code>vehicle_device_data</code> — it lets us read your <em>software version</em>. It <strong>cannot</strong> drive, steer, unlock, open, charge, honk, or send <em>any</em> command to your car. The capability simply isn't in the grant.</li>
-        <li>🔐 <strong>Your tokens are encrypted at rest</strong> (AES-256-GCM) and only ever move over HTTPS. We store the bare minimum: your Tesla account id, the email from the login, and your car's VIN / version / region.</li>
-        <li>🙈 <strong>Nothing is public unless you tick the box.</strong> Fleet sharing and the leaderboard are <strong>opt-in</strong> and default to off. No handle, no car, no grief note appears anywhere until you choose it.</li>
-        <li>🧹 <strong>Leave anytime, no hard feelings.</strong> Disconnect in-app, delete your data with one click, or revoke us entirely from <em>Tesla Account → Security → Third-Party Apps</em>. Gone is gone.</li>
-        <li>🚗 <strong>You don't have to connect at all.</strong> “Add by VIN” gives you the full prediction with zero login. Connecting just automates reading your version.</li>
-        <li>🍪 <strong>No cookies, no trackers, no ad-tech.</strong> No Google Analytics, no Facebook pixel, nothing sold to anyone. Visit counts use a salted daily hash — we don't even store your IP.</li>
-        <li>🫡 <strong>Honest caveat:</strong> this is an independent project, not a SOC-2-audited megacorp. While you're connected, the token <em>can</em> read your vehicle data — that's the whole point — and you can cut it off in two taps. We're telling you the trade-off instead of hiding it. <span class="mut-i">(We also genuinely cannot afford to be sinister.)</span></li>
+        <li>🎯 <strong>What we actually read:</strong> our code makes exactly one kind of data call — <code>vehicle_data?endpoints=vehicle_state</code>. That returns your <em>software version</em> and any pending-update status. We never call the location, drive, charge, supercharger, or ownership endpoints. Not once.</li>
+        <li>🗺️ <strong>Your location:</strong> we do <strong>not</strong> request Tesla's separate location scope, never fetch drive/location data, and store none of it. We don't know — or want to know — where your car is or where you've driven.</li>
+        <li>💾 <strong>What we store:</strong> only your software version, region, hardware, and any pending update. No location, no trips, no odometer, no name, no ownership records. Check the schema yourself if you'd like.</li>
+        <li>🔑 <strong>We never see your password.</strong> You log in on Tesla's own page (standard OAuth). We only receive a token, <strong>encrypted at rest</strong> (AES-256-GCM), used only over HTTPS.</li>
+        <li>🛑 <strong>It can't <em>do</em> anything to your car.</strong> No command scope means no drive, steer, unlock, open, honk, or charge — those capabilities aren't in the grant at all.</li>
+        <li>🚗 <strong>Don't want to grant <em>any</em> of that? Don't.</strong> “Add by VIN” gives you the full prediction with <strong>zero login and zero Tesla access</strong>. Connecting is a convenience, never a requirement. Honestly, if the screen worries you, just use Add by VIN.</li>
+        <li>🧹 <strong>Leave anytime.</strong> Disconnect in-app, delete your data in one click, or revoke us entirely from <em>Tesla Account → Security → Third-Party Apps</em>. Gone is gone.</li>
+        <li>🍪 <strong>No cookies, no trackers, no ad-tech, nothing sold.</strong> Visit counts use a salted daily hash — we don't even store your IP.</li>
+        <li>🫡 <strong>The honest limit:</strong> the grant <em>permits</em> more than we use — that's Tesla's coarse design, not our choice — so the only way to be 100% certain we only read the version is to read the code. We're up for that: ask and we'll share the source.</li>
       </ul>
-      <p class="sec-foot">Want to poke holes in this? The full <a href="PRIVACY.md">Privacy policy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a> spell it all out, including how to reach a human. We'd genuinely rather you ask than worry.</p>
+      <p class="sec-foot">Still uneasy? Totally reasonable — <strong>use Add by VIN and grant nothing.</strong> Full details in the <a href="PRIVACY.md">Privacy policy</a> · <a href="TERMS.md">Terms</a> · <a href="LICENSE">License</a>. We'd much rather you ask than worry.</p>
     </details>
   </section>
 

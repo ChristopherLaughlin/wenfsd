@@ -159,6 +159,10 @@ tr.mx-click:hover td{background:#11161f}
 .why-answer::after{content:" 🔁";font-size:13px;opacity:.5}
 .why-sub{margin:2px 0 10px;font-size:12px;color:var(--mut2);font-style:italic}
 .sec-list code{font-family:var(--mono);font-size:11.5px;background:rgba(143,149,168,.14);padding:1px 5px;border-radius:4px;color:var(--cyan)}
+.sec-callout{margin:6px 0 14px;padding:12px 14px;border-radius:11px;background:rgba(232,177,90,.10);border:1px solid rgba(232,177,90,.34)}
+.sec-callout-h{font-size:13.5px;font-weight:800;color:#ffd591;margin-bottom:6px;line-height:1.4}
+.sec-callout p{margin:0;font-size:12.5px;line-height:1.55;color:var(--mut)}
+.sec-callout code{font-family:var(--mono);font-size:11.5px;background:rgba(143,149,168,.14);padding:1px 5px;border-radius:4px;color:var(--amber)}
 .sec-foot{margin:14px 0 0;font-size:12.5px;color:var(--mut);line-height:1.55}
 .sec-foot a{color:var(--cyan);text-decoration:underline}
 .sec-link{display:inline-block;margin-top:7px;font-size:12px;color:var(--cyan);text-decoration:underline;cursor:pointer;background:none;border:none;font:inherit;font-size:12px;padding:0}
