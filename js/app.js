@@ -121,6 +121,7 @@
     renderRolloutPace();
     renderHumour();
     renderGrief();
+    renderUpdateAlert();
     return pred;
   }
 
@@ -149,6 +150,7 @@
     renderRolloutPace();
     renderHumour();
     renderGrief();
+    renderUpdateAlert();
   }
   function svgEmpty(msg) {
     return `<div class="chart-empty">${esc(msg)}</div>`;
@@ -171,6 +173,7 @@
     renderRolloutPace();
     renderHumour();
     renderGrief();
+    renderUpdateAlert();
   }
 
   // ---- regional humour (the wenFSD meme = "wen FSD? two weeks, trust me bro") ----
@@ -348,6 +351,37 @@
       wa.addEventListener("click", go);
       wa.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") go(e); });
     }
+  }
+
+  // LIVE pending-update banner — the car itself told us an update is on the way. Connected cars
+  // only; this is OBSERVED truth (from vehicle_state.software_update), not a model estimate.
+  function renderUpdateAlert() {
+    const el = $("updateAlert"); if (!el) return;
+    const v = av(), u = v && v.connected ? v.pendingUpdate : null;
+    if (!u || !u.version) { el.hidden = true; return; }
+    const ver = esc(u.version), st = (u.status || "").toLowerCase();
+    const dl = u.download != null ? u.download : null, ins = u.install != null ? u.install : null;
+    let icon = "🔔", cls = "ua-available", head, sub;
+    if (st === "installing") {
+      icon = "⚙️"; cls = "ua-installing";
+      head = `<strong>${ver} is installing${ins != null ? ` — ${ins}%` : ""}.</strong>`;
+      sub = rnd(["Do not drive into anything. Let it cook. 🍳", "Hands off. The car is becoming its best self.", "This is the part where you stand in the driveway and stare."]);
+    } else if (st === "downloading" || st === "downloading_wifi_wait") {
+      icon = "⬇️"; cls = "ua-downloading";
+      head = `<strong>${ver} is downloading${dl != null ? ` — ${dl}%` : ""}.</strong>`;
+      sub = st === "downloading_wifi_wait" ? rnd(["Waiting for Wi-Fi. Go park near the router and whisper encouragement. 📶", "Needs Wi-Fi. Your car has trust issues with mobile data."])
+        : rnd(["So close you can smell the changelog. 👃", "Keep it on Wi-Fi and don't you dare drive off.", "The prophecy is buffering."]);
+    } else if (st === "scheduled") {
+      icon = "🗓️"; cls = "ua-scheduled";
+      head = `<strong>${ver} is scheduled to install.</strong>`;
+      sub = rnd(["wenFSD called it. The prophecy fulfils itself. 🔮", "It's basically here. Tonight, probably, while you sleep.", "Set an alarm. Or don't. It'll happen either way."]);
+    } else {
+      head = `<strong>${ver} is available for your car.</strong>`;
+      sub = rnd(["It's RIGHT THERE. Open the Tesla app and hit install. 📲", "Stop refreshing this page and go tap 'Install' already.", "The waiting is over. Go. Be free."]);
+    }
+    el.hidden = false;
+    el.className = "update-alert " + cls;
+    el.innerHTML = `<span class="ua-icon">${icon}</span><span class="ua-text">${head} <span class="ua-sub">${esc(sub)}</span></span><span class="ua-badge" title="Read live from your car via Tesla's API">✓ live from your car</span>`;
   }
 
   function renderHero(pred) {
@@ -1318,6 +1352,7 @@
     }
     ui.griefPick = null;
     renderGrief();
+    renderUpdateAlert();
     const h = $("griefSaveHint"); if (h) { h.textContent = rnd(["Logged. Catharsis achieved. ✓", "Filed under 'feelings'. ✓", "Noted. Be gentle with yourself. ✓", "Your pain is now data. Thank you. ✓"]); }
   }
   function renderGriefHistory(v) {
@@ -1424,6 +1459,7 @@
         renderRolloutPace();
         renderHumour();
         renderGrief();
+        renderUpdateAlert();
       });
     }
   }
@@ -1680,6 +1716,7 @@
           generation: v.generation || existing.generation, hardware: v.hardware || existing.hardware,
           market, drive: v.drive || region.drive || existing.drive,
           earlyAccess: !!v.early_access, optedIn: !!v.opted_in, connected: true,
+          pendingUpdate: v.pending_version ? { version: v.pending_version, status: v.pending_status, download: v.pending_download, install: v.pending_install } : null,
         };
         if (v.current_version) patch.installedVersion = v.current_version;   // don't clobber a manual entry with null
         if (v.earliness != null) { patch.earliness = v.earliness; patch.earlinessSource = "history"; }
@@ -1692,6 +1729,7 @@
           installedVersion: v.current_version || "", fsdVersion: "",
           earliness: v.earliness != null ? v.earliness : 0.5, earlinessSource: v.earliness != null ? "history" : "default",
           earlyAccess: !!v.early_access, optedIn: !!v.opted_in, connected: true, history: [],
+          pendingUpdate: v.pending_version ? { version: v.pending_version, status: v.pending_status, download: v.pending_download, install: v.pending_install } : null,
         });
       }
     });

@@ -36,6 +36,19 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .connect-nudge{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 0;padding:13px 16px;border-radius:12px;
   background:linear-gradient(90deg,rgba(230,57,75,.12),rgba(57,212,255,.08));border:1px solid rgba(230,57,75,.35)}
 .connect-nudge[hidden]{display:none}   /* class display:flex would otherwise override the [hidden] attribute */
+
+/* LIVE pending-update alert (real data, straight from the car) */
+.update-alert{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin:14px 0 0;padding:13px 16px;border-radius:12px;
+  border:1px solid var(--line2);background:#0b0e14;border-left-width:4px}
+.update-alert[hidden]{display:none}
+.update-alert.ua-installing{border-left-color:#e6394b;background:linear-gradient(90deg,rgba(230,57,75,.14),rgba(230,57,75,.03))}
+.update-alert.ua-downloading{border-left-color:#39d4ff;background:linear-gradient(90deg,rgba(57,212,255,.14),rgba(57,212,255,.03))}
+.update-alert.ua-scheduled{border-left-color:#9b8cff;background:linear-gradient(90deg,rgba(155,140,255,.14),rgba(155,140,255,.03))}
+.update-alert.ua-available{border-left-color:#5fd1a0;background:linear-gradient(90deg,rgba(95,209,160,.14),rgba(95,209,160,.03))}
+.ua-icon{font-size:22px;flex-shrink:0}
+.ua-text{flex:1;min-width:220px;font-size:14px;line-height:1.45;color:var(--fg)}
+.ua-sub{color:var(--mut);font-weight:400;font-style:italic}
+.ua-badge{flex-shrink:0;font-size:10.5px;font-weight:700;color:#5fd1a0;background:rgba(95,209,160,.12);border:1px solid rgba(95,209,160,.3);padding:3px 9px;border-radius:999px;white-space:nowrap}
 .cn-text{display:flex;align-items:center;gap:10px;flex:1;min-width:240px;font-size:13.5px;line-height:1.5;color:var(--txt)}
 .cn-emoji{font-size:20px;flex-shrink:0}
 .cn-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}

@@ -160,3 +160,25 @@ export async function getVehicleVersion(accessToken, vin) {
   // car_version looks like "2026.20.3 ab0def..." — keep just the version token.
   return v ? v.split(" ")[0] : null;
 }
+
+// Read BOTH the installed version AND any pending over-the-air update in ONE vehicle_data call
+// (same cost as getVehicleVersion). The Fleet API's vehicle_state.software_update block exposes
+// the live update lifecycle — status / target version / download % / install % — i.e. the actual
+// answer to "wen", straight from the car. Online cars only (vehicle_data 408s on a sleeping car;
+// the caller already filters to awake vehicles so we never wake one).
+export async function getVehicleState(accessToken, vin) {
+  if (config.mockMode) return { version: await getVehicleVersion(accessToken, vin), update: null };
+  const data = await fleetGet(accessToken, `/api/1/vehicles/${encodeURIComponent(vin)}/vehicle_data?endpoints=${encodeURIComponent("vehicle_state")}`);
+  const vs = data?.response?.vehicle_state || {};
+  const version = vs.car_version ? String(vs.car_version).split(" ")[0] : null;
+  const su = vs.software_update || null;
+  const active = su && su.status && su.status !== "" && su.version;
+  const update = active ? {
+    version: String(su.version).split(" ")[0],
+    status: String(su.status),                                   // available | scheduled | downloading | downloading_wifi_wait | installing
+    download: su.download_perc != null ? Math.round(+su.download_perc) : null,
+    install: su.install_perc != null ? Math.round(+su.install_perc) : null,
+    durationSec: su.expected_duration_sec != null ? +su.expected_duration_sec : null,
+  } : null;
+  return { version, update };
+}

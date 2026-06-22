@@ -43,6 +43,13 @@ CREATE TABLE IF NOT EXISTS vehicles (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_vehicles_user ON vehicles(user_id);
+-- Live pending OTA update (from vehicle_state.software_update on each poll) — the actual answer
+-- to "wen" for a connected car. Cleared once it installs (current_version catches up).
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pending_version  TEXT;
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pending_status   TEXT;   -- available|scheduled|downloading|installing
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pending_download INT;
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pending_install  INT;
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pending_seen_at  TIMESTAMPTZ;
 
 -- Append-only log: every time a vehicle's software version is observed to change.
 -- This is the raw data the fleet tracker + prediction model are built from.

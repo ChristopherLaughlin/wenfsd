@@ -46,9 +46,10 @@ export async function pollOnce() {
         // Reading a FRESH version (to detect an update → score) does need the car awake.
         if (state.get(c.vin) && state.get(c.vin) !== "online") { skipped++; continue; } // asleep/offline — don't wake it
         try {
-          const version = await tesla.getVehicleVersion(access, c.vin);
+          const { version, update } = await tesla.getVehicleState(access, c.vin);  // version + pending OTA, one call
           polled++;
           const r = await applyVersionReading(c, version);   // score-on-change + snapshot + ensure
+          await persistPendingUpdate(c, update);             // live "update incoming" status
           if (r.changed) changed++;
         } catch (e) { if (e.code !== 408) console.warn(`[poller] ${c.vin}:`, e.message); }
       }
@@ -119,6 +120,17 @@ export async function applyVersionReading(c, version) {
   }
   if (c.current_version) await ensurePrediction(c);
   return { changed, version: c.current_version };
+}
+
+// Persist the car's live pending OTA update (or clear it when there's none — e.g. it just
+// installed). Shared by the cron poller and the owner-triggered refresh.
+export async function persistPendingUpdate(c, update) {
+  if (update && update.version && update.version !== c.current_version) {
+    await query(`UPDATE vehicles SET pending_version=$1, pending_status=$2, pending_download=$3, pending_install=$4, pending_seen_at=now() WHERE id=$5`,
+      [update.version, update.status || null, update.download, update.install, c.id]);
+  } else {
+    await query(`UPDATE vehicles SET pending_version=NULL, pending_status=NULL, pending_download=NULL, pending_install=NULL, pending_seen_at=now() WHERE id=$1`, [c.id]);
+  }
 }
 
 // Recompute per-version install counts, fleet %, and the fitted logistic (t0, k).
