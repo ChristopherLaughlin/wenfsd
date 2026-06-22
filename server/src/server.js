@@ -7,7 +7,9 @@ import cron from "node-cron";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import crypto from "node:crypto";
 import { config, ensureModeReady } from "./config.js";
+import { query, hasDb } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { apiRouter } from "./routes/api.js";
 import { pollOnce } from "./poller.js";
@@ -87,11 +89,40 @@ async function serveIndex(req, res) {
       const raw = await readFile(path.join(REPO_ROOT, "index.html"), "utf8");
       _indexHtml = raw.replace(/(src|href)="(js\/[^"?]+|styles\.css)"/g, `$1="$2?v=${BUILD}"`);
     }
+    recordVisit(req);   // privacy-respecting page-view counter (fire-and-forget)
     res.type("html").set("Cache-Control", "no-cache").send(_indexHtml);
   } catch { res.sendStatus(500); }
 }
 app.get("/", serveIndex);
 app.get("/index.html", serveIndex);
+
+// --- privacy-respecting visit counter (no cookies, no stored IPs) ---
+// Per-day TOTAL views + rough uniques via a SALTED daily hash of IP+UA (not reversible,
+// pruned after 90 days). Never blocks or breaks a page load.
+async function recordVisit(req) {
+  if (config.mockMode || !hasDb()) return;
+  try {
+    const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+    const ua = String(req.headers["user-agent"] || "");
+    const day = new Date().toISOString().slice(0, 10);
+    const hash = crypto.createHash("sha256").update(day + "|" + ip + "|" + ua + "|" + config.sessionSecret).digest("hex");
+    await query(`INSERT INTO daily_visits(day, views) VALUES($1, 1) ON CONFLICT(day) DO UPDATE SET views = daily_visits.views + 1`, [day]);
+    await query(`INSERT INTO daily_unique_visitors(day, visitor_hash) VALUES($1, $2) ON CONFLICT DO NOTHING`, [day, hash]);
+    if (Math.random() < 0.01) await query(`DELETE FROM daily_unique_visitors WHERE day < (CURRENT_DATE - INTERVAL '90 days')`);
+  } catch { /* analytics must never break a page load */ }
+}
+
+// --- creator-only admin dashboard (token-gated; the data API lives at /api/admin/stats) ---
+app.get("/admin", (req, res) => {
+  if (!config.adminToken) return res.status(404).send("Admin dashboard disabled. Set ADMIN_TOKEN to enable it.");
+  res.type("html").set("Cache-Control", "no-cache").send(`<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>wenFSD · creator dashboard</title><link rel="stylesheet" href="/styles.css?v=${BUILD}"/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e6394b'/%3E%3Ctext x='16' y='25' font-family='Arial' font-size='25' font-weight='bold' text-anchor='middle' fill='white'%3E%3F%3C/text%3E%3C/svg%3E"/>
+</head><body><div class="bg-grid"></div><main style="max-width:880px"><h1 style="font-size:24px;margin:18px 0 4px">wenFSD · creator dashboard 📊</h1>
+<p class="hint" id="adminHint">The numbers Tesla won't give you either. Token-gated; nobody sees this but you.</p>
+<div id="adminApp"></div></main><script src="/js/admin.js?v=${BUILD}"></script></body></html>`);
+});
 app.use("/js", express.static(path.join(REPO_ROOT, "js"), STATIC_OPTS));
 app.get("/styles.css", (req, res) => res.sendFile(path.join(REPO_ROOT, "styles.css")));
 // hard block anything sensitive even if a future static mount is added

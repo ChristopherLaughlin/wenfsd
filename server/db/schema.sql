@@ -123,3 +123,16 @@ CREATE TABLE IF NOT EXISTS grief_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_grief_region ON grief_logs(region, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_grief_user ON grief_logs(user_id, created_at DESC);
+
+-- Privacy-respecting visit counter for the creator dashboard. We store per-day TOTAL page
+-- views (an aggregate counter) and, for rough unique counts, a salted daily hash of
+-- IP+UA — NOT the IP itself, not reversible, and pruned after 90 days. No cookies, no PII.
+CREATE TABLE IF NOT EXISTS daily_visits (
+  day    DATE PRIMARY KEY,
+  views  BIGINT NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS daily_unique_visitors (
+  day           DATE NOT NULL,
+  visitor_hash  TEXT NOT NULL,
+  PRIMARY KEY (day, visitor_hash)
+);

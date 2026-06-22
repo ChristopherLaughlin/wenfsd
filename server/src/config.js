@@ -30,6 +30,7 @@ export const config = {
   pollCron: process.env.POLL_CRON || "0 * * * *",        // hourly (was */30 — too aggressive)
   tokenEncKey: process.env.TOKEN_ENC_KEY || "",          // 32-byte key (base64/hex) for token encryption
   allowLiveSources: bool(process.env.ALLOW_LIVE_SOURCES, false), // explicit opt-in to fetch external trackers
+  adminToken: process.env.ADMIN_TOKEN || "",             // gates the creator-only /admin dashboard (unset ⇒ disabled)
 };
 
 // If real mode is requested but its required config is incomplete, DEGRADE to sample
