@@ -122,7 +122,21 @@
     return _flavorCache[key];
   }
   function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; } // fresh every call (transient msgs)
-  const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter."];
+  const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter.", "Coming right after the robotaxis. 🚕", "Soon™ — on Elon Time™.", "Two more weeks. (The two weeks renew automatically.)"];
+  // region-agnostic Tesla/FSD meme one-liners — mixed into the hero flavour for variety
+  const GENERIC = [
+    "Still on {ver}? It's fine. FSD is 'two weeks' away. It's always two weeks away.",
+    "{ver} → the robotaxis were promised first, and look how that's going. 🚕",
+    "Refreshing the software menu doesn't make it come faster. (You're still doing it. So are we.)",
+    "Your car is 'Full Self-Driving (Supervised).' Heavy, heavy emphasis on <em>supervised</em>.",
+    "It'll appreciate into an appreciating asset any day now. Any day. 📈",
+    "Sentry Mode watched your car all night and still has no idea wen FSD either.",
+    "Stuck on {ver}? At least Actually Smart Summon crossed the car park in under four minutes.",
+    "Phantom braking for no reason builds character. The update builds… eventually.",
+    "Elon said 'this year.' He didn't say which year. ⏳",
+    "HW3 owners typing 'wen retrofit' into the void. We see you. 🫡",
+    "The update is coming. The over-the-air gods are merely… buffering.",
+  ];
   const REGION_FLAVOR = {
     "Australia": { flag: "🇦🇺",
       soon: ["Two weeks. Trust me, mate. 🦘", "She'll be right — a fortnight, tops.", "Basically here. Crack a tinnie. 🍺", "Soon-ish, bruz. Trust."],
@@ -145,7 +159,7 @@
     const v = av(); if (!v) return "";
     const fl = flavorFor(v.market), d = pred.daysToMedian;
     if (d != null && d >= 8 && d <= 18) return `${fl.flag} ${flavorPick("soon:" + v.market, fl.soon.concat(MEME))}`;   // the meme zone
-    const q = flavorPick("quip:" + v.market, fl.quips).replace("{ver}", esc(v.installedVersion || "your build"));
+    const q = flavorPick("quip:" + v.market, fl.quips.concat(GENERIC)).replace(/\{ver\}/g, esc(v.installedVersion || "your build"));
     return `${fl.flag} ${q}`;
   }
 
@@ -659,7 +673,12 @@
     bold: { label: "🎯 Confident", window: 5, mult: 2.5, tag: "bold" },
     yolo: { label: "🎲 Trust me bro", window: 2, mult: 6, tag: "yolo" },
   };
+  const WENPOINTS_BLURB = `🪙 <strong>What are wenPoints?</strong> Pure bragging rights — a score, not a token, not redeemable, definitely not "financial advice." Nail your call and you climb your region's leaderboard. Bold calls pay up to <strong>6×</strong>, safe calls 1×. That's the whole economy: glory.`;
+  function guessFormEls() { return [$("nervePick"), $("guessBtn"), $("guessDate") && $("guessDate").closest(".field")].filter(Boolean); }
   function renderGuess(pred) {
+    const v = av();
+    if (v && v.bet && v.bet.date) { guessFormEls().forEach(el => el.style.display = "none"); renderLockedBet(pred, v.bet); return; }
+    guessFormEls().forEach(el => el.style.display = "");
     if (!$("guessDate").value) $("guessDate").value = Predict.isoDay(pred.medianDate);
     document.querySelectorAll("#nervePick .nerve-btn").forEach(b => {
       b.classList.toggle("active", b.dataset.risk === ui.guessRisk);
@@ -670,6 +689,49 @@
       };
     });
     if (ui.guessDays != null) showGuessResult(pred);
+  }
+  // social share row (pre-filled brag) → TMC, X, Reddit, Facebook, copy
+  function shareRow() {
+    return `<div class="share-row">` +
+      `<button class="btn-sm" id="shCopy" type="button">🔗 Copy</button>` +
+      `<a class="btn-sm" id="shTmc" target="_blank" rel="noopener">💬 TMC</a>` +
+      `<a class="btn-sm" id="shX" target="_blank" rel="noopener">𝕏</a>` +
+      `<a class="btn-sm" id="shReddit" target="_blank" rel="noopener">Reddit</a>` +
+      `<a class="btn-sm" id="shFb" target="_blank" rel="noopener">Facebook</a>` +
+      `</div>`;
+  }
+  function wireShare(blurb) {
+    const url = "https://wenfsd.info", t = encodeURIComponent(blurb), u = encodeURIComponent(url);
+    const set = (id, href) => { const a = $(id); if (a) a.href = href; };
+    set("shX", `https://twitter.com/intent/tweet?text=${t}&url=${u}`);
+    set("shReddit", `https://www.reddit.com/submit?url=${u}&title=${t}`);
+    set("shFb", `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${t}`);
+    const tmc = $("shTmc"); if (tmc) { tmc.href = "https://teslamotorsclub.com/tmc/"; tmc.onclick = () => copyText(blurb); }
+    const cp = $("shCopy"); if (cp) cp.onclick = () => copyText(blurb, cp);
+  }
+  // the committed, persistent bet — locked so you can't re-roll endlessly
+  function renderLockedBet(pred, bet) {
+    const v = av(), risk = RISK[bet.risk] || RISK.bold;
+    const dateNice = Predict.fmtDate(bet.date).replace(/^\w+, /, "");
+    const blurb = `📲 I called it on wenFSD: my Tesla gets ${bet.target || "its next update"} by ${dateNice} (${risk.label} mode, ${bet.odds}% odds). Screenshot this so you can mock me later 😤 wenfsd.info`;
+    $("guessResult").classList.add("show");
+    $("guessResult").innerHTML =
+      `<div class="shot shot-${risk.tag} shot-locked">` +
+        `<div class="shot-mode">🔒 Locked in · ${risk.label}</div>` +
+        `<div class="shot-call">You called <strong>${esc(bet.target || "your next update")}</strong> by <strong>${esc(dateNice)}</strong>. No takebacks${v.connected ? " — the leaderboard's watching" : ""}.</div>` +
+        `<div class="shot-stats"><div><b>${bet.odds}%</b><span>the house gave you</span></div><div><b>🪙 ${bet.potential}</b><span>wenPoints at stake</span></div></div>` +
+        `<div class="shot-stake">${v.connected ? "✅ Staked for real — settles automatically when your car updates. Nail it → leaderboard glory. Whiff it → we'll remember. 👀" : "📸 Locked on this device. Connect your Tesla to settle it for real + bank the wenPoints."}</div>` +
+        `<div class="wp-explain">${WENPOINTS_BLURB}</div>` +
+        `<div class="share-label">📣 Plant your flag (so everyone sees you were right):</div>` +
+        shareRow() +
+        `<button class="btn-link" id="resetBet" type="button">↺ Misfire? Change my call (the model judges flip-floppers)</button>` +
+      `</div>`;
+    Charts.distribution($("distChart"), pred, today, Predict.daysBetween(today, bet.date));
+    wireShare(blurb);
+    $("resetBet").onclick = () => {
+      if (!confirm("Change your locked call? Flip-flopping is a bad look, but okay. 🤨")) return;
+      gstate = Garage.update(v.id, { bet: null }); ui.guessDays = null; renderGuess(pred);
+    };
   }
   function showGuessResult(pred) {
     const guessStr = $("guessDate").value;
@@ -701,18 +763,22 @@
     $("copyBrag").onclick = () => copyText(blurb, $("copyBrag"));
     $("shareTmc").onclick = () => { copyText(blurb, $("shareTmc")); window.open("https://teslamotorsclub.com/tmc/", "_blank", "noopener"); };
   }
-  // "Lock in" → render the card AND, for a connected car, stake the wager server-side (settles
-  // automatically when the car updates → real wenPoints).
+  // "Lock in" → PERSIST the bet (one locked call per car, no endless re-rolling), and for a
+  // connected car stake it server-side so it settles for real when the car updates.
   function lockInGuess(pred) {
-    showGuessResult(pred);
     const v = av(), guessStr = $("guessDate").value;
-    if (!v || !v.connected || !/^https?:$/.test(location.protocol) || !guessStr) return;
-    const risk = RISK[ui.guessRisk] || RISK.bold, st = $("shotStake");
-    if (st) st.textContent = "Staking…";
-    fetch("/api/me/guess", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
-      body: JSON.stringify({ guessDate: guessStr, windowDays: risk.window, mult: risk.mult, target: pred.targetLabel || null }) })
-      .then(r => r.json()).then(d => { if (st) st.textContent = d && d.staked ? "🔒 Staked! Settles automatically when your car updates — then it pays out wenPoints." : "🔒 Saved."; })
-      .catch(() => { if (st) st.textContent = "⚠ Couldn't stake it (you can still screenshot your call)."; });
+    if (!v) return;
+    if (!guessStr || isNaN(new Date(guessStr + "T00:00:00Z"))) { showGuessResult(pred); return; }
+    const risk = RISK[ui.guessRisk] || RISK.bold;
+    const g = Predict.daysBetween(today, guessStr);
+    const odds = Math.round(Math.max(0, Math.min(1, pred.probWithin(g + risk.window) - pred.probWithin(g - risk.window))) * 100);
+    const bet = { date: guessStr, risk: ui.guessRisk, target: pred.targetLabel || null, odds, potential: Math.round(100 * risk.mult), placedAt: today };
+    gstate = Garage.update(v.id, { bet });
+    if (v.connected && /^https?:$/.test(location.protocol)) {
+      fetch("/api/me/guess", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ guessDate: guessStr, windowDays: risk.window, mult: risk.mult, target: pred.targetLabel || null }) }).catch(() => {});
+    }
+    renderGuess(pred);
   }
   function guessVerdict(risk, odds, g, pred) {
     const off = Math.round(g - pred.daysToMedian);
