@@ -555,6 +555,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .rn-grp-fsd .rn-grp-h{color:var(--violet)}
 .rn-grp .rn-items{border-top:none;padding-top:0}
 .rn-li-fsd{border-left:2px solid rgba(155,140,255,.4);padding-left:8px!important;margin-left:-2px}
+.rn-li-muted{color:var(--mut2);font-style:italic}
 
 /* rollout pace */
 .pace-toggle{display:flex;gap:6px;margin:0 0 14px}
@@ -574,6 +575,47 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .pace-bar.pace-today{fill:var(--cyan)}
 .pace-bar.pace-peak{fill:rgba(155,140,255,.7)}
 .pace-foot{font-size:12.5px;color:var(--mut);line-height:1.5;margin-top:10px;padding-top:11px;border-top:1px solid var(--line)}
+
+/* the five stages of grief */
+.grief-pred{border:1px solid var(--line2);border-left-width:3px;border-radius:11px;padding:12px 14px;margin:4px 0 14px;background:#0b0e14}
+.gp-h{font-size:15px;font-weight:800;color:var(--txt);margin-bottom:5px}
+.gp-line{font-size:13px;color:var(--mut);font-style:italic;line-height:1.45;margin-bottom:6px}
+.gp-why{font-size:12px;color:var(--mut2);line-height:1.45}
+.grief-denial{border-left-color:#6aa3ff}
+.grief-anger{border-left-color:#e6394b}
+.grief-bargaining{border-left-color:#e8b15a}
+.grief-depression{border-left-color:#8f95a8}
+.grief-acceptance{border-left-color:#5fd1a0}
+.grief-ask{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:8px}
+.grief-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.grief-chip{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:78px;padding:8px 10px;border-radius:10px;border:1px solid var(--line2);background:#0c1019;color:var(--mut);cursor:pointer;font-size:12px;font-weight:600}
+.grief-chip .ge{font-size:20px}
+.grief-chip:hover{border-color:var(--cyan);color:var(--txt)}
+.grief-chip.is-on{background:rgba(57,212,255,.12);border-color:var(--cyan);color:var(--cyan)}
+.grief-note{width:100%;box-sizing:border-box;background:#0c1019;color:var(--txt);border:1px solid var(--line2);border-radius:10px;padding:9px 11px;font:inherit;font-size:13px;resize:vertical;margin-bottom:10px}
+.grief-note:focus{outline:none;border-color:var(--cyan)}
+.grief-savehint{font-size:12px;color:#5fd1a0;margin-left:10px}
+.grief-empty,.gh-empty,.gc-off{font-size:13px;color:var(--mut);line-height:1.5;font-style:italic}
+.grief-history{margin-top:14px}
+.gh-h,.gc-h,.gc-notes-h{font-size:12.5px;font-weight:700;color:var(--txt);margin-bottom:8px}
+.gh-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.gh-list li{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;font-size:12.5px;padding:8px 10px;background:#0b0e14;border:1px solid var(--line);border-radius:9px}
+.gh-when{color:var(--mut2);font-family:var(--mono);font-size:11px;min-width:64px}
+.gh-stages{color:var(--mut)} .gh-stages b{color:var(--txt)}
+.gh-hit{color:#5fd1a0} .gh-miss{color:var(--amber)}
+.gh-note{flex-basis:100%;color:var(--mut);font-style:italic;padding-left:72px}
+.grief-community{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.gc-bars{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.gc-bar{display:flex;align-items:center;gap:9px;font-size:12px}
+.gc-emoji{font-size:16px;width:22px;text-align:center}
+.gc-track{flex:1;height:12px;background:#0b0e14;border-radius:6px;overflow:hidden}
+.gc-fill{display:block;height:100%;border-radius:6px;opacity:.85}
+.gc-fill.grief-denial{background:#6aa3ff}.gc-fill.grief-anger{background:#e6394b}.gc-fill.grief-bargaining{background:#e8b15a}.gc-fill.grief-depression{background:#8f95a8}.gc-fill.grief-acceptance{background:#5fd1a0}
+.gc-pct{color:var(--mut);font-family:var(--mono);min-width:34px;text-align:right}
+.gc-notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.gc-notes li{display:flex;align-items:baseline;gap:8px;font-size:12.5px;color:var(--mut)}
+.gcn-stage{font-size:15px}.gcn-who{color:var(--cyan);font-weight:600;white-space:nowrap}.gcn-note{font-style:italic}
+.gc-foot{font-size:11.5px;color:var(--mut2);font-style:italic;margin-top:10px}
 
 /* per-region OS rollout panel */
 .region-panel{display:flex;flex-direction:column;gap:2px}

@@ -103,7 +103,7 @@
     try {
       const rn = await getJSON("/api/release-notes?live=1");
       if (rn && rn.mode === "live" && rn.notes && Object.keys(rn.notes).length) {
-        WEN.releaseNotes = rn.notes;          // replace seed notes with the real ones
+        WEN.releaseNotes = Object.assign({}, WEN.releaseNotes, rn.notes);  // live notes win, seed fills the gaps
         WEN.releaseNotesSource = "live";
       }
     } catch (e) { /* keep seed notes (badged as modelled) */ }

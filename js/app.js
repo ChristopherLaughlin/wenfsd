@@ -4,7 +4,7 @@
   const today = WEN.today;
 
   let gstate = Garage.get();           // { vehicles, activeId }
-  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all", paceWindow: "day", trackRegion: null };
+  const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all", paceWindow: "day", trackRegion: null, griefPick: null };
 
   function av() { return Garage.active(gstate); }
 
@@ -120,6 +120,7 @@
     renderReleaseNotes();
     renderRolloutPace();
     renderHumour();
+    renderGrief();
     return pred;
   }
 
@@ -147,6 +148,7 @@
     renderReleaseNotes();
     renderRolloutPace();
     renderHumour();
+    renderGrief();
   }
   function svgEmpty(msg) {
     return `<div class="chart-empty">${esc(msg)}</div>`;
@@ -168,6 +170,7 @@
     renderReleaseNotes();
     renderRolloutPace();
     renderHumour();
+    renderGrief();
   }
 
   // ---- regional humour (the wenFSD meme = "wen FSD? two weeks, trust me bro") ----
@@ -289,8 +292,10 @@
     const pick = fresh ? rnd(AT_LEAST) : flavorPick("whyAnswer", AT_LEAST);
     el.innerHTML = `It doesn't. <span class="wa-but">But at least <em>${pick}</em></span>`;
   }
+  const TAB_TITLES = ["wenFSD — two weeks, probably", "wenFSD · refreshing won't help (you'll refresh anyway)", "wenFSD — wen, exactly?", "wenFSD · soon™", "wenFSD — trust me bro", "wenFSD · coming right after the robotaxis", "wenFSD — your update is in another castle"];
   function renderHumour() {
     for (const id in SUBS) { const el = $(id); if (el) el.textContent = flavorPick("sub:" + id, SUBS[id]); }
+    try { document.title = flavorPick("tabTitle", TAB_TITLES); } catch (e) {}
     rollWhyAnswer(false);
     const wa = $("whyAnswer");
     if (wa && !wa._wired) {
@@ -1125,6 +1130,7 @@
       renderReleaseNotes();
     });
   }
+  const NO_OS_NOTES = ["OS changelog not captured for this build yet — Tesla's keeping it mysterious. 🤫", "OS notes pending. Assume “improvements to overall stability”; they always say that.", "No OS changelog scraped yet. The trackers are working on it, allegedly.", "OS notes MIA. The dog ate Tesla's release notes again. 🐕"];
   function renderReleaseNotes() {
     wireRnFilter();
     syncTrackRegion();
@@ -1132,28 +1138,154 @@
     const showYouTags = !region || (av() && region === av().market);
     const mine = showYouTags && av() ? av().installedVersion : null;
     const filt = ui.rnFilter;
-    const order = WEN.versionsForRegion(region).map(v => v.version).filter(v => WEN.releaseNotes[v]);
-    const html = order.map(ver => {
-      const rn = WEN.releaseNotes[ver];
+    // Iterate EVERY tracked build for the region (newest-first, capped for readability) — not
+    // just ones with scraped notes. Every build carries a KNOWN FSD build (fsdBuild), so we can
+    // always show a real FSD line even when the OS changelog scrape came back empty.
+    const vers = WEN.versionsForRegion(region).slice(0, 14);
+    const li = (it, fsdNote) => `<li class="${fsdNote ? "rn-li-fsd" : ""}"><span class="rn-tag ${RN_TAG[it.tag] || "rn-feat"}">${esc(it.tag)}</span>${esc(it.text)}</li>`;
+    const html = vers.map(vobj => {
+      const ver = vobj.version;
+      const rn = WEN.releaseNotes[ver] || {};
+      const items = rn.items || [];
+      const os = items.filter(it => !isFsdItem(it));
+      let fsd = items.filter(isFsdItem);
+      // the FSD version each OS build carries is REAL (from tracker data) — synthesise an FSD
+      // note from it so FSD-only is never wrongly "empty" and every build is properly labelled.
+      const fsdBuild = (vobj.fsdBuild && vobj.fsdBuild.AI4 && vobj.fsdBuild.AI4 !== "—") ? vobj.fsdBuild.AI4 : (rn.fsd || null);
+      if (!fsd.length && fsdBuild) fsd = [{ tag: "FSD", text: `FSD (Supervised) ${fsdBuild} ships bundled inside this build.` }];
       const isMine = ver === mine;
-      // split FSD vs OS notes; FSD pinned first so the autonomy crowd sees it immediately
-      const fsd = (rn.items || []).filter(isFsdItem);
-      const os = (rn.items || []).filter(it => !isFsdItem(it));
-      const show = filt === "fsd" ? fsd : filt === "os" ? os : fsd.concat(os);
-      if (!show.length) return ""; // version has nothing for the active filter — hide it
-      const li = (it, fsdNote) => `<li class="${fsdNote ? "rn-li-fsd" : ""}"><span class="rn-tag ${RN_TAG[it.tag] || "rn-feat"}">${esc(it.tag)}</span>${esc(it.text)}</li>`;
-      const blocks =
-        (filt !== "os" && fsd.length ? `<div class="rn-grp rn-grp-fsd"><div class="rn-grp-h">🤖 FSD (Supervised) ${esc(rn.fsd || "")}</div><ul class="rn-items">${fsd.map(it => li(it, true)).join("")}</ul></div>` : "") +
-        (filt !== "fsd" && os.length ? `<div class="rn-grp rn-grp-os"><div class="rn-grp-h">⚙️ OS / firmware ${esc(ver)}</div><ul class="rn-items">${os.map(it => li(it, false)).join("")}</ul></div>` : "");
-      const regions = (rn.regions || []).map(r => `<span class="rn-region">${esc(r)}</span>`).join("");
+      const fsdBlock = (filt !== "os" && fsd.length)
+        ? `<div class="rn-grp rn-grp-fsd"><div class="rn-grp-h">🤖 FSD (Supervised) ${esc(fsdBuild || "")}</div><ul class="rn-items">${fsd.map(it => li(it, true)).join("")}</ul></div>` : "";
+      const osBody = os.length ? `<ul class="rn-items">${os.map(it => li(it, false)).join("")}</ul>`
+                               : `<ul class="rn-items"><li class="rn-li-muted">${esc(rnd(NO_OS_NOTES))}</li></ul>`;
+      const osBlock = (filt !== "fsd") ? `<div class="rn-grp rn-grp-os"><div class="rn-grp-h">⚙️ OS / firmware ${esc(ver)}</div>${osBody}</div>` : "";
+      const blocks = fsdBlock + osBlock;
+      if (!blocks) return ""; // FSD-only on a build with no known FSD build → genuinely nothing
+      const date = rn.date || vobj.firstSeen || "";
+      const regions = ((rn.regions && rn.regions.length) ? rn.regions : WEN.marketsFor(vobj)).map(r => `<span class="rn-region">${esc(r)}</span>`).join("");
       return `<details class="rn-item${isMine ? " rn-mine" : ""}" data-ver="${esc(ver)}"${isMine ? " open" : ""}>` +
         `<summary><span class="rn-ver">${esc(ver)}</span>${isMine ? ' <span class="tag-you">you</span>' : ''}` +
-        `<span class="rn-date">${esc(rn.date)}</span><span class="rn-fsdb">FSD ${esc(rn.fsd || "—")}</span>` +
+        `${date ? `<span class="rn-date">${esc(shortDate(date))}</span>` : ""}<span class="rn-fsdb">FSD ${esc(fsdBuild || "—")}</span>` +
         `<span class="rn-regions">${regions}</span></summary>` +
         blocks +
-        `<div class="rn-src">via ${esc(rn.source || "trackers")}</div></details>`;
+        `<div class="rn-src">via ${esc(rn.source || "tracker data")}</div></details>`;
     }).join("");
-    $("releaseNotes").innerHTML = html || `<p class="hint">No ${filt === "fsd" ? "FSD" : "OS"}-specific notes in the tracked builds.</p>`;
+    $("releaseNotes").innerHTML = html || `<p class="hint">No builds to show for this region yet. ${esc(rnd(["The trackers are still waking up. ☕", "Either everything's up to date or the internet broke. Probably the latter."]))}</p>`;
+  }
+
+  // ---- The Five Stages of wenFSD Grief (Kübler-Ross, Tesla edition) ----
+  const GRIEF = [
+    { key: "denial", emoji: "🙈", name: "Denial", line: `"The trackers are wrong. It's basically installing right now. I can feel it in the steering wheel."` },
+    { key: "anger", emoji: "😡", name: "Anger", line: `"WHY does the US get everything first?! Same money, same car, a whole continent of disrespect."` },
+    { key: "bargaining", emoji: "🙏", name: "Bargaining", line: `"If I reboot the screen, clear the cache, wash the car AND sacrifice a USB stick… maybe?"` },
+    { key: "depression", emoji: "😩", name: "Depression", line: `"I will die on this build. FSD is a bedtime story. Why, WHY did I buy right-hand-drive."` },
+    { key: "acceptance", emoji: "🧘", name: "Acceptance", line: `"It is what it is. Autopilot is fine. The wait is the feature. I am at peace. (I am not at peace.)"` },
+  ];
+  const GRIEF_PLACEHOLDERS = [
+    "Vent here. The model is listening. The model cares. (The model is a logistic curve.)",
+    "How are we today? Spiral freely.",
+    "Describe your pain in 180 characters or fewer.",
+    "Dear diary, still on the same build…",
+    "Let it out. Tesla won't read this. Neither will Elon. But we will. 🫂",
+  ];
+  const griefByKey = (k) => GRIEF.find(g => g.key === k);
+  function predictGrief(pred, v) {
+    if (isDownUnderHW3(v)) return { key: "acceptance", why: "You've completed all five stages and looped back to a grim, sunburnt acceptance. There is no FSD. There is only Autopilot and the horizon. 🌅" };
+    if (pred && pred.capped) return { key: "acceptance", why: "Your hardware tapped out. Acceptance was selected for you, free of charge." };
+    const d = pred && pred.daysToMedian != null ? pred.daysToMedian : 30;
+    if (d <= 0) return { key: "anger", why: "You're overdue. The rage is righteous and the group chat has heard about it. Repeatedly." };
+    if (d <= 4) return { key: "denial", why: "So close you refuse to emotionally prepare for the inevitable last-minute delay." };
+    if (d <= 12) return { key: "bargaining", why: "Close enough to start negotiating with the over-the-air gods. They do not take calls." };
+    if (d <= 30) return { key: "anger", why: "Close enough to see it, far enough to resent everyone who already has it." };
+    if (d <= 70) return { key: "depression", why: "The horizon keeps receding. The changelog mocks you. This is the long dark tea-time of the OTA." };
+    return { key: "acceptance", why: "It's so far away you've made peace, taken up a hobby, and stopped checking. (You're checking right now.)" };
+  }
+  function renderGrief() {
+    const el = $("griefBody"); if (!el) return;
+    const v = av();
+    if ($("griefSub")) $("griefSub").textContent = flavorPick("sub:griefSub", ["a clinical assessment", "denial is stage one", "you are not alone (you are a little alone)", "grief, but make it OTA", "bill us your therapist's invoice"]);
+    if (!v) { el.innerHTML = `<p class="grief-empty">Add your car to begin your healing journey. Grief requires an object of loss — right now you have none. Lucky, unburdened you. 🕊️</p>`; return; }
+    let pred = null; try { pred = currentPrediction(); } catch (e) {}
+    const pg = predictGrief(pred, v);
+    const stage = griefByKey(pg.key);
+    const hist = (v.grief || []);
+    const latest = hist.length ? hist[hist.length - 1] : null;
+    const chips = GRIEF.map(g => `<button type="button" class="grief-chip${ui.griefPick === g.key ? " is-on" : ""}" data-grief="${g.key}" title="${esc(g.line)}"><span class="ge">${g.emoji}</span><span>${g.name}</span></button>`).join("");
+    el.innerHTML =
+      `<div class="grief-pred grief-${stage.key}"><div class="gp-h">🩺 Our diagnosis: <strong>${stage.emoji} ${stage.name}</strong></div><div class="gp-line">${esc(stage.line)}</div><div class="gp-why">${esc(pg.why)}</div></div>` +
+      `<div class="grief-ask">Be honest — where are <em>you</em>, actually?</div>` +
+      `<div class="grief-chips">${chips}</div>` +
+      `<textarea id="griefNote" class="grief-note" maxlength="180" rows="2" placeholder="${esc(rnd(GRIEF_PLACEHOLDERS))}">${latest ? esc(latest.note || "") : ""}</textarea>` +
+      `<button class="btn-sm" id="griefLog" type="button">🕯️ Log how I'm feeling</button>` +
+      `<span class="grief-savehint" id="griefSaveHint"></span>` +
+      `<div id="griefHistory" class="grief-history"></div>` +
+      `<div id="griefCommunity" class="grief-community"></div>`;
+    el.querySelectorAll(".grief-chip").forEach(b => b.onclick = () => { ui.griefPick = b.dataset.grief; renderGrief(); });
+    $("griefLog").onclick = () => logGrief(pg.key);
+    renderGriefHistory(v);
+    renderGriefCommunity(v);
+  }
+  function logGrief(predictedKey) {
+    const v = av(); if (!v) return;
+    const actual = ui.griefPick || predictedKey;
+    const note = (($("griefNote") || {}).value || "").slice(0, 180);
+    // real wall-clock timestamp so the journey shows true chronology (predictions use pinned `today`)
+    const entry = { ts: new Date().toISOString().slice(0, 10), at: Date.now(), predicted: predictedKey, actual, note };
+    gstate = Garage.update(v.id, { grief: (v.grief || []).concat([entry]) });
+    if (v.connected && v.optedIn && /^https?:$/.test(location.protocol)) {
+      fetch("/api/me/grief", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ stage: actual, predicted: predictedKey, note }) }).then(() => renderGriefCommunity(av())).catch(() => {});
+    }
+    ui.griefPick = null;
+    renderGrief();
+    const h = $("griefSaveHint"); if (h) { h.textContent = rnd(["Logged. Catharsis achieved. ✓", "Filed under 'feelings'. ✓", "Noted. Be gentle with yourself. ✓", "Your pain is now data. Thank you. ✓"]); }
+  }
+  function renderGriefHistory(v) {
+    const el = $("griefHistory"); if (!el) return;
+    const hist = (v.grief || []).slice().reverse();
+    if (!hist.length) { el.innerHTML = `<p class="gh-empty">No entries yet. Log your first stage and start a grief diary future-you will cringe at. 📔</p>`; return; }
+    const moved = hist.length > 1 && hist[0].actual !== hist[hist.length - 1].actual;
+    el.innerHTML = `<div class="gh-h">📈 Your grief journey <span class="mut-i">— ${hist.length} entr${hist.length === 1 ? "y" : "ies"}${moved ? `, ${griefByKey(hist[hist.length - 1].actual).emoji} → ${griefByKey(hist[0].actual).emoji}` : ""}</span></div>` +
+      `<ul class="gh-list">` + hist.map(e => {
+        const p = griefByKey(e.predicted), a = griefByKey(e.actual);
+        const agree = e.predicted === e.actual;
+        return `<li><span class="gh-when">${esc(shortDate(e.ts))}</span>` +
+          `<span class="gh-stages">we guessed ${p ? p.emoji : "?"} <b>${p ? p.name : "?"}</b> · you felt ${a ? a.emoji : "?"} <b>${a ? a.name : "?"}</b> ${agree ? '<span class="gh-hit">🎯 we read you like a book</span>' : '<span class="gh-miss">😬 we misjudged you</span>'}</span>` +
+          (e.note ? `<span class="gh-note">“${esc(e.note)}”</span>` : "") + `</li>`;
+      }).join("") + `</ul>`;
+  }
+  function renderGriefCommunity(v) {
+    const el = $("griefCommunity"); if (!el) return;
+    const region = v ? v.market : "Australia";
+    if (!/^https?:$/.test(location.protocol)) {
+      el.innerHTML = `<div class="gc-h">🌏 How everyone else is coping</div><p class="gc-off">Community grief lives on the real site (wenfsd.info). In this offline preview, you grieve alone — as nature, and Tesla, intended. 🕯️</p>`;
+      return;
+    }
+    el.innerHTML = `<div class="gc-h">🌏 How ${esc(region)} is coping…</div><p class="gc-load">${esc(rnd(["Taking the room's emotional temperature…", "Polling the support group…", "Counting the tears, regionally…"]))}</p>`;
+    fetch(`/api/grief?region=${encodeURIComponent(region)}`, { headers: { Accept: "application/json" } })
+      .then(r => r.json()).then(d => paintGriefCommunity(d, region))
+      .catch(() => { const p = el.querySelector(".gc-load"); if (p) p.textContent = "Couldn't reach the support group. They're probably all still in Denial. 🙈"; });
+  }
+  function paintGriefCommunity(d, region) {
+    const el = $("griefCommunity"); if (!el || !d) return;
+    const total = (d.counts && Object.values(d.counts).reduce((a, b) => a + b, 0)) || 0;
+    if (!total) {
+      el.innerHTML = `<div class="gc-h">🌏 How ${esc(region)} is coping…</div><p class="gc-off">Nobody in ${esc(region)} has logged their grief yet. Be the first to overshare — opt into public sharing in your profile and let it all out. 🫂</p>`;
+      return;
+    }
+    const bars = GRIEF.map(g => {
+      const n = (d.counts && d.counts[g.key]) || 0;
+      const pct = Math.round((n / total) * 100);
+      return `<div class="gc-bar" title="${n} ${g.name}"><span class="gc-emoji">${g.emoji}</span><span class="gc-track"><span class="gc-fill grief-${g.key}" style="width:${Math.max(2, pct)}%"></span></span><span class="gc-pct">${pct}%</span></div>`;
+    }).join("");
+    const notes = (d.notes || []).slice(0, 8).map(n => {
+      const g = griefByKey(n.stage);
+      return `<li><span class="gcn-stage">${g ? g.emoji : "❔"}</span><span class="gcn-who">${esc(n.handle || "anon")}</span><span class="gcn-note">“${esc(n.note)}”</span></li>`;
+    }).join("");
+    el.innerHTML = `<div class="gc-h">🌏 How ${esc(region)} is coping <span class="mut-i">— ${total} grieving${d.sample ? " · sample" : ""}</span></div>` +
+      `<div class="gc-bars">${bars}</div>` +
+      (notes ? `<div class="gc-notes-h">Latest from the support group:</div><ul class="gc-notes">${notes}</ul>` : "") +
+      `<p class="gc-foot">${esc(rnd(["Misery, aggregated. You are not alone. 🫂", "A problem shared is a problem still not patched.", "Group therapy, fleet-weighted."]))}</p>`;
   }
 
   // ---- Rollout pace: estimated vehicles/day on a newer build, grounded vs observed share ----
@@ -1211,6 +1343,7 @@
         tog.querySelectorAll(".pace-btn").forEach(x => x.classList.toggle("is-on", x === b));
         renderRolloutPace();
         renderHumour();
+        renderGrief();
       });
     }
   }

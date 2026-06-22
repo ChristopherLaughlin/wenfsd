@@ -110,3 +110,16 @@ CREATE TABLE IF NOT EXISTS guesses (
   UNIQUE(vehicle_id, from_version)            -- one live wager per car-version (re-guessable until it settles)
 );
 CREATE INDEX IF NOT EXISTS idx_guess_vehicle ON guesses(vehicle_id);
+
+-- The Five Stages of wenFSD Grief: users log where they emotionally are while waiting.
+CREATE TABLE IF NOT EXISTS grief_logs (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  region      TEXT,
+  stage       TEXT NOT NULL,                  -- denial|anger|bargaining|depression|acceptance
+  predicted   TEXT,                           -- the stage wenFSD guessed
+  note        TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_grief_region ON grief_logs(region, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_grief_user ON grief_logs(user_id, created_at DESC);
