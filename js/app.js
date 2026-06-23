@@ -673,9 +673,43 @@
       `<p class="basis-conf">Confidence: <strong>${esc(confLabel(v))}</strong>.</p>` +
       `<p class="basis-warn">⚠️ Bands are <strong>modelled</strong> (logistic rollout + Monte-Carlo), not yet empirically back-tested against real per-car timing — treat as estimates. The anchor dates (the FSD one especially) are educated estimates, not a Tesla commitment.</p>`;
   }
+  // Prediction confidence tier — the reciprocity engine, and the single source of truth for
+  // confidence across the hero (confLabel) and the garage meter (renderConfMeter). It climbs as
+  // you log REAL updates (Tesla-read or hand-corrected). Model-"estimated" dates do NOT count:
+  // they're derived from the model itself, so they can't honestly raise our confidence in it.
+  function confidenceTier(v) {
+    const real = v ? (v.history || []).filter(h => h.source === "tesla" || h.source === "exact").length : 0;
+    if (v && v.connected && v.pendingUpdate && v.pendingUpdate.version)
+      return { key: "confirmed", idx: 3, label: "Confirmed", real, need: 0 };
+    if (v && v.earlinessSource === "history" && real >= 3) return { key: "high", idx: 2, label: "High", real, need: 0 };
+    if (v && v.earlinessSource === "history" && real >= 1) return { key: "med", idx: 1, label: "Medium", real, need: 3 - real };
+    return { key: "low", idx: 0, label: "Low", real, need: 3 };
+  }
   function confLabel(v) {
-    return v.earlinessSource === "history" ? "higher — from your real update history"
-      : v.earlyAccess ? "lower — typical-owner prior + your Early Access setting" : "lower — typical-owner prior";
+    const t = confidenceTier(v);
+    return t.key === "confirmed" ? "confirmed — your car reported a pending update"
+      : t.key === "high" ? "high — fit from your real update history"
+      : t.key === "med" ? `medium — fit from ${t.real} of your real update${t.real > 1 ? "s" : ""}`
+      : v.earlyAccess ? "low — typical-owner prior + your Early Access setting" : "low — typical-owner prior";
+  }
+  // The payoff the user can SEE: a meter that visibly climbs when they contribute real data.
+  function renderConfMeter() {
+    const el = $("confMeter"); if (!el) return;
+    const v = av(); if (!v) { el.innerHTML = ""; return; }
+    const t = confidenceTier(v);
+    if (t.key === "confirmed") {
+      el.innerHTML = `<div class="cm-confirmed"><span class="cm-badge">✓ Confirmed by your car</span>` +
+        `<span class="cm-msg">Your Tesla is reporting a pending update — this prediction is the real thing, not a model guess. 🛰️</span></div>`;
+      return;
+    }
+    const segs = ["Low", "Medium", "High"].map((n, i) =>
+      `<span class="cm-seg ${i <= t.idx ? "cm-on cm-" + t.key : ""}">${n}</span>`).join("");
+    const msg = t.key === "high"
+      ? `🎯 <strong>High confidence</strong> — fit from <strong>${t.real}</strong> of your real updates. This is <em>your</em> data, not a guess. Keep logging to keep it sharp.`
+      : t.key === "med"
+      ? `📈 <strong>Medium</strong> — fit from <strong>${t.real}</strong> real update${t.real > 1 ? "s" : ""}. Log <strong>${t.need} more</strong> to unlock <strong>High</strong> — every real date makes <em>your</em> prediction sharper.`
+      : `🔮 <strong>Low</strong> — we're using a <strong>typical-owner prior</strong> (a fair guess, not your data). Log <strong>3 real updates</strong> below and your prediction switches to <em>fit from your own history</em>.`;
+    el.innerHTML = `<div class="cm-h">Prediction confidence</div><div class="cm-meter" role="img" aria-label="Prediction confidence: ${t.label}">${segs}</div><div class="cm-msg">${msg}</div>`;
   }
 
   // ONE actionable insight — the Early-Access delta (computed, not a generic CTA). The
@@ -974,7 +1008,7 @@
     setEarlyLabel();
     es.oninput = () => {
       gstate = Garage.update(v.id, { earliness: (+es.value) / 100, earlinessSource: "manual" });
-      setEarlyLabel(); ui.guessDays = null; clearGuess(); render();
+      setEarlyLabel(); ui.guessDays = null; clearGuess(); render(); renderConfMeter();
     };
 
     const ea = $("earlyAccessChk"); ea.checked = !!v.earlyAccess;
@@ -1061,6 +1095,7 @@
     } else {
       $("earlyEstimate").innerHTML = "";
     }
+    renderConfMeter();
   }
   function applyEstimate() {
     const v = av(); const est = Garage.estimateEarliness(v);
