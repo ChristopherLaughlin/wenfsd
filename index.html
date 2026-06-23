@@ -171,7 +171,7 @@
             <div class="hpred-quip" id="fsdPredQuip"></div>
           </div>
         </div>
-        <p class="hero-split-hint">Here's the key thing most trackers blur: <strong>every FSD version ships inside a software build — but most software builds don't change your FSD version.</strong> So your next software update might bump FSD too (we'll flag it ✅), or it might be a maintenance build that leaves FSD exactly where it is. We predict both: the next software update, and the next build that actually moves your FSD. Both are <strong>our modelled guesses</strong>, <em>not</em> Tesla announcements.</p>
+        <details class="hero-split-hint"><summary>Why two dates? <strong>FSD ships inside software builds — but most builds don't change FSD.</strong></summary><p>So your next software update might bump FSD too (we'll flag it ✅), or it might be a maintenance build that leaves FSD exactly where it is. We predict both: the next software update, and the next build that actually moves your FSD. Both are <strong>our modelled guesses</strong>, <em>not</em> Tesla announcements.</p></details>
       </div>
 
       <!-- SOFTWARE-UPDATE detail: the odds + note all describe the OS update above (and the ring) -->
@@ -462,22 +462,14 @@
     </div>
   </section>
 
-  <div class="grid2">
-    <!-- LIVE FEED -->
-    <section class="card fleet-card" id="feedCard">
-      <div class="card-h-row">
-        <h2 class="card-h"><span class="ch-label" id="hdr_feed">Recent rollout activity</span> <span class="card-sub" id="feedSub"></span></h2>
-        <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
-      </div>
-      <ul class="feed" id="feed"></ul>
-    </section>
-
-    <!-- MODEL CALIBRATION / BACK-TEST -->
-    <section class="card fleet-card" id="calibrationCard">
-      <h2 class="card-h"><span class="ch-label" id="hdr_cal">Model calibration</span> <span class="card-sub" id="calSub">back-tested against real tracker history</span></h2>
-      <div id="calibrationBody"></div>
-    </section>
-  </div>
+  <!-- LIVE FEED -->
+  <section class="card fleet-card" id="feedCard">
+    <div class="card-h-row">
+      <h2 class="card-h"><span class="ch-label" id="hdr_feed">Recent rollout activity</span> <span class="card-sub" id="feedSub"></span></h2>
+      <label class="track-pick">📍 <select class="js-track-region" aria-label="Filter builds by region"></select></label>
+    </div>
+    <ul class="feed" id="feed"></ul>
+  </section>
   </details>
 
   <!-- THE FIVE STAGES OF wenFSD GRIEF (Kübler-Ross) — after the explanatory data, before the social board -->
@@ -527,6 +519,11 @@
           <div class="sb-tiles" id="sbTiles"></div>
           <p class="sb-note" id="sbNote"></p>
         </div>
+        <!-- Full calibration detail (cadence · velocity · coverage · back-test) — calibration's single home -->
+        <details class="cal-details" id="calibrationCard">
+          <summary class="cal-sum">📐 <span class="ch-label" id="hdr_cal">Full calibration detail</span> <span class="card-sub" id="calSub">cadence · velocity · coverage · back-test</span></summary>
+          <div id="calibrationBody"></div>
+        </details>
         <div class="model-actions">
           <button class="btn" id="dlModelBtn" type="button">📥 Download the model (Excel / Google&nbsp;Sheets)</button>
           <a class="btn-ghost" href="/model.json" target="_blank" rel="noopener">View the raw model (JSON)</a>
