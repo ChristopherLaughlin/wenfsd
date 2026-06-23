@@ -887,6 +887,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .aha-install{white-space:nowrap;background:rgba(230,57,71,.14);border-color:rgba(230,57,71,.4);color:#ffb3ba;font-weight:700}
 .aha-install:hover{background:rgba(230,57,71,.22)}
 .aha-hint{margin:9px 0 0;font-size:11.5px}
+
+/* social proof — real recent-prediction count under the quick-start */
+.social-proof{margin:10px 0 0;font-size:12.5px;font-weight:600;color:var(--green)} .social-proof[hidden]{display:none}
+
+/* animated date reveal (respects reduced-motion) */
+@keyframes wf-pop{0%{opacity:0;transform:translateY(6px) scale(.97)}60%{opacity:1}100%{opacity:1;transform:none}}
+.hero-date.pop{animation:wf-pop .42s cubic-bezier(.2,.7,.3,1) both}
+@media (prefers-reduced-motion: reduce){.hero-date.pop{animation:none}}
 .btn-link{background:none;border:0;color:var(--mut2);font-size:11.5px;text-decoration:underline;cursor:pointer;padding:10px 0 0;font-family:inherit}
 .btn-link:hover{color:var(--acc2)}
 .mut-i{color:var(--mut)}

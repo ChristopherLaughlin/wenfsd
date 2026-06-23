@@ -46,6 +46,27 @@ export const FUNNEL_SOURCES = new Set(["reddit", "x", "facebook", "google", "you
 export const FUNNEL_VARIANTS = new Set(["a", "b"]);
 export function cleanSource(s) { return FUNNEL_SOURCES.has(s) ? s : "other"; }
 export function cleanVariant(v) { return FUNNEL_VARIANTS.has(v) ? v : "a"; }
+// coarse geo from the edge/CDN country header (Railway/Cloudflare set one) → a default region for
+// the quick-start. No IP stored, no lookup service — just a header read. Falls back to Australia.
+const COUNTRY_REGION = { AU: "Australia", NZ: "New Zealand", US: "United States", CA: "Canada" };
+const EU_COUNTRIES = new Set("GB IE DE FR IT ES NL BE AT PT SE NO DK FI PL CH CZ".split(" "));
+export function countryToRegion(cc) {
+  cc = String(cc || "").toUpperCase().slice(0, 2);
+  return COUNTRY_REGION[cc] || (EU_COUNTRIES.has(cc) ? "Europe" : null);
+}
+apiRouter.get("/geo", (req, res) => {
+  const cc = String(req.get("cf-ipcountry") || req.get("x-vercel-ip-country") || req.get("x-country") || "").toUpperCase().slice(0, 2);
+  res.set("Cache-Control", "no-store").json({ region: countryToRegion(cc), country: cc || null });
+});
+
+// honest, real social proof: how many predictions were generated lately. Never fabricated — in
+// sample/no-db mode it's flagged so the client can withhold it rather than show a fake number.
+apiRouter.get("/pulse", ah(async (req, res) => {
+  if (config.mockMode || !hasDb()) return res.json({ predictions: 0, sample: true });
+  const r = await query(`SELECT COALESCE(SUM(count),0)::int AS n FROM daily_events WHERE event='prediction_generated' AND day >= (CURRENT_DATE - INTERVAL '30 days')`).catch(() => null);
+  res.set("Cache-Control", "public, max-age=300").json({ predictions: (r && r.rows[0] && r.rows[0].n) || 0, sample: false });
+}));
+
 apiRouter.post("/event", ah(async (req, res) => {
   const b = req.body || {};
   if (!isValidEvent(b.event)) return res.status(400).json({ ok: false, error: "unknown event" });
