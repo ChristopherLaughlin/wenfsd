@@ -39,13 +39,23 @@ export const FUNNEL_EVENTS = new Set([
   "shared", "model_downloaded",
 ]);
 export function isValidEvent(name) { return typeof name === "string" && FUNNEL_EVENTS.has(name); }
+// coarse acquisition source (a referrer *bucket*, never a URL) + A/B copy arm. Both are validated
+// against fixed allow-lists and fall back to safe defaults — nothing free-text reaches the DB.
+export const FUNNEL_SOURCES = new Set(["reddit", "x", "facebook", "google", "youtube", "teslamotorsclub", "whirlpool", "direct", "other"]);
+export const FUNNEL_VARIANTS = new Set(["a", "b"]);
+export function cleanSource(s) { return FUNNEL_SOURCES.has(s) ? s : "other"; }
+export function cleanVariant(v) { return FUNNEL_VARIANTS.has(v) ? v : "a"; }
 apiRouter.post("/event", ah(async (req, res) => {
-  const event = req.body && req.body.event;
-  if (!isValidEvent(event)) return res.status(400).json({ ok: false, error: "unknown event" });
+  const b = req.body || {};
+  if (!isValidEvent(b.event)) return res.status(400).json({ ok: false, error: "unknown event" });
   if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  const event = b.event, source = cleanSource(b.source), variant = cleanVariant(b.variant);
   const day = new Date().toISOString().slice(0, 10);
+  // legacy top-line table (preserves history) + the dimensioned table (source/variant breakdowns)
   await query(`INSERT INTO daily_events(day, event, count) VALUES($1, $2, 1)
                ON CONFLICT(day, event) DO UPDATE SET count = daily_events.count + 1`, [day, event]);
+  await query(`INSERT INTO daily_funnel(day, event, source, variant, count) VALUES($1, $2, $3, $4, 1)
+               ON CONFLICT(day, event, source, variant) DO UPDATE SET count = daily_funnel.count + 1`, [day, event, source, variant]);
   res.json({ ok: true });
 }));
 
@@ -350,7 +360,7 @@ apiRouter.get("/admin/stats", ah(async (req, res) => {
   if (!adminOk(req)) return res.status(401).json({ error: "bad or missing admin token" });
   if (config.mockMode || !hasDb()) return res.json({ mode: "sample", ...sampleAdmin() });
   const z = (p, fb) => p.catch(() => ({ rows: [fb] }));
-  const [users, vehicles, byRegion, signupsByDay, visits, grief, guesses, emailSubs, events] = await Promise.all([
+  const [users, vehicles, byRegion, signupsByDay, visits, grief, guesses, emailSubs, events, dims] = await Promise.all([
     z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE email IS NOT NULL)::int AS with_email FROM users`), { n: 0, with_email: 0 }),
     z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE opted_in)::int AS opted_in, count(*) FILTER (WHERE current_version IS NOT NULL)::int AS with_version FROM vehicles`), { n: 0, opted_in: 0, with_version: 0 }),
     z(query(`SELECT market, count(*)::int AS n FROM vehicles GROUP BY market ORDER BY n DESC`), null),
@@ -360,6 +370,7 @@ apiRouter.get("/admin/stats", ah(async (req, res) => {
     z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE settled)::int AS settled FROM guesses`), { n: 0, settled: 0 }),
     z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE confirmed)::int AS confirmed FROM email_subscribers WHERE unsubscribed_at IS NULL`), { n: 0, confirmed: 0 }),
     z(query(`SELECT event, count::int AS n FROM daily_events WHERE day >= (CURRENT_DATE - INTERVAL '30 days') ORDER BY event`), null),
+    z(query(`SELECT source, variant, event, sum(count)::int AS n FROM daily_funnel WHERE day >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY source, variant, event`), null),
   ]);
   // roll the per-day event rows up into a 30-day funnel total per event
   const funnel = {}; for (const r of (events.rows || [])) funnel[r.event] = (funnel[r.event] || 0) + r.n;
@@ -370,7 +381,7 @@ apiRouter.get("/admin/stats", ah(async (req, res) => {
     vehicles: vehicles.rows[0].n, optedIn: vehicles.rows[0].opted_in, vehiclesWithVersion: vehicles.rows[0].with_version,
     byRegion: byRegion.rows || [], signupsByDay: signupsByDay.rows || [], visitsByDay: visits.rows || [],
     griefLogs: grief.rows[0].n, guesses: guesses.rows[0].n, guessesSettled: guesses.rows[0].settled,
-    funnel,
+    funnel, funnelDims: dims.rows || [],
   });
 }));
 function sampleAdmin() {
@@ -382,6 +393,23 @@ function sampleAdmin() {
     signupsByDay: [{ day: "2026-06-21", n: 5 }, { day: "2026-06-20", n: 9 }, { day: "2026-06-19", n: 12 }, { day: "2026-06-18", n: 16 }],
     visitsByDay: [{ day: "2026-06-21", views: 340, uniques: 210 }, { day: "2026-06-20", views: 512, uniques: 331 }, { day: "2026-06-19", views: 720, uniques: 470 }],
     griefLogs: 88, guesses: 25, guessesSettled: 9,
+    funnelDims: [
+      { source: "reddit", variant: "a", event: "prediction_generated", n: 520 },
+      { source: "reddit", variant: "a", event: "shared", n: 41 },
+      { source: "reddit", variant: "a", event: "notify_enabled", n: 18 },
+      { source: "reddit", variant: "b", event: "prediction_generated", n: 540 },
+      { source: "reddit", variant: "b", event: "shared", n: 67 },
+      { source: "reddit", variant: "b", event: "notify_enabled", n: 22 },
+      { source: "google", variant: "a", event: "prediction_generated", n: 410 },
+      { source: "google", variant: "a", event: "shared", n: 12 },
+      { source: "google", variant: "b", event: "prediction_generated", n: 395 },
+      { source: "google", variant: "b", event: "shared", n: 19 },
+      { source: "x", variant: "a", event: "prediction_generated", n: 150 },
+      { source: "x", variant: "b", event: "prediction_generated", n: 145 },
+      { source: "x", variant: "b", event: "shared", n: 14 },
+      { source: "direct", variant: "a", event: "prediction_generated", n: 88 },
+      { source: "direct", variant: "b", event: "prediction_generated", n: 92 },
+    ],
   };
 }
 

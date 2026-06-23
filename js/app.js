@@ -10,10 +10,34 @@
 
   // privacy-first funnel instrumentation: fire-and-forget aggregate event ping (no PII, no cookies).
   // Server validates against an allowlist and only increments a daily counter. No-ops off http(s).
+  // --- privacy-safe acquisition source: a coarse referrer BUCKET, never a URL or query string ---
+  const SRC_HOSTS = [["reddit", "reddit"], ["t.co", "x"], ["x.com", "x"], ["twitter", "x"], ["facebook", "facebook"], ["fb.", "facebook"], ["google", "google"], ["youtu", "youtube"], ["teslamotorsclub", "teslamotorsclub"], ["whirlpool", "whirlpool"]];
+  const SRC_OK = new Set(["reddit", "x", "facebook", "google", "youtube", "teslamotorsclub", "whirlpool", "direct", "other"]);
+  function detectSource() {
+    try {
+      const utm = (new URLSearchParams(location.search).get("utm_source") || "").toLowerCase();
+      if (SRC_OK.has(utm)) return utm;
+      if (!document.referrer) return "direct";
+      const host = new URL(document.referrer).hostname.replace(/^www\./, "");
+      if (host === location.hostname) return "direct";            // internal navigation
+      for (const [needle, name] of SRC_HOSTS) if (host.indexOf(needle) !== -1) return name;
+      return "other";
+    } catch (e) { return "direct"; }
+  }
+  // stable anonymous id → 50/50 A/B bucket. Not an identity: only its derived variant is ever sent.
+  function anonId() {
+    try { let id = localStorage.getItem("wf_uid"); if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("wf_uid", id); } return id; }
+    catch (e) { return "anon"; }
+  }
+  function variantBucket() {
+    const s = anonId(); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return (h % 2) ? "b" : "a";
+  }
+  const FN = { source: detectSource(), variant: variantBucket() };
   function track(event) {
     try {
       if (!/^https?:$/.test(location.protocol)) return;
-      const body = JSON.stringify({ event });
+      const body = JSON.stringify({ event, source: FN.source, variant: FN.variant });
       if (navigator.sendBeacon) navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }));
       else fetch("/api/event", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
     } catch (e) {}
@@ -1313,6 +1337,8 @@
 
   function wireQuickStart() {
     const go = $("qsGo"); if (!go || go._wired) return; go._wired = true;
+    // A/B test #1 (value-led vs action-led primary CTA); variant rides on every funnel event.
+    go.textContent = FN.variant === "b" ? "Predict my next update →" : "See my prediction →";
     // populate year + region selects
     const ySel = $("qs_year");
     if (ySel && !ySel.options.length) {

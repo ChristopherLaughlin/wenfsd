@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isValidEvent, FUNNEL_EVENTS, isValidEmail } from "../src/routes/api.js";
+import { isValidEvent, FUNNEL_EVENTS, isValidEmail, cleanSource, cleanVariant, FUNNEL_SOURCES, FUNNEL_VARIANTS } from "../src/routes/api.js";
 
 test("email validation accepts plausible addresses", () => {
   for (const e of ["a@b.co", "juniper.joy@gmail.com", "x+tag@sub.domain.io"]) {
@@ -33,4 +33,22 @@ test("funnel event allowlist rejects unknown / malformed events", () => {
 test("allowlist is a Set of non-empty lowercase snake_case strings (no PII fields)", () => {
   assert.ok(FUNNEL_EVENTS instanceof Set && FUNNEL_EVENTS.size > 0);
   for (const e of FUNNEL_EVENTS) assert.match(e, /^[a-z][a-z_]*[a-z]$/, `${e} should be snake_case`);
+});
+
+test("cleanSource passes known buckets and coerces anything else to 'other'", () => {
+  for (const s of ["reddit", "x", "google", "direct"]) assert.equal(cleanSource(s), s);
+  for (const bad of ["evil.com", "https://x.com/?token=abc", "REDDIT", "", null, 42, {}]) {
+    assert.equal(cleanSource(bad), "other", `${JSON.stringify(bad)} → other`);
+  }
+});
+
+test("cleanVariant passes a/b and coerces anything else to 'a'", () => {
+  assert.equal(cleanVariant("a"), "a");
+  assert.equal(cleanVariant("b"), "b");
+  for (const bad of ["c", "A", "", null, 1, {}]) assert.equal(cleanVariant(bad), "a");
+});
+
+test("source + variant allowlists are closed enums (no free text reaches the DB)", () => {
+  assert.ok(FUNNEL_SOURCES instanceof Set && FUNNEL_SOURCES.has("other"));
+  assert.deepEqual([...FUNNEL_VARIANTS].sort(), ["a", "b"]);
 });
