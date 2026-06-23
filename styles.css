@@ -61,7 +61,7 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .ua-badge{flex-shrink:0;font-size:10.5px;font-weight:700;color:#5fd1a0;background:rgba(95,209,160,.12);border:1px solid rgba(95,209,160,.3);padding:3px 9px;border-radius:999px;white-space:nowrap}
 .cn-text{display:flex;align-items:center;gap:10px;flex:1;min-width:240px;font-size:13.5px;line-height:1.5;color:var(--txt)}
 .cn-emoji{font-size:20px;flex-shrink:0}
-.cn-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.cn-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cn-btn{margin:0;white-space:nowrap;padding:9px 18px}
 .cn-btn2{margin:0;white-space:nowrap;padding:8px 14px;font-size:13px}
 .cn-dismiss{background:none;border:none;color:var(--mut2);font-size:12px;cursor:pointer;font:inherit;font-size:12px;padding:6px}
@@ -122,10 +122,14 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
   border-radius:var(--radius); padding:20px; margin-top:16px; box-shadow:var(--shadow)}
 .card-h{margin:0 0 14px;font-size:15px;font-weight:700;letter-spacing:.2px;display:flex;align-items:baseline;gap:10px}
 .card-sub{font-size:12px;color:var(--mut);font-weight:500}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+/* minmax(0,1fr) (not 1fr) + min-width:0 so columns can shrink below content min-width —
+   otherwise charts/wide form rows force the track past the viewport and get clipped on mobile */
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.grid2>*{min-width:0}
+@media(max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
 /* both "how sure" charts stacked beside the garage */
-.chart-stack{display:flex;flex-direction:column;gap:16px}
+.chart-stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.chart-stack>*{min-width:0}
 /* zone signposts — break the page into legible sections */
 .zone-h{display:flex;align-items:center;gap:14px;margin:40px 2px 8px}
 .zone-h .zh-t{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);white-space:nowrap}
@@ -841,7 +845,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .chart-empty{display:flex;align-items:center;justify-content:center;height:200px;color:var(--mut2);font-size:13px;border:1px dashed var(--line2);border-radius:12px}
 
 /* update channel */
-.channel-row{display:flex;gap:14px;align-items:center}
+.channel-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .channel-field{flex:1;margin:14px 0}
 .switch-row.inline{margin:0;align-items:center;white-space:nowrap}
 .spark{display:block;opacity:.9}
