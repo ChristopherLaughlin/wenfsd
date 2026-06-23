@@ -2411,5 +2411,25 @@
       const b = $("installBtn"); if (b) { b.hidden = false; b.onclick = async () => { b.hidden = true; deferred.prompt(); try { await deferred.userChoice; } catch (e2) {} deferred = null; }; }
     });
     window.addEventListener("appinstalled", () => { const b = $("installBtn"); if (b) b.hidden = true; });
+
+    // web push — only surfaces if the server has VAPID configured (/api/push/key → {enabled:true})
+    if ("serviceWorker" in navigator && "PushManager" in window && "Notification" in window) {
+      const b2u = (b64) => { const pad = "=".repeat((4 - (b64.length % 4)) % 4); const s = (b64 + pad).replace(/-/g, "+").replace(/_/g, "/"); const raw = atob(s); const a = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i); return a; };
+      fetch("/api/push/key").then(r => (r.ok ? r.json() : null)).then(d => {
+        const btn = $("pushBtn");
+        if (!d || !d.enabled || !d.key || !btn) return;
+        btn.hidden = false;
+        btn.onclick = async () => {
+          try {
+            if ((await Notification.requestPermission()) !== "granted") return;
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b2u(d.key) });
+            const v = av() || {};
+            const r = await fetch("/api/push/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: sub.toJSON(), market: v.market, hardware: v.hardware, version: v.installedVersion }) });
+            if (r.ok) { track("notify_enabled"); btn.textContent = "🔔 Push on ✓"; btn.disabled = true; }
+          } catch (e) {}
+        };
+      }).catch(() => {});
+    }
   })();
 })();

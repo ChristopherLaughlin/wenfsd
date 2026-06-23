@@ -34,7 +34,16 @@ export const config = {
   notifyWebhookUrl: process.env.NOTIFY_WEBHOOK_URL || "", // where "your update landed" events POST (Zapier / ntfy); unset ⇒ log-only
   resendApiKey: process.env.RESEND_API_KEY || "",        // if set (with NOTIFY_FROM_EMAIL), send real email via Resend
   notifyFromEmail: process.env.NOTIFY_FROM_EMAIL || "",  // verified sender, e.g. "wenFSD <updates@wenfsd.info>"
+
+  // Web push (VAPID). Dormant until all three are set (generate with `npx web-push generate-vapid-keys`).
+  // Until then /api/push/* report disabled and no push UI shows — mirrors the dormant-deploy pattern.
+  vapidPublicKey: process.env.VAPID_PUBLIC_KEY || "",
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || "",
+  vapidSubject: process.env.VAPID_SUBJECT || "mailto:security@wenfsd.info",
 };
+
+// web push is available only when both VAPID keys are configured
+export function pushEnabled() { return !!(config.vapidPublicKey && config.vapidPrivateKey); }
 
 // If real mode is requested but its required config is incomplete, DEGRADE to sample
 // mode (and log loudly) instead of crashing — so a missing DB/credential never takes the

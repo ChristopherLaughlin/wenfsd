@@ -44,6 +44,9 @@ If you *do* connect your Tesla account:
   email + your car's region/hardware/version (to know what to alert on) — double opt-in, so we
   can't be signed up by someone else. **Unsubscribing erases the record entirely** (a hard delete,
   not a flag).
+- **Web-push alerts (no-login):** if you enable browser/PWA push, we store only the browser's push
+  endpoint + its public keys and your car's region/hardware/version — no email, no PII. Turning
+  push off (or the browser expiring the subscription) **deletes the record**.
 - **Sharing is opt-in and off by default.** Your handle, car, or notes only appear on the public
   leaderboard/community views if you explicitly enable public sharing.
 - **No cookies, no third-party trackers, no analytics SDKs.** Aggregate visit counts use a salted
