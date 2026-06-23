@@ -1102,9 +1102,7 @@
     }) }).then(r => r.json().catch(() => ({}))).then(d => {
       if (d && d.ok) {
         track("email_subscribed");
-        status.innerHTML = d.confirmed
-          ? "✓ You're already on the list — we've got you. 🫡"
-          : "✓ Almost there — check your inbox for a confirm link (peek in spam too; we're not the only ones with delivery delays).";
+        status.innerHTML = "✓ Almost there — check your inbox for a confirm link (peek in spam too). Already confirmed before? Then you're all set. 🫡";
         status.className = "ec-status ec-ok"; inp.value = "";
       } else { status.textContent = (d && d.error) || "Couldn't sign you up just now — try again in a sec."; status.className = "ec-status ec-err"; }
     }).catch(() => { status.textContent = "Network hiccup — give it another go."; status.className = "ec-status ec-err"; })
