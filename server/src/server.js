@@ -13,7 +13,7 @@ import { query, hasDb } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { apiRouter } from "./routes/api.js";
 import { pollOnce } from "./poller.js";
-import { decodeSlug, renderPage, renderIndex, ogPng, allSlugs } from "./predictionpage.js";
+import { decodeSlug, renderPage, renderIndex, ogPng, allSlugs, iconPng } from "./predictionpage.js";
 
 const modeStatus = ensureModeReady();
 
@@ -157,6 +157,21 @@ app.get("/styles.css", (req, res) => res.sendFile(path.join(REPO_ROOT, "styles.c
 
 // --- social preview image ---
 app.get("/og.png", (req, res) => res.set("Cache-Control", "public, max-age=86400").sendFile(path.join(REPO_ROOT, "og.png")));
+// --- PWA: manifest, service worker, app icons (installable; better retention on mobile) ---
+app.get("/manifest.webmanifest", (req, res) => res.type("application/manifest+json").set("Cache-Control", "public, max-age=86400").send(JSON.stringify({
+  name: "wenFSD — Tesla update predictor", short_name: "wenFSD",
+  description: "Predict your next Tesla software & FSD update.",
+  start_url: "/", scope: "/", display: "standalone",
+  background_color: "#0a0d12", theme_color: "#e6394b",
+  icons: [
+    { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+  ],
+})));
+app.get("/sw.js", (req, res) => res.type("application/javascript").set("Cache-Control", "no-cache").set("Service-Worker-Allowed", "/").sendFile(path.join(REPO_ROOT, "sw.js")));
+const sendIcon = (res, n) => { try { res.type("png").set("Cache-Control", "public, max-age=604800").send(iconPng(n)); } catch (e) { res.status(500).end(); } };
+app.get("/icon-192.png", (req, res) => sendIcon(res, 192));
+app.get("/icon-512.png", (req, res) => sendIcon(res, 512));
 app.get("/og.svg", (req, res) => res.type("image/svg+xml").set("Cache-Control", "public, max-age=86400").sendFile(path.join(REPO_ROOT, "og.svg")));
 
 // --- open model: serve the canonical prediction-model parameters so anyone can inspect/tinker ---

@@ -63,7 +63,8 @@
 </script>
 <!-- Favicon: the eternal question, in brand red. The whole site, in 32 pixels. -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e6394b'/%3E%3Ctext x='16' y='25' font-family='Arial,Helvetica,sans-serif' font-size='25' font-weight='bold' text-anchor='middle' fill='white'%3E?%3C/text%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e6394b'/%3E%3Ctext x='16' y='25' font-family='Arial,Helvetica,sans-serif' font-size='25' font-weight='bold' text-anchor='middle' fill='white'%3E?%3C/text%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<link rel="manifest" href="/manifest.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -187,6 +188,18 @@
         <p class="hero-note" id="heroNote"></p>
         <details class="pred-basis" id="predBasis"><summary>How is this calculated?</summary><div id="predBasisBody"></div></details>
         <div class="predict-tips" id="predictTips"></div>
+
+        <!-- aha-moment alert: the peak-intent ask, right under the predicted date -->
+        <div class="aha-alert" id="ahaAlert" hidden>
+          <div class="aha-h">🔔 Want a heads-up the day it's likely to land?</div>
+          <div class="aha-row">
+            <input type="email" id="ahaEmail" placeholder="you@email.com" autocomplete="email" inputmode="email" spellcheck="false" aria-label="Email for update alerts"/>
+            <button class="btn-sm aha-btn" id="ahaBtn" type="button">Alert me 🔔</button>
+            <button class="btn-sm aha-install" id="installBtn" type="button" hidden>📲 Install app</button>
+          </div>
+          <div class="ec-status" id="ahaStatus" role="status" aria-live="polite"></div>
+          <p class="hint aha-hint">One email when your 80% window opens — no spam, unsubscribe in a click, confirm-link first. Prefer it to update itself? <button type="button" class="qs-link" id="ahaConnect">Connect read-only 🔗</button></p>
+        </div>
       </div>
 
       <!-- FSD-UPDATE detail: separate outlook for the FSD version (capped / promised / bundled) -->
