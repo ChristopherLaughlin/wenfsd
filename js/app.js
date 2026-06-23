@@ -707,12 +707,35 @@
 
     const w7 = Math.round(pred.probWithin(7) * 100), w14 = Math.round(pred.probWithin(14) * 100), w30 = Math.round(pred.probWithin(30) * 100);
     $("confRow").innerHTML = [chip("a week", w7), chip("two weeks 🙏", w14), chip("a month", w30)].join("");
+    const ch = $("confHead"); if (ch) { if (ch._default == null) ch._default = ch.innerHTML; if (!pred.paused) ch.innerHTML = ch._default; }   // restore after a prior paused render
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
     renderBasis(pred);
     renderTips(pred);
     const sb = $("shareBtn");
     if (sb) { sb.textContent = flavorPick("shareBtn", SHARE_LABELS); sb.onclick = () => shareMyPrediction(pred, sb); }
+
+    // ⏸ ROLLOUT PAUSED — a confirmed pause/halt freezes the prediction. We refuse to show a
+    // confident date (honesty > a wrong number); override the headline + ring + confidence.
+    if (pred.paused) {
+      $("heroEyebrow").textContent = "⏸ Rollout paused";
+      $("heroDate").textContent = "⏸ Paused";
+      const hw2 = $("heroWindow"); hw2.textContent = "Resumes — no reliable ETA until it restarts"; hw2.classList.add("hw-stale"); hw2.classList.remove("hw-confirmed");
+      if ($("ringDays")) $("ringDays").textContent = "⏸";
+      if ($("ringCap")) $("ringCap").innerHTML = "⏸ rollout <strong>on hold</strong>";
+      const since = pred.pausedSince ? ` since ${esc(shortDate(new Date(pred.pausedSince)))}` : "";
+      const reason = pred.pauseReason ? ` — ${esc(pred.pauseReason)}` : "";
+      $("heroFlavor").innerHTML = `🛑 <strong>Tesla paused this rollout${since}.</strong>${reason} We've frozen the prediction: a made-up date would be worse than an honest “wen it resumes.” ${esc(flavorPick("paused", PAUSED_QUIPS))}`;
+      $("confRow").innerHTML = "";
+      if ($("confHead")) $("confHead").textContent = "⏸ The confidence window doesn't apply while the rollout is paused — it'll be back when Tesla resumes shipping.";
+      $("heroNote").innerHTML = `<span class="mut-i">No reliable ETA while paused — we'll update the second the rollout restarts${pred.pauseSource ? ` · source: ${esc(pred.pauseSource)}` : ""}.</span>`;
+    }
   }
+  const PAUSED_QUIPS = [
+    "Even the regulators need a smoko. ☕", "The rollout pulled over to check the map. 🗺️",
+    "On hold — like everything else in the southern hemisphere. 🦘", "Tesla hit ctrl-Z. We respect the honesty. ↩️",
+    "“Unforeseen issues” — the two most foreseeable words in software. 🔮", "🇦🇺 Paused locally; California is, of course, completely fine. 🏖️",
+    "It's not delayed, it's just fashionably frozen. 🧊", "The bits went back in the oven. 🍞",
+  ];
 
   // persistent NOW → NEXT context (region-aware) so the progression is always obvious
   function renderYouBar(pred) {
@@ -2441,6 +2464,14 @@
 
   // --- progressive disclosure: the fleet-intelligence zone is collapsed by default so a first-time
   //     visitor gets their answer, not a research terminal. Choice is remembered. ---
+  // pull confirmed rollout events (pauses/halts) so the prediction reflects reality, not just cadence
+  (function loadRolloutEvents() {
+    if (!/^https?:$/.test(location.protocol)) return;   // offline/file preview → no backend
+    fetch("/api/events").then(r => (r.ok ? r.json() : null)).then(d => {
+      if (d && Array.isArray(d.events) && d.events.length) { WEN.rolloutEvents = d.events; try { render(); } catch (e) {} }
+    }).catch(() => {});
+  })();
+
   (function setupExploreToggle() {
     const btn = $("exploreToggle"), zone = $("exploreZone"), caret = $("exploreCaret");
     if (!btn || !zone) return;
