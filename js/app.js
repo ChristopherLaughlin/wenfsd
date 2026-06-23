@@ -885,26 +885,15 @@
     renderConnectNudge(connected);
   }
 
-  // Up-front, rotating, shamelessly funny nudge to link a Tesla account. Different every refresh
-  // (flavorPick re-rolls per page load); shown only when NOT connected, hideable for the session.
-  // Leads with the NO-LOGIN path (Add by VIN). Connecting Tesla is framed as the optional upgrade.
+  // Rotating nudge shown ONLY when you already have a car but haven't connected Tesla — so it
+  // pitches the relevant upgrade (live alerts), not VIN onboarding (you're past that). {car} =
+  // the active car's name. flavorPick re-rolls per page load; hideable for the session.
   const NUDGE = [
-    "Want your prediction? Paste your VIN — no login, no Tesla access, ~10 seconds. (Or connect Tesla to auto-track, if you're brave.)",
-    "No account needed. Add your VIN and we'll tell you “two weeks” — but with actual maths this time. 📈",
-    "Skip the scary Tesla permission screen entirely: just drop in your VIN. We decode the model, year & hardware for you. 🚗",
-    "Your VIN is all we need to predict your next update. No login, no location, no drama.",
-    "Add by VIN = full prediction, zero access granted. Connecting Tesla is an optional upgrade for the keen. 🫡",
-    "Don't want to grant anything? Smart. Add your VIN and you're done. (Connect later if you change your mind.)",
-    "10 seconds, one VIN, zero logins. That's the whole ask. The robotaxi took longer. 🚕",
-    "Paste your VIN, get your “wen.” No password, no permissions, no problem.",
-    "We predict your update from just your VIN. The Tesla login is optional — it only automates reading your version. 🔢",
-    "Free, no-login, no-tracking prediction, one box: your VIN. Go on, the suspense is unbearable. 🔮",
-    "No VIN even? Fine. Pick your model, year & version up top. We're flexible; Tesla isn't. 🤷",
-    "Your VIN tells us model, year & hardware — that's it. Not your location, not your sins. 😇",
-    "Cheaper than FSD, faster than a service appointment, and it asks for zero passwords. 🔓",
-    "We want one box filled in. Tesla wanted your whole account. We're the reasonable one here.",
-    "Worried about the permissions? Use Add by VIN and grant precisely nothing. Still get the full forecast. 🛡️",
-    "Your VIN tells us model, year & hardware — enough to predict your update without touching your account at all.",
+    "You're tracking {car} by hand. Connect your Tesla read-only and we'll ping you the <em>second</em> your update lands — no more 2am software-menu refreshing. 📨",
+    "Want {car} to phone home? Connect read-only and we'll watch the rollout for you, then ping you the moment it arrives. We only ever read your version. 🛰️",
+    "Tired of checking? Let us do the refreshing. Connect {car} read-only and we'll alert you the instant your build actually drops. ⚡",
+    "Manual mode works — but connect {car} read-only and your prediction settles itself: live alerts, no location, no commands, no drama. 🔓",
+    "Bet you've checked the software menu today. Connect {car} read-only and we'll do it for you, then tell you the moment it's real. 🔔",
   ];
   let _nudgeDismissed = false;
   function openAddByVin() {
@@ -921,10 +910,14 @@
     const empty = !gstate.vehicles || !gstate.vehicles.length;
     if (connected || _nudgeDismissed || empty) { el.hidden = true; return; }
     el.hidden = false;
-    const line = $("cnLine"); if (line) line.textContent = flavorPick("nudge", NUDGE);
-    const em = $("cnEmoji"); if (em) em.textContent = flavorPick("nudgeEmoji", ["🚗", "🔢", "🪪", "🔮", "🫶", "⚡", "🛡️"]);
-    const vin = $("cnVin"); if (vin && !vin._wired) { vin._wired = true; vin.onclick = openAddByVin; }
-    const btn = $("cnConnect"); if (btn && !btn._wired) { btn._wired = true; btn.onclick = connectTesla; }
+    const v = av(), carName = (v && (v.nickname || v.model)) || "your car";
+    const line = $("cnLine"); if (line) line.innerHTML = flavorPick("nudge", NUDGE).replace(/\{car\}/g, `<strong>${esc(carName)}</strong>`);
+    const em = $("cnEmoji"); if (em) em.textContent = "📨";
+    // you already have a car → connect (live alerts) is the primary action; adding another is secondary
+    const btn = $("cnConnect");
+    if (btn) { btn.textContent = "🔗 Connect → get pinged"; btn.className = "btn cn-btn"; if (!btn._wired) { btn._wired = true; btn.onclick = connectTesla; } }
+    const vin = $("cnVin");
+    if (vin) { vin.textContent = "+ add another car"; vin.className = "btn-ghost cn-btn2"; if (!vin._wired) { vin._wired = true; vin.onclick = openAddByVin; } }
     const dx = $("cnDismiss"); if (dx && !dx._wired) { dx._wired = true; dx.onclick = () => { _nudgeDismissed = true; el.hidden = true; }; }
   }
 
