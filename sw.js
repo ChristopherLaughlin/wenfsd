@@ -33,3 +33,23 @@ self.addEventListener("fetch", (e) => {
       .catch(() => caches.match(req).then((hit) => hit || caches.match("/")))
   );
 });
+
+// --- web push: show the "your update is close" notification, focus/open the app on click ---
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = {}; }
+  const title = d.title || "wenFSD";
+  e.waitUntil(self.registration.showNotification(title, {
+    body: d.body || "Your Tesla update is getting close.",
+    icon: "/icon-192.png", badge: "/icon-192.png",
+    data: { url: d.url || "/" },
+  }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/";
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+    for (const c of cs) { if (c.url.indexOf(url) !== -1 && "focus" in c) return c.focus(); }
+    return self.clients.openWindow ? self.clients.openWindow(url) : null;
+  }));
+});

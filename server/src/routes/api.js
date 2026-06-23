@@ -1,7 +1,8 @@
 // Public + per-user data API consumed by the wenFSD frontend.
 import { Router } from "express";
-import { config } from "../config.js";
+import { config, pushEnabled } from "../config.js";
 import { query, hasDb } from "../db.js";
+import { isValidSubscription } from "../push.js";
 import { predictNextOS, predictNextFSD } from "../predict.js";
 import * as W from "../wendata.js";
 import { SEED_VERSIONS, SEED_FEED, SEED_STATS } from "../seed.js";
@@ -129,6 +130,32 @@ apiRouter.post("/unsubscribe", ah(async (req, res) => {
   // right-to-erasure + data minimisation). Re-subscribing later goes through double opt-in again.
   if (!config.mockMode && hasDb() && t) await query(`DELETE FROM email_subscribers WHERE unsub_token=$1`, [t]);
   res.type("html").send(confirmPage("Done — you're unsubscribed and your address is erased. No more emails. We'll miss you. 🫡"));
+}));
+
+// --- web push (no-login alerts; dormant until VAPID keys are set) ---
+apiRouter.get("/push/key", (req, res) => {
+  if (!pushEnabled()) return res.status(404).json({ enabled: false });
+  res.json({ enabled: true, key: config.vapidPublicKey });
+});
+apiRouter.post("/push/subscribe", ah(async (req, res) => {
+  const b = req.body || {};
+  if (!pushEnabled()) return res.status(404).json({ ok: false, error: "push disabled" });
+  if (!isValidSubscription(b.subscription)) return res.status(400).json({ ok: false, error: "bad subscription" });
+  const market = b.market && W.regions[b.market] ? b.market : null;
+  const hardware = HARDWARE.has(b.hardware) ? b.hardware : null;
+  const version = typeof b.version === "string" ? b.version.replace(/[^0-9.]/g, "").slice(0, 24) : null;
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  const s = b.subscription;
+  await query(
+    `INSERT INTO push_subscriptions(endpoint, p256dh, auth, market, hardware, version) VALUES($1,$2,$3,$4,$5,$6)
+     ON CONFLICT(endpoint) DO UPDATE SET p256dh=$2, auth=$3, market=$4, hardware=$5, version=$6`,
+    [s.endpoint, s.keys.p256dh, s.keys.auth, market, hardware, version]);
+  res.json({ ok: true });
+}));
+apiRouter.post("/push/unsubscribe", ah(async (req, res) => {
+  const endpoint = String((req.body && req.body.endpoint) || "");
+  if (endpoint && !config.mockMode && hasDb()) await query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [endpoint]);
+  res.json({ ok: true });
 }));
 
 apiRouter.get("/fleet/firmware", ah(async (req, res) => {

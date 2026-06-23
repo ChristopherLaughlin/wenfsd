@@ -167,6 +167,19 @@ CREATE TABLE IF NOT EXISTS daily_funnel (
   PRIMARY KEY (day, event, source, variant)
 );
 
+-- Web-push subscriptions (no-login, like email alerts). Keyed by the browser's push endpoint.
+-- Stores only the push keys + the car context we'd alert on — no PII. Erased on unsubscribe.
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  endpoint              TEXT PRIMARY KEY,
+  p256dh                TEXT NOT NULL,
+  auth                  TEXT NOT NULL,
+  market                TEXT,
+  hardware              TEXT,
+  version               TEXT,
+  last_notified_version TEXT,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- No-login email capture: the retention channel for owners who don't connect Tesla via OAuth.
 -- Double opt-in (confirmed via emailed link) so we can't be used to spam someone else's address.
 -- Stores only what's needed to email them about THEIR car's updates; unsubscribe token always set.
