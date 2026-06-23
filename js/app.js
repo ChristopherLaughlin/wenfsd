@@ -1780,7 +1780,8 @@
       } else if (badge) { badge.remove(); }
     });
     const banner = $("sampleBanner");
-    if (banner) {
+    if (banner && !av()) { banner.hidden = true; }   // empty state: nothing personal to caveat yet
+    else if (banner) {
       banner.hidden = false;
       banner.className = live ? "sample-banner sb-live" : "sample-banner";
       banner.innerHTML = live
