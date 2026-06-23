@@ -1770,7 +1770,7 @@
   function renderDataMode() {
     const live = WEN.dataMode === "live";
     const el = $("dataMode"), lbl = $("dataModeLabel");
-    if (lbl) lbl.textContent = live ? "live fleet data" : "sample data";
+    if (lbl) lbl.textContent = live ? "📡 live fleet data" : "🧪 sample data (demo)";
     if (el) { el.classList.toggle("is-sample", !live); el.title = live ? "Live, aggregated from connected cars + trackers" : "Illustrative sample data — connect a backend / your Tesla for live figures"; }
     const fwSub = document.querySelector("#fwSub");
     if (fwSub) fwSub.textContent = live ? "live distribution" : "sample distribution";
