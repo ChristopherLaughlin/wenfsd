@@ -155,6 +155,18 @@ CREATE TABLE IF NOT EXISTS daily_events (
   PRIMARY KEY (day, event)
 );
 
+-- Same aggregate counts, dimensioned by acquisition source + A/B variant — still no PII.
+-- `source` is a coarse referrer bucket (reddit/x/google/…), never a full URL or query string.
+-- `variant` is the A/B copy bucket. Lets us read conversion by channel and by experiment arm.
+CREATE TABLE IF NOT EXISTS daily_funnel (
+  day     DATE NOT NULL,
+  event   TEXT NOT NULL,
+  source  TEXT NOT NULL DEFAULT 'other',
+  variant TEXT NOT NULL DEFAULT 'a',
+  count   BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, event, source, variant)
+);
+
 -- No-login email capture: the retention channel for owners who don't connect Tesla via OAuth.
 -- Double opt-in (confirmed via emailed link) so we can't be used to spam someone else's address.
 -- Stores only what's needed to email them about THEIR car's updates; unsubscribe token always set.

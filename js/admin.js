@@ -56,17 +56,46 @@
     ["bet_placed", "🎲 Placed a Call-Your-Shot bet"],
     ["shared", "📣 Shared a prediction"],
   ];
+  const pct = (n, d) => d > 0 ? Math.round((n / d) * 100) + "%" : "—";
   function funnelSection(funnel) {
     funnel = funnel || {};
-    const rows = FUNNEL_ORDER.map(([k, label]) => ({ label, n: +funnel[k] || 0 }));
+    const base = +funnel.prediction_generated || 0;   // activation is the conversion denominator
+    const rows = FUNNEL_ORDER.map(([k, label]) => ({ k, label, n: +funnel[k] || 0 }));
     const max = Math.max(1, ...rows.map(r => r.n));
     const bars = rows.map(r =>
       `<div class="rp-row"><div class="rp-name">${esc(r.label)}</div>` +
       `<div class="rp-bar"><span style="width:${Math.max(2, (r.n / max) * 100)}%"></span></div>` +
-      `<div class="rp-eta"><strong>${r.n.toLocaleString()}</strong></div></div>`).join("");
+      `<div class="rp-eta"><strong>${r.n.toLocaleString()}</strong>${r.k !== "prediction_generated" ? ` <span style="color:var(--mut)">· ${pct(r.n, base)} of activations</span>` : ""}</div></div>`).join("");
     return `<h2 class="card-h" style="margin:22px 0 10px">Funnel <span class="card-sub">events, last 30 days</span></h2>` +
       `<div class="card"><div class="region-panel">${bars}</div>` +
-      `<p class="hint" style="margin-top:10px">Cookieless aggregate counts (no user IDs). Activation = got a prediction; the rest are retention/referral actions.</p></div>`;
+      `<p class="hint" style="margin-top:10px">Cookieless aggregate counts (no user IDs). Activation = got a prediction; downstream rows show their conversion off activation.</p></div>`;
+  }
+
+  // roll the dimensioned rows up by one dimension → { key: { event: n } }
+  function rollup(dims, dim) {
+    const out = {};
+    for (const r of (dims || [])) { const k = r[dim] || "?"; (out[k] = out[k] || {})[r.event] = (out[k][r.event] || 0) + (+r.n || 0); }
+    return out;
+  }
+  function convTable(title, sub, roll) {
+    const keys = Object.keys(roll).sort((a, b) => (roll[b].prediction_generated || 0) - (roll[a].prediction_generated || 0));
+    if (!keys.length) return "";
+    const th = (t) => `<th style="text-align:left;padding:6px 10px;color:var(--mut);font-weight:600">${t}</th>`;
+    const td = (t, strong) => `<td style="padding:6px 10px;border-top:1px solid var(--line)">${strong ? `<strong>${t}</strong>` : t}</td>`;
+    const body = keys.map(k => {
+      const e = roll[k], act = e.prediction_generated || 0;
+      const alerts = (e.notify_enabled || 0) + (e.email_subscribed || 0);
+      return `<tr>${td(esc(k), true)}${td(act.toLocaleString())}${td(pct(e.shared || 0, act))}${td(pct(alerts, act))}${td(pct(e.connect_clicked || 0, act))}</tr>`;
+    }).join("");
+    return `<h2 class="card-h" style="margin:22px 0 10px">${esc(title)} <span class="card-sub">${esc(sub)}</span></h2>` +
+      `<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">` +
+      `<thead><tr>${th(title.indexOf("variant") !== -1 ? "variant" : "source")}${th("activations")}${th("share rate")}${th("alert rate")}${th("connect rate")}</tr></thead>` +
+      `<tbody>${body}</tbody></table></div>`;
+  }
+  function breakdownSection(dims) {
+    if (!dims || !dims.length) return "";
+    return convTable("Activation by source", "which channel converts (off activations)", rollup(dims, "source")) +
+      convTable("A/B: primary CTA (by variant)", "a = “See my prediction” · b = “Predict my next update”", rollup(dims, "variant"));
   }
   function render(d) {
     const sample = d.mode === "sample";
@@ -82,6 +111,7 @@
         tile((d.emailSubscribers || 0).toLocaleString(), "email subscribers (no-login)", `${(d.emailConfirmed || 0)} confirmed`) +
       `</div>` +
       funnelSection(d.funnel) +
+      breakdownSection(d.funnelDims) +
       `<h2 class="card-h" style="margin:22px 0 10px">Signups by region <span class="card-sub">where your people are</span></h2>` +
       `<div class="card">${barRows(d.byRegion, "market", ["n"])}</div>` +
       `<h2 class="card-h" style="margin:22px 0 10px">Traffic <span class="card-sub">views &amp; rough uniques, by day</span></h2>` +
