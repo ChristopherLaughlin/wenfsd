@@ -43,7 +43,7 @@ async function fetchAndParse() {
   try {
     const res = await fetch(PAGE, { headers: { "User-Agent": UA, Accept: "text/html" }, signal: ctrl.signal });
     if (!res.ok) throw new Error("teslafi HTTP " + res.status);
-    html = await res.text();
+    html = (await res.text()).slice(0, 2_000_000);   // cap upstream HTML (defence-in-depth: bounds all regex parsing)
   } finally { clearTimeout(timer); }
 
   // the daily table is the one whose header cells say "Install count for MM/DD"
