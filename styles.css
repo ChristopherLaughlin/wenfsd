@@ -826,7 +826,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .spark rect{fill:var(--acc2)}
 
 /* consent + connect */
-.consent{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+/* garage sub-section dividers — chunk the card into Your car / Your spot / Auto-track */
+.garage-div{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;font-weight:800;
+  letter-spacing:.6px;text-transform:uppercase;color:var(--mut);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.garage-div .gd-sub{font-weight:500;letter-spacing:.2px;text-transform:none;color:var(--mut2);font-size:11.5px}
+.consent{margin-top:16px;padding-top:0}
 .connect-btn{width:100%;background:linear-gradient(135deg,#1a8cff,#0a5bd0);box-shadow:0 4px 14px rgba(26,140,255,.3)}
 .connect-btn:hover{box-shadow:0 6px 18px rgba(26,140,255,.45)}
 .switch-row{display:flex;gap:10px;align-items:flex-start;margin:12px 0 0;font-size:12.5px;color:var(--mut);cursor:pointer}
