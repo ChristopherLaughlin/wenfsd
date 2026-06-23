@@ -357,6 +357,8 @@ apiRouter.get("/admin/stats", ah(async (req, res) => {
 function sampleAdmin() {
   return {
     signups: 42, usersWithEmail: 40, vehicles: 51, optedIn: 23, vehiclesWithVersion: 48,
+    emailSubscribers: 137, emailConfirmed: 119,
+    funnel: { prediction_generated: 1840, demo_loaded: 410, email_subscribed: 137, connect_clicked: 88, notify_enabled: 61, history_logged: 73, bet_placed: 156, shared: 94 },
     byRegion: [{ market: "Australia", n: 30 }, { market: "New Zealand", n: 8 }, { market: "United States", n: 7 }, { market: "Europe", n: 4 }, { market: "Canada", n: 2 }],
     signupsByDay: [{ day: "2026-06-21", n: 5 }, { day: "2026-06-20", n: 9 }, { day: "2026-06-19", n: 12 }, { day: "2026-06-18", n: 16 }],
     visitsByDay: [{ day: "2026-06-21", views: 340, uniques: 210 }, { day: "2026-06-20", views: 512, uniques: 331 }, { day: "2026-06-19", views: 720, uniques: 470 }],

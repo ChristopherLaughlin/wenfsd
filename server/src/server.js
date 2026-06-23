@@ -232,6 +232,11 @@ app.listen(config.port, async () => {
 if (!config.mockMode) {
   cron.schedule(config.pollCron, () => { pollOnce().catch((e) => console.error("[cron]", e)); });
   console.log(`  poller scheduled: ${config.pollCron}`);
+  // daily "your window is opening" alerts to no-login email subscribers (idempotent per build)
+  cron.schedule("0 9 * * *", async () => {
+    try { const { runSubscriberAlerts } = await import("./subscribers.js"); const r = await runSubscriberAlerts(); if (r.sent) console.log("[alerts]", JSON.stringify(r)); }
+    catch (e) { console.error("[alerts cron]", e); }
+  });
   if (config.allowLiveSources) {
     cron.schedule("17 */6 * * *", async () => {
       try { const db = await import("./db.js"); const { refreshAll } = await import("./sources/index.js"); await refreshAll(db, { live: true }); }
