@@ -154,3 +154,23 @@ CREATE TABLE IF NOT EXISTS daily_events (
   count  BIGINT NOT NULL DEFAULT 0,
   PRIMARY KEY (day, event)
 );
+
+-- No-login email capture: the retention channel for owners who don't connect Tesla via OAuth.
+-- Double opt-in (confirmed via emailed link) so we can't be used to spam someone else's address.
+-- Stores only what's needed to email them about THEIR car's updates; unsubscribe token always set.
+CREATE TABLE IF NOT EXISTS email_subscribers (
+  id              BIGSERIAL PRIMARY KEY,
+  email           TEXT UNIQUE NOT NULL,
+  model           TEXT,
+  market          TEXT,
+  hardware        TEXT,
+  version         TEXT,
+  fsd_entitlement TEXT,
+  confirmed       BOOLEAN NOT NULL DEFAULT false,
+  confirm_token   TEXT,
+  unsub_token     TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  confirmed_at    TIMESTAMPTZ,
+  unsubscribed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_email_subs_confirmed ON email_subscribers(confirmed) WHERE unsubscribed_at IS NULL;

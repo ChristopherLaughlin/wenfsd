@@ -1083,7 +1083,32 @@
       }
     };
 
+    const eb = $("emailSubBtn"), ei = $("emailInput");
+    if (eb && !eb._wired) { eb._wired = true; eb.onclick = submitEmail; }
+    if (ei && !ei._wired) { ei._wired = true; ei.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitEmail(); } }); }
+
     renderHistory();
+  }
+  // no-login email capture: validate, POST the car context, show double-opt-in status
+  function submitEmail() {
+    const inp = $("emailInput"), btn = $("emailSubBtn"), status = $("emailSubStatus");
+    if (!inp || !status) return;
+    const email = inp.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { status.textContent = "Hmm — that doesn't look like an email. 🤔"; status.className = "ec-status ec-err"; inp.focus(); return; }
+    const v = av() || {};
+    if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
+    fetch("/api/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      email, model: v.model, market: v.market, hardware: v.hardware, version: v.installedVersion, fsdEntitlement: v.fsdEntitlement,
+    }) }).then(r => r.json().catch(() => ({}))).then(d => {
+      if (d && d.ok) {
+        track("email_subscribed");
+        status.innerHTML = d.confirmed
+          ? "✓ You're already on the list — we've got you. 🫡"
+          : "✓ Almost there — check your inbox for a confirm link (peek in spam too; we're not the only ones with delivery delays).";
+        status.className = "ec-status ec-ok"; inp.value = "";
+      } else { status.textContent = (d && d.error) || "Couldn't sign you up just now — try again in a sec."; status.className = "ec-status ec-err"; }
+    }).catch(() => { status.textContent = "Network hiccup — give it another go."; status.className = "ec-status ec-err"; })
+      .finally(() => { if (btn) { btn.disabled = false; btn.textContent = "Notify me 🔔"; } });
   }
   function setVerHint(val) {
     const el = $("verHint"); if (!el) return;
