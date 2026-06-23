@@ -145,3 +145,12 @@ CREATE TABLE IF NOT EXISTS daily_unique_visitors (
   visitor_hash  TEXT NOT NULL,
   PRIMARY KEY (day, visitor_hash)
 );
+
+-- privacy-respecting funnel-event counters: aggregate counts only, no user id, no PII.
+-- Lets us measure activation/conversion (visit → prediction → connect/email → return).
+CREATE TABLE IF NOT EXISTS daily_events (
+  day    DATE NOT NULL,
+  event  TEXT NOT NULL,
+  count  BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, event)
+);

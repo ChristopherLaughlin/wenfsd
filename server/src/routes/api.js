@@ -31,6 +31,23 @@ async function cached(key, ttlMs, fn) {
   return v;
 }
 
+// --- privacy-first funnel instrumentation: aggregate event counts only, no user id, no PII ---
+export const FUNNEL_EVENTS = new Set([
+  "quickstart_submitted", "prediction_generated", "demo_loaded", "vin_decoded", "vehicle_added",
+  "connect_clicked", "email_subscribed", "notify_enabled", "history_logged", "bet_placed",
+  "shared", "model_downloaded",
+]);
+export function isValidEvent(name) { return typeof name === "string" && FUNNEL_EVENTS.has(name); }
+apiRouter.post("/event", ah(async (req, res) => {
+  const event = req.body && req.body.event;
+  if (!isValidEvent(event)) return res.status(400).json({ ok: false, error: "unknown event" });
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  const day = new Date().toISOString().slice(0, 10);
+  await query(`INSERT INTO daily_events(day, event, count) VALUES($1, $2, 1)
+               ON CONFLICT(day, event) DO UPDATE SET count = daily_events.count + 1`, [day, event]);
+  res.json({ ok: true });
+}));
+
 apiRouter.get("/fleet/firmware", ah(async (req, res) => {
   if (req.query.merged) {
     const live = req.query.live === "1" && config.allowLiveSources;

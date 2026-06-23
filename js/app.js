@@ -8,6 +8,17 @@
 
   function av() { return Garage.active(gstate); }
 
+  // privacy-first funnel instrumentation: fire-and-forget aggregate event ping (no PII, no cookies).
+  // Server validates against an allowlist and only increments a daily counter. No-ops off http(s).
+  function track(event) {
+    try {
+      if (!/^https?:$/.test(location.protocol)) return;
+      const body = JSON.stringify({ event });
+      if (navigator.sendBeacon) navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }));
+      else fetch("/api/event", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
+
   // effective rollout percentile = base, shifted earlier if you're in the Early Access Program.
   // If earliness came from real logged history it already reflects that — don't double-count.
   function effEarliness(v) {
@@ -778,6 +789,7 @@
 
   // Kick off the Tesla OAuth link flow (works when served by the backend).
   function connectTesla() {
+    track("connect_clicked");
     if (/^https?:$/.test(location.protocol)) {
       window.location.href = "/auth/login";
     } else {
@@ -857,6 +869,7 @@
       fetch("/api/me/notify", { headers: { Accept: "application/json" }, credentials: "same-origin" })
         .then(r => r.ok ? r.json() : null).then(d => { if (d) nChk.checked = !!d.enabled; }).catch(() => {});
       nChk.onchange = () => {
+        if (nChk.checked) track("notify_enabled");
         fetch("/api/me/notify", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ enabled: nChk.checked }) }).catch(() => {});
       };
     }
@@ -1217,6 +1230,7 @@
       const v = av(); const hist = (v.history || []).concat([{ version: ver, date }]);
       gstate = Garage.update(v.id, { history: hist });
       $("h_date").value = ""; $("h_ver").value = ""; $("histForm").hidden = true;
+      track("history_logged");
       populateVersionOptions(); renderHistory();
     };
   }
@@ -1246,6 +1260,7 @@
     ui.guessDays = null; clearGuess();
     renderGarage(); renderActiveControls(); render();
     maybeOnboard(wasEmpty);
+    track("prediction_generated");   // activation: a car was added and a prediction shown
     const hero = $("heroDate"); if (hero && hero.scrollIntoView) hero.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -1304,7 +1319,7 @@
     if (verEl && warn) verEl.addEventListener("input", () => { warn.hidden = true; });
     const c = $("qsConnect"); if (c) c.onclick = connectTesla;
     const vn = $("qsVin"); if (vn) vn.onclick = openAddByVin;
-    const dm = $("qsDemo"); if (dm) dm.onclick = () => { gstate = Garage.loadDemo(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render(); };
+    const dm = $("qsDemo"); if (dm) dm.onclick = () => { track("demo_loaded"); gstate = Garage.loadDemo(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render(); };
   }
   function doDecode() {
     const d = VIN.decode($("vinInput").value);
@@ -1424,6 +1439,7 @@
     const v = av(), guessStr = $("guessDate").value;
     if (!v) return;
     if (!guessStr || isNaN(new Date(guessStr + "T00:00:00Z"))) { showGuessResult(pred); return; }
+    track("bet_placed");
     const risk = RISK[ui.guessRisk] || RISK.bold;
     const g = Predict.daysBetween(today, guessStr);
     const odds = Math.round(Math.max(0, Math.min(1, pred.probWithin(g + risk.window) - pred.probWithin(g - risk.window))) * 100);
@@ -1503,6 +1519,7 @@
   const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
   async function shareMyPrediction(pred, btn) {
     const v = av(); if (!v || !pred) return;
+    track("shared");
     const model = `${v.year} ${v.model}${v.generation ? " " + v.generation : ""}`;
     const date = Predict.fmtDate(pred.medianDate);
     const text = pred.confirmed
