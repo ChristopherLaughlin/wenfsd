@@ -50,6 +50,7 @@
     const host = $("adminEvents"); if (!host) return;
     const pending = events.filter(e => e.status === "pending");
     const recent = events.filter(e => e.status !== "pending").slice(0, 8);
+    document.title = (pending.length ? `(${pending.length}) ` : "") + "wenFSD · creator dashboard";   // tab badge
     host.innerHTML =
       `<h2 class="card-h" style="margin:22px 0 10px">Rollout events <span class="card-sub">${pending.length} awaiting your confirmation — nothing goes public until you approve it</span></h2>` +
       `<div class="card"><div class="region-panel">` +

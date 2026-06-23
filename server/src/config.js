@@ -34,6 +34,7 @@ export const config = {
   notifyWebhookUrl: process.env.NOTIFY_WEBHOOK_URL || "", // where "your update landed" events POST (Zapier / ntfy); unset ⇒ log-only
   resendApiKey: process.env.RESEND_API_KEY || "",        // if set (with NOTIFY_FROM_EMAIL), send real email via Resend
   notifyFromEmail: process.env.NOTIFY_FROM_EMAIL || "",  // verified sender, e.g. "wenFSD <updates@wenfsd.info>"
+  ownerEmail: process.env.OWNER_EMAIL || "",             // creator's address for "event pending review" alerts (instant)
 
   // Web push (VAPID). Dormant until all three are set (generate with `npx web-push generate-vapid-keys`).
   // Until then /api/push/* report disabled and no push UI shows — mirrors the dormant-deploy pattern.

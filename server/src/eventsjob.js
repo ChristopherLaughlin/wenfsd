@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { query, hasDb } from "./db.js";
 import { detectStalls } from "./events.js";
 import { fetchDailySeries } from "./sources/teslafi.js";
+import { notifyOwnerOfPending } from "./ownernotify.js";
 
 export async function runStallDetection({ live = false } = {}) {
   if (config.mockMode || !hasDb() || !live) return { queued: 0, checked: 0, skipped: "not-live" };
@@ -18,10 +19,13 @@ export async function runStallDetection({ live = false } = {}) {
       `SELECT 1 FROM rollout_events WHERE type IN ('pause','halt') AND version=$1
          AND status IN ('pending','confirmed') AND detected_at > now() - interval '21 days' LIMIT 1`, [s.version]).catch(() => null);
     if (dup && dup.rowCount) continue;
+    const reason = `Installs flatlined ${s.stalledDays}+ days after averaging ~${s.priorAvg}/day — possible pause (auto-detected, needs confirmation).`;
     await query(
       `INSERT INTO rollout_events(type, version, region, status, reason, source, confidence)
        VALUES('pause',$1,NULL,'pending',$2,'observed-plateau',0.6)`,
-      [s.version, `Installs flatlined ${s.stalledDays}+ days after averaging ~${s.priorAvg}/day — possible pause (auto-detected, needs confirmation).`]).catch(() => {});
+      [s.version, reason]).catch(() => {});
+    // each queued stall is already deduped (21-day window) → genuinely new → alert the owner
+    notifyOwnerOfPending({ type: "pause", version: s.version, region: null, reason, source: "observed-plateau" }).catch(() => {});
     queued++;
   }
   return { queued, checked: series.length };

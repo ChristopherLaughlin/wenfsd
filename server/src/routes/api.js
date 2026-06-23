@@ -14,6 +14,7 @@ import { applyVersionReading, persistPendingUpdate } from "../poller.js";
 import { deliver, confirmMessage } from "../mailer.js";
 import { cleanEventType, cleanRegion, cleanVersion, cleanReason, HIGH_IMPACT } from "../events.js";
 import { classifyPost } from "../community.js";
+import { notifyOwnerOfPending } from "../ownernotify.js";
 import crypto from "node:crypto";
 
 export const apiRouter = Router();
@@ -220,6 +221,13 @@ apiRouter.post("/report", ah(async (req, res) => {
     `INSERT INTO rollout_events(type, version, region, status, reason, source, submitted_by, confidence)
      VALUES($1,$2,$3,'pending',$4,'community-report',$5,$6)`,
     [type, version, region, reason, submitterHash(req), guess ? guess.confidence : 0.4]);
+  // owner alert — only on the FIRST pending of this (type,version,region) in 24h (dedupe a flood of
+  // duplicate reports into a single ping). Fire-and-forget so the response isn't blocked.
+  const fresh = await query(
+    `SELECT count(*)::int AS n FROM rollout_events WHERE type=$1 AND COALESCE(version,'')=COALESCE($2,'')
+       AND COALESCE(region,'')=COALESCE($3,'') AND status='pending' AND detected_at > now() - interval '24 hours'`,
+    [type, version, region]).catch(() => null);
+  if (fresh && fresh.rows[0].n === 1) notifyOwnerOfPending({ type, version, region, reason, source: "community-report" }).catch(() => {});
   res.json({ ok: true });   // generic success — we don't expose whether/when it goes live (anti-manipulation)
 }));
 
