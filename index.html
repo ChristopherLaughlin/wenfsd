@@ -96,10 +96,13 @@
   <section class="lede" id="lede">
     <h1>Predict your next Tesla software &amp; FSD update — no login required</h1>
     <p>wenFSD predicts when <em>your</em> Tesla gets its next over-the-air update — including
-    FSD&nbsp;(Supervised) v14 — as a real <strong>probability date</strong> with an 80% confidence
-    window, not just “two weeks.” It models Tesla's staged rollout as a logistic S-curve and
-    Monte-Carlos it into a date distribution. Free and open-source.
+    FSD&nbsp;(Supervised) v14 — as a real <strong>probability date</strong> with an 80% window.
+    Not “two weeks.” Not “soon™.” Not “it's basically already on the truck.” An actual date, with
+    error bars and everything. We model Tesla's staged rollout as an S-curve and Monte-Carlo it into
+    a distribution — i.e. we did the maths so you don't have to refresh the software menu at 2am.
+    (You'll refresh anyway. We understand.) Free, open-source, and powered mostly by hope.
     <a class="lede-skip js-open-security" href="#trustCard">How your data is handled →</a></p>
+    <p class="lede-kicker" id="ledeKicker"></p>
   </section>
 
   <div id="sampleBanner" class="sample-banner" hidden></div>
@@ -150,7 +153,7 @@
   <div class="update-alert" id="updateAlert" role="status" aria-live="polite" hidden></div>
 
   <!-- ZONE: Your prediction -->
-  <div class="zone-h" id="zonePred"><span class="zh-t">📍 Your prediction</span><span class="zh-line"></span></div>
+  <div class="zone-h" id="zonePred"><span class="zh-t" id="zh_pred">📍 Your prediction</span><span class="zh-line"></span></div>
 
   <!-- HERO PREDICTION -->
   <section class="hero card" id="heroCard">
@@ -395,7 +398,7 @@
     </section>
 
   <!-- ZONE: Explore the fleet -->
-  <div class="zone-h"><span class="zh-t">🛰️ Explore the fleet</span><span class="zh-line"></span></div>
+  <div class="zone-h"><span class="zh-t" id="zh_explore">🛰️ Explore the fleet</span><span class="zh-line"></span></div>
 
   <!-- FSD AUSTRALIA REGULATORY TRACKER -->
   <section class="card fleet-card" id="fsdCard">
@@ -403,7 +406,7 @@
       <h2 class="card-h"><span class="ch-label" id="hdr_fsdreg">FSD by region &amp; hardware</span> <span class="card-sub" id="fsdRegSub"></span></h2>
       <label class="explore-pick">Explore <select id="exploreRegionSel" class="inline-sel" aria-label="Region to explore"></select></label>
     </div>
-    <p class="hint">Which FSD version you can get depends on <strong>region</strong> (regulators, bless them) and <strong>hardware</strong> (HW3/AI3 = capped, pour one out 🫗; HW4/AI4 = latest and greatest). Pick any region above to explore its rollout and feel things about it — your own car's prediction stays pinned at the top. <em>New to the software-vs-FSD thing? The glossary just below has you.</em></p>
+    <p class="hint">Which FSD version you can get comes down to three things: <strong>region</strong> (regulators, bless them), <strong>hardware</strong> (HW3/AI3 = capped, pour one out 🫗; HW4/AI4 = latest and greatest), and <strong>sheer dumb luck</strong> (which VIN block Tesla felt like blessing this week 🎰). Your postcode has nothing to do with it. Pick any region above to explore its rollout and feel things about it — your own car's prediction stays pinned at the top. <em>New to the software-vs-FSD thing? The glossary just below has you.</em></p>
     <details class="glossary">
       <summary>🤓 Wait — software vs firmware vs FSD version?</summary>
       <ul>
@@ -488,7 +491,7 @@
   </details>
 
   <!-- ZONE: Community -->
-  <div class="zone-h"><span class="zh-t">🫂 Community</span><span class="zh-line"></span></div>
+  <div class="zone-h"><span class="zh-t" id="zh_community">🫂 Community</span><span class="zh-line"></span></div>
 
   <!-- THE FIVE STAGES OF wenFSD GRIEF (Kübler-Ross) — after the explanatory data, before the social board -->
   <section class="card grief-card" id="griefCard">
@@ -507,7 +510,7 @@
   </section>
 
   <!-- ZONE: How it works & trust -->
-  <div class="zone-h"><span class="zh-t">🔬 How it works &amp; trust</span><span class="zh-line"></span></div>
+  <div class="zone-h"><span class="zh-t" id="zh_trust">🔬 How it works &amp; trust</span><span class="zh-line"></span></div>
 
   <!-- TRUST CLUSTER — methodology + open model + security, one card under the zone header -->
   <section class="card" id="trustCard">

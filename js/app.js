@@ -415,7 +415,7 @@
   const SUBS = {
     whenSub: ["probability by day (science!)", "your wen, quantified", "a graph of pure hope 📈", "statistically: soon-ish", "the suspense, plotted", "every day's odds, ranked by cope", "maths, but make it anxious", "a bell curve of yearning 🔔", "the only Tesla timeline with error bars", "feelings, but with axes"],
     shotSub: ["wen, exactly? Put a date on it.", "no take-backs, hero 🎯", "easy to say 'two weeks' — prove it", "stake your bragging rights", "the model is watching 👀", "calling it is free; being wrong is forever", "bet the house (the house is a Tesla)", "your turn to say 'trust me bro'", "loser buys the Supercharger session ⚡"],
-    fsdRegSub: ["who gets it first (probably not you)", "the global FSD pecking order", "a leaderboard of smugness", "spoiler: the US, again 🇺🇸", "geography decides your autonomy", "find out exactly how jealous to be", "your postcode is your destiny 📮", "rank your continent's heartbreak", "the autonomy hunger games 🏹"],
+    fsdRegSub: ["who gets it first (probably not you)", "the global FSD pecking order", "a leaderboard of smugness", "spoiler: the US, again 🇺🇸", "geography decides your autonomy", "find out exactly how jealous to be", "your region is your destiny 🌏", "luck of the regulatory draw 🍀", "rank your continent's heartbreak", "the autonomy hunger games 🏹", "right region, right hardware, right vibes 🎰", "blame the regulators, then refresh anyway"],
     osRegSub: ["how far behind the US wave each market runs", "the global queue, ranked by suffering", "who's eating Tesla's dust, by region 🌫️", "days of lag, served cold", "how late your continent runs", "the OTA pecking order (you're near the back)"],
     paceScope: ["how many cars are updating", "the fleet, escaping old builds", "cars-per-day clawing their way forward", "rollout velocity, such as it is", "how fast the herd is moving 🐂", "the great migration off your build"],
     calSub: ["back-tested against real tracker history", "marking our own homework (honestly)", "how wrong we've been, quantified 📐", "receipts for our guessing", "we grade ourselves on a curve (an S-curve)", "proof we're not just vibing"],
@@ -534,26 +534,49 @@
   // pool keeps the original plain title as one option, and every variant still clearly says what
   // the card IS (so the page never becomes unnavigable — just funnier).
   const HEADLINES = {
-    hdr_qs: ["⚡ Get your prediction in 10 seconds", "⚡ Your 'wen', in 10 seconds flat", "⚡ No login, no VIN, no nonsense", "⚡ The quick, painless, no-account way", "⚡ Predict it before the kettle boils ☕"],
-    hdr_garage: ["Your garage", "Your fleet (of one)", "The car in question", "Your pride and depreciating joy", "Subject vehicle 🚗"],
-    hdr_curve: ["Rollout S-curve", "The S-curve of yearning", "How the build spreads (slowly)", "Adoption curve, plotted in hope", "The shape of the wait 📈"],
-    hdr_when: ["When exactly?", "When, exactly?", "Wen? (the eternal question)", "Put a date on it", "The whole reason you're here", "Your 'two weeks', quantified"],
-    hdr_shot: ["Call your shot 🎯", "Put your money where your wen is 🎯", "Bet on it, hero 🎯", "Stake your reputation 🎯", "Your turn to say 'trust me bro' 🎯"],
-    hdr_grief: ["The Five Stages of wenFSD Grief", "The Five Stages of OTA Grief", "Where are you in the grieving process?", "Five Stages of 'still on the same build'", "Grief, but make it firmware 🕯️"],
-    hdr_fsdreg: ["FSD by region &amp; hardware", "FSD: who's allowed nice things, by region", "The autonomy class system 🌍", "FSD eligibility, by postcode &amp; hardware", "Where (and whether) FSD shows up"],
-    hdr_notes: ["Release notes", "What's actually in each build", "The changelog, decoded", "'Minor improvements', allegedly 📝", "What each build really ships"],
-    hdr_osreg: ["OS rollout by region", "Who's behind whom (by region)", "The global lag leaderboard", "OS rollout, ranked by suffering", "How late your continent runs ⏱️"],
-    hdr_pace: ["Rollout pace", "How fast the fleet's moving", "Cars escaping old builds, per day", "Rollout velocity (such as it is)", "The great migration off your build 🐂"],
-    hdr_fw: ["Fleet firmware tracker", "What the fleet's running right now", "Who's on what, fleet-wide", "The build distribution, live-ish", "Firmware spread across the herd 📊"],
-    hdr_feed: ["Recent rollout activity", "Fresh sightings", "What just moved", "Live-ish rollout sightings 👀", "Cars updating in the wild"],
-    hdr_cal: ["Model calibration", "Marking our own homework", "How wrong we've been, measured 📐", "Our receipts", "Proof we're not just vibing"],
-    hdr_lb: ["wen Leaderboard 🏆", "The smugness leaderboard 🏆", "Who's winning the wait 🏆", "Bragging rights, ranked 🏆", "First-wave royalty vs the rest 👑"],
+    // four zone headers — now rotate too (they were the last flat thing on the page)
+    zh_pred: ["📍 Your prediction", "🔮 The main event", "🎯 Your 'wen', dated", "📅 The whole point", "🚗 Your update, foretold", "🔮 Crystal ball, but make it maths", "📍 What you actually came for", "🕯️ Your hope, with error bars"],
+    zh_explore: ["🛰️ Explore the fleet", "🌍 The rest of the herd", "🔭 Fleet-wide snooping", "🌏 Who got it before you", "📊 Everyone else's business", "🛰️ Spying on the whole fleet (politely)", "🌍 Comparison is the thief of joy 🌍", "🔭 Other people's good news"],
+    zh_community: ["🫂 Community", "😤 The support group", "🕯️ Group therapy", "🍿 Misery, aggregated", "🤝 You are not alone (you're a little alone)", "🫂 Fellow sufferers", "🕯️ The waiting room", "😩 Pain, but social"],
+    zh_trust: ["🔬 How it works &amp; trust", "🧪 The honest bit", "📖 Show your work", "🤓 The maths, exposed", "🔍 No black box, no BS", "🔬 Receipts &amp; reassurance", "🧾 Where we mark our own homework", "🔬 Trust, but verify (please do)"],
+    hdr_qs: ["⚡ Get your prediction in 10 seconds", "⚡ Your 'wen', in 10 seconds flat", "⚡ No login, no VIN, no nonsense", "⚡ The quick, painless, no-account way", "⚡ Predict it before the kettle boils ☕", "⚡ Two taps to your two weeks", "⚡ Faster than a Supercharger queue 🔌", "⚡ Quicker than Tesla's 'arriving soon'", "⚡ Skip the forums, get a real date", "⚡ Less effort than a phantom brake 👻"],
+    hdr_garage: ["Your garage", "Your fleet (of one)", "The car in question", "Your pride and depreciating joy", "Subject vehicle 🚗", "The patient 🩺", "Your rolling beta test", "Exhibit A 🚗", "Your four-wheeled group chat with Elon", "The defendant 🚗"],
+    hdr_curve: ["Rollout S-curve", "The S-curve of yearning", "How the build spreads (slowly)", "Adoption curve, plotted in hope", "The shape of the wait 📈", "Maths cosplaying as hope 📈", "The hopium curve", "Statistically, you're on it somewhere", "Where you sit in Tesla's queue 📈"],
+    hdr_when: ["When exactly?", "When, exactly?", "Wen? (the eternal question)", "Put a date on it", "The whole reason you're here", "Your 'two weeks', quantified", "Soon™, with error bars", "An actual date, allegedly", "Wen, mathematically"],
+    hdr_shot: ["Call your shot 🎯", "Put your money where your wen is 🎯", "Bet on it, hero 🎯", "Stake your reputation 🎯", "Your turn to say 'trust me bro' 🎯", "Prove the forums wrong 🎯", "Two weeks, but with a paper trail 🎯", "Out-guess the maths 🎯"],
+    hdr_grief: ["The Five Stages of wenFSD Grief", "The Five Stages of OTA Grief", "Where are you in the grieving process?", "Five Stages of 'still on the same build'", "Grief, but make it firmware 🕯️", "Kübler-Ross: the firmware edition 🕯️", "The five stages of 'check again' 🕯️", "Bereavement, over-the-air"],
+    hdr_fsdreg: ["FSD by region &amp; hardware", "FSD: who's allowed nice things, by region", "The autonomy class system 🌍", "FSD eligibility: region, hardware &amp; sheer luck 🍀", "Where (and whether) FSD shows up", "Geography is destiny (so is your HW) 🌍", "Who got picked for the FSD lottery 🎰", "FSD: a tale of regulators and luck 🍀"],
+    hdr_notes: ["Release notes", "What's actually in each build", "The changelog, decoded", "'Minor improvements', allegedly 📝", "What each build really ships", "'Bug fixes and improvements' (translated)", "The patch notes, with subtitles 📝", "What the build menu won't tell you"],
+    hdr_osreg: ["OS rollout by region", "Who's behind whom (by region)", "The global lag leaderboard", "OS rollout, ranked by suffering", "How late your continent runs ⏱️", "The geography of waiting ⏱️", "US first, as is tradition 🇺🇸", "Your continent's place in the queue"],
+    hdr_pace: ["Rollout pace", "How fast the fleet's moving", "Cars escaping old builds, per day", "Rollout velocity (such as it is)", "The great migration off your build 🐂", "Vehicles fleeing your firmware, hourly", "The exodus, in cars per day", "How fast everyone else is moving on"],
+    hdr_fw: ["Fleet firmware tracker", "What the fleet's running right now", "Who's on what, fleet-wide", "The build distribution, live-ish", "Firmware spread across the herd 📊", "Everyone else's version, basically", "The fleet's current wardrobe 📊"],
+    hdr_feed: ["Recent rollout activity", "Fresh sightings", "What just moved", "Live-ish rollout sightings 👀", "Cars updating in the wild", "Updates spotted in their natural habitat 👀", "Other people's good fortune, live"],
+    hdr_cal: ["Model calibration", "Marking our own homework", "How wrong we've been, measured 📐", "Our receipts", "Proof we're not just vibing", "We graded ourselves (harshly) 📐", "The honesty audit 🧾"],
+    hdr_lb: ["wen Leaderboard 🏆", "The smugness leaderboard 🏆", "Who's winning the wait 🏆", "Bragging rights, ranked 🏆", "First-wave royalty vs the rest 👑", "The 'I got it before you' board 🏆", "Smugness, league table 🏆"],
   };
   function rotateHeadlines() {
     for (const id in HEADLINES) { const el = $(id); if (el) el.innerHTML = flavorPick("hdr:" + id, HEADLINES[id]); }
   }
+  // top-of-page rotating one-liner, fresh every visit
+  const LEDE_KICKERS = [
+    "Currently 0% affiliated with Tesla, who would be appalled by our candour. ✌️",
+    "The only Tesla timeline with error bars instead of vibes.",
+    "Yes, California already has it. No, that doesn't help you. 🏖️",
+    "Built by people who check the software menu before they check their texts.",
+    "Like a horoscope, except the maths is real and the disappointment is scheduled.",
+    "We cannot make your update arrive faster. We have tested this. Repeatedly. Tearfully.",
+    "Manifesting your OTA, responsibly. 🔮",
+    "Tesla says “soon.” We say a date. One of us is braver.",
+    "Phantom-brake-free since launch. (The website. Not the cars.) 👻",
+    "Refreshing won't summon the update — but you should absolutely keep trying.",
+    "Powered by S-curves, public trackers, and barely-contained envy of the US fleet. 🇺🇸",
+    "The forums said “two weeks.” The forums say that every week.",
+    "Now with 100% more error bars than that guy on Reddit.",
+    "Your update is in another castle. We at least know which castle. 🏰",
+  ];
   function renderHumour() {
     for (const id in SUBS) { const el = $(id); if (el) el.textContent = flavorPick("sub:" + id, SUBS[id]); }
+    const lk = $("ledeKicker"); if (lk) lk.textContent = flavorPick("ledeKicker", LEDE_KICKERS);
     rotateHeadlines();
     // rotate the joke, but keep a stable keyworded base so bookmarks / crawlers / social unfurls
     // always carry the real product name (never replace the canonical title outright).

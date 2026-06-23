@@ -100,6 +100,8 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .lede p{font-size:13.5px;line-height:1.6;color:var(--mut);margin:0}
 .lede strong{color:var(--fg)} .lede em{font-style:normal;color:var(--cyan)}
 .lede-skip{color:var(--cyan);text-decoration:underline;white-space:nowrap}
+.lede p.lede-kicker{font-size:12.5px;font-style:italic;color:var(--amber);margin-top:8px}
+.lede-kicker:empty{display:none}
 @media(max-width:680px){.lede h1{font-size:18px}}
 .topbar-right{display:flex;gap:18px;align-items:center}
 .today{font-size:11px;color:var(--mut);text-align:right;line-height:1.3}
