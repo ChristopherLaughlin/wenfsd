@@ -224,6 +224,7 @@
     showPredictionZone(true);                             // a car exists → reveal the prediction zone
     const pred = currentPrediction();
     $("curveVer").textContent = pred.targetLabel || "OS";
+    updateAhaAlert(pred);
 
     if (pred.capped || pred.unavailable) { renderNoPrediction(pred); return pred; }
 
@@ -1113,13 +1114,15 @@
 
     renderHistory();
   }
-  // no-login email capture: validate, POST the car context, show double-opt-in status
-  function submitEmail() {
-    const inp = $("emailInput"), btn = $("emailSubBtn"), status = $("emailSubStatus");
+  // no-login email capture: validate, POST the car context, show double-opt-in status.
+  // Parametrised so both the garage capture and the aha-moment hero block reuse one path.
+  function submitEmail(inputId, btnId, statusId) {
+    const inp = $(inputId || "emailInput"), btn = $(btnId || "emailSubBtn"), status = $(statusId || "emailSubStatus");
     if (!inp || !status) return;
     const email = inp.value.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { status.textContent = "Hmm — that doesn't look like an email. 🤔"; status.className = "ec-status ec-err"; inp.focus(); return; }
     const v = av() || {};
+    const orig = btn ? btn.textContent : "";
     if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
     fetch("/api/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
       email, model: v.model, market: v.market, hardware: v.hardware, version: v.installedVersion, fsdEntitlement: v.fsdEntitlement,
@@ -1130,7 +1133,23 @@
         status.className = "ec-status ec-ok"; inp.value = "";
       } else { status.textContent = (d && d.error) || "Couldn't sign you up just now — try again in a sec."; status.className = "ec-status ec-err"; }
     }).catch(() => { status.textContent = "Network hiccup — give it another go."; status.className = "ec-status ec-err"; })
-      .finally(() => { if (btn) { btn.disabled = false; btn.textContent = "Notify me 🔔"; } });
+      .finally(() => { if (btn) { btn.disabled = false; btn.textContent = orig; } });
+  }
+  // aha-moment alert opt-in: shown right under the predicted date, at peak intent. Connected cars
+  // already get live alerts, so it's offered to not-yet-connected cars with a real prediction.
+  function updateAhaAlert(pred) {
+    const el = $("ahaAlert"); if (!el) return;
+    const v = av();
+    const show = !!(v && !v.connected && pred && !pred.capped && !pred.unavailable);
+    el.hidden = !show;
+    if (!show) return;
+    const btn = $("ahaBtn");
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.onclick = () => submitEmail("ahaEmail", "ahaBtn", "ahaStatus");
+      const inp = $("ahaEmail"); if (inp) inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitEmail("ahaEmail", "ahaBtn", "ahaStatus"); } });
+      const cn = $("ahaConnect"); if (cn) cn.onclick = connectTesla;
+    }
   }
   function setVerHint(val) {
     const el = $("verHint"); if (!el) return;
@@ -2379,4 +2398,18 @@
       el.innerHTML = `Not linked to a Tesla account on this device. <strong>Connect Tesla account</strong> below to auto-track — or just add your car manually above.`;
     }
   }
+
+  // --- PWA: register the service worker + surface an Install button (better mobile retention) ---
+  (function setupPWA() {
+    if (!/^https?:$/.test(location.protocol)) return;   // not in offline/file preview
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    }
+    let deferred = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault(); deferred = e;
+      const b = $("installBtn"); if (b) { b.hidden = false; b.onclick = async () => { b.hidden = true; deferred.prompt(); try { await deferred.userChoice; } catch (e2) {} deferred = null; }; }
+    });
+    window.addEventListener("appinstalled", () => { const b = $("installBtn"); if (b) b.hidden = true; });
+  })();
 })();

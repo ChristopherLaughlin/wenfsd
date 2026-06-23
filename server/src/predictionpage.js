@@ -206,6 +206,17 @@ function ogSvg(meta, os) {
 </svg>`;
 }
 
+// PWA app icon — the brand "?" mark, rasterised so installability is reliable (Chrome wants PNG).
+const _iconCache = new Map();
+export function iconPng(size) {
+  const s = Math.max(48, Math.min(1024, parseInt(size, 10) || 192));
+  if (_iconCache.has(s)) return _iconCache.get(s);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 192 192"><rect width="192" height="192" rx="42" fill="#e6394b"/><text x="96" y="142" font-family="${SANS}" font-size="132" font-weight="800" text-anchor="middle" fill="#ffffff">?</text></svg>`;
+  const png = new Resvg(svg, { fitTo: { mode: "width", value: s }, font: { loadSystemFonts: true } }).render().asPng();
+  _iconCache.set(s, png);
+  return png;
+}
+
 const _ogCache = new Map(); // slug+version → PNG Buffer (deterministic inputs, safe to cache)
 export function ogPng(meta, version) {
   const key = canonicalSlug(meta.year, meta.model, meta.region) + "|" + (version || "");

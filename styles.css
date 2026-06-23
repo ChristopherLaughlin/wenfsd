@@ -873,6 +873,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .connect-btn:hover{box-shadow:0 6px 18px rgba(26,140,255,.45)}
 .switch-row{display:flex;gap:10px;align-items:flex-start;margin:12px 0 0;font-size:12.5px;color:var(--mut);cursor:pointer}
 .switch-row input{width:auto;margin-top:2px;accent-color:var(--acc)}
+
+/* aha-moment alert opt-in — peak-intent, right under the predicted date */
+.aha-alert{margin:16px 0 2px;padding:13px 15px;border:1px solid rgba(57,212,255,.32);border-radius:12px;background:linear-gradient(180deg,rgba(57,212,255,.07),rgba(57,212,255,.02))}
+.aha-h{font-size:14px;font-weight:800;color:var(--txt);margin-bottom:9px}
+.aha-row{display:flex;gap:8px;flex-wrap:wrap}
+.aha-row input{flex:1;min-width:180px;background:#0a0d12;border:1px solid var(--line);border-radius:8px;color:var(--txt);font:inherit;font-size:14px;padding:9px 11px}
+.aha-row input:focus{outline:2px solid var(--cyan);outline-offset:1px;border-color:var(--cyan)}
+.aha-btn{white-space:nowrap;background:rgba(57,212,255,.16);border-color:rgba(57,212,255,.45);color:#8fe3ff;font-weight:800}
+.aha-btn:hover{background:rgba(57,212,255,.26)}
+.aha-install{white-space:nowrap;background:rgba(230,57,71,.14);border-color:rgba(230,57,71,.4);color:#ffb3ba;font-weight:700}
+.aha-install:hover{background:rgba(230,57,71,.22)}
+.aha-hint{margin:9px 0 0;font-size:11.5px}
 .btn-link{background:none;border:0;color:var(--mut2);font-size:11.5px;text-decoration:underline;cursor:pointer;padding:10px 0 0;font-family:inherit}
 .btn-link:hover{color:var(--acc2)}
 .mut-i{color:var(--mut)}
