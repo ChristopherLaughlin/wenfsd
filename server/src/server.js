@@ -48,6 +48,8 @@ app.use(helmet({
       connectSrc: ["'self'"],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
+      formAction: ["'self'"],          // a form may only submit back to us (caps injected-form exfil)
+      upgradeInsecureRequests: [],     // auto-upgrade any stray http subresource to https
     },
   },
   crossOriginEmbedderPolicy: false,
@@ -72,13 +74,18 @@ const subscribeLimiter = rateLimit({ windowMs: 60_000, max: 5, standardHeaders: 
 // handlers — is rate-limited (defence against fs-access abuse); the stricter limiters above still apply.
 app.use(rateLimit({ windowMs: 60_000, max: 600, standardHeaders: true, legacyHeaders: false }));
 
-// CSRF protection for state-changing requests: require a same-origin Origin/Referer token.
-// Pairs with SameSite=lax cookies; a cross-site page can't forge a matching Origin header.
+// CSRF protection for state-changing requests: require a verifiable same-origin source.
+// Pairs with SameSite=lax cookies (a cross-site POST carries no session cookie anyway). Fails
+// CLOSED: browsers attach Origin to *every* non-GET request, and the only writers here are our
+// own same-origin fetch/sendBeacon/forms — so a missing or mismatched source is not us, and is
+// refused. (mockMode/local-http are exempt so tests and offline dev still work.)
 const SELF_ORIGIN = config.publicBaseUrl.replace(/\/$/, "");
 app.use((req, res, next) => {
   if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
-  const src = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : "");
-  if (!config.mockMode && SELF_ORIGIN.startsWith("http") && src && src.replace(/\/$/, "") !== SELF_ORIGIN) {
+  if (config.mockMode || !SELF_ORIGIN.startsWith("http")) return next();
+  let src = req.headers.origin || "";
+  if (!src && req.headers.referer) { try { src = new URL(req.headers.referer).origin; } catch { src = ""; } }
+  if (src.replace(/\/$/, "") !== SELF_ORIGIN) {
     return res.status(403).json({ error: "cross-origin write refused (CSRF protection)" });
   }
   next();
