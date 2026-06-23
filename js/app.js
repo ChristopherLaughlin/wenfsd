@@ -186,6 +186,7 @@
     if (!av()) { renderEmptyState(); return; }
     if ($("quickStart")) $("quickStart").hidden = true;   // a car exists → the garage takes over
     if ($("lede")) $("lede").hidden = true;               // returning user: drop the marketing lede, reclaim the space
+    showPredictionZone(true);                             // a car exists → reveal the prediction zone
     const pred = currentPrediction();
     $("curveVer").textContent = pred.targetLabel || "OS";
 
@@ -206,7 +207,13 @@
     return pred;
   }
 
+  // First visit (no car): single funnel — show only the lede + quickStart, and hide the entire
+  // prediction zone (header, hero, garage+charts grid, guess game) until there's a car to fill it.
+  function showPredictionZone(show) {
+    ["zonePred", "heroCard", "predGrid", "guessCard"].forEach(id => { const el = $(id); if (el) el.hidden = !show; });
+  }
   function renderEmptyState() {
+    showPredictionZone(false);
     if ($("quickStart")) { $("quickStart").hidden = false; wireQuickStart(); }   // front-and-centre no-login path
     if ($("lede")) $("lede").hidden = false;              // no car yet → show the value-prop lede
     $("curveVer").textContent = "";
@@ -1270,6 +1277,7 @@
     if (verEl && warn) verEl.addEventListener("input", () => { warn.hidden = true; });
     const c = $("qsConnect"); if (c) c.onclick = connectTesla;
     const vn = $("qsVin"); if (vn) vn.onclick = openAddByVin;
+    const dm = $("qsDemo"); if (dm) dm.onclick = () => { gstate = Garage.loadDemo(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render(); };
   }
   function doDecode() {
     const d = VIN.decode($("vinInput").value);
@@ -2253,7 +2261,7 @@
       el.innerHTML = `Connected to Tesla, but the API returned no vehicles yet. If you just linked, wait a moment and reload.`;
     } else {
       el.className = "link-status ls-off";
-      el.innerHTML = `Not connected on this device (or your session expired). Use <strong>Connect Tesla account</strong> below to link your car.`;
+      el.innerHTML = `Not linked to a Tesla account on this device. <strong>Connect Tesla account</strong> below to auto-track — or just add your car manually above.`;
     }
   }
 })();

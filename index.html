@@ -131,7 +131,7 @@
     </div>
     <div class="qs-actions">
       <button class="btn qs-go" id="qsGo" type="button">See my prediction →</button>
-      <span class="qs-alt">Want it to update itself? <button class="qs-link" id="qsConnect" type="button">Connect Tesla, read-only 🔗</button> · or <button class="qs-link" id="qsVin" type="button">add by VIN</button>. <button class="qs-link js-open-security" type="button">Is this safe? 🔒</button></span>
+      <span class="qs-alt">Want it to update itself? <button class="qs-link" id="qsConnect" type="button">Connect Tesla, read-only 🔗</button> · or <button class="qs-link" id="qsVin" type="button">add by VIN</button> · or <button class="qs-link" id="qsDemo" type="button">explore with a demo car 🚗</button>. <button class="qs-link js-open-security" type="button">Is this safe? 🔒</button></span>
     </div>
   </section>
 
@@ -150,10 +150,10 @@
   <div class="update-alert" id="updateAlert" role="status" aria-live="polite" hidden></div>
 
   <!-- ZONE: Your prediction -->
-  <div class="zone-h"><span class="zh-t">📍 Your prediction</span><span class="zh-line"></span></div>
+  <div class="zone-h" id="zonePred"><span class="zh-t">📍 Your prediction</span><span class="zh-line"></span></div>
 
   <!-- HERO PREDICTION -->
-  <section class="hero card">
+  <section class="hero card" id="heroCard">
     <div class="hero-left">
       <div class="hero-head" aria-live="polite" role="status">
         <div class="hero-eyebrow" id="heroEyebrow">Predicted arrival on your car</div>
@@ -215,7 +215,7 @@
   <!-- NOW → NEXT context bar -->
   <div class="you-bar" id="youBar" hidden></div>
 
-  <div class="grid2">
+  <div class="grid2" id="predGrid">
     <!-- YOUR GARAGE -->
     <section class="card" id="garageCard">
       <div class="card-h-row">
@@ -378,7 +378,7 @@
   </div>
 
   <!-- GUESS GAME -->
-  <section class="card guess-card">
+  <section class="card guess-card" id="guessCard">
       <h2 class="card-h"><span class="ch-label" id="hdr_shot">Call your shot 🎯</span> <span class="card-sub" id="shotSub">wen, exactly?</span></h2>
       <p class="hint">Bet on the day <strong>your</strong> car updates. Pick your nerve — the bolder the call, the bigger the bragging rights (and the more spectacular the faceplant). It's "two weeks, trust me bro" but with a paper trail. 🎲</p>
       <label class="field">
