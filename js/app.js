@@ -673,7 +673,8 @@
   function renderHero(pred) {
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
     $("heroEyebrow").textContent = flavorPick("heroEyebrow", HERO_EYEBROWS).replace(/\{car\}/g, av().nickname || "your car");
-    $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
+    const hd = $("heroDate"); hd.textContent = Predict.fmtDate(pred.medianDate);
+    hd.classList.remove("pop"); void hd.offsetWidth; hd.classList.add("pop");   // replay the reveal animation
     $("osPredVer").textContent = pred.targetLabel ? "· " + pred.targetLabel : "";
     const hw = $("heroWindow");
     hw.textContent = pred.confirmed
@@ -1135,6 +1136,17 @@
     }).catch(() => { status.textContent = "Network hiccup — give it another go."; status.className = "ec-status ec-err"; })
       .finally(() => { if (btn) { btn.disabled = false; btn.textContent = orig; } });
   }
+  // honest social proof: a REAL count of recent predictions. Shown only when it's both real
+  // (not sample/mock) and meaningfully large — we never invent or pad the number.
+  function fetchSocialProof() {
+    const el = $("socialProof"); if (!el || el._done) return; el._done = true;
+    fetch("/api/pulse").then(r => r.ok ? r.json() : null).then(d => {
+      if (d && !d.sample && d.predictions >= 100) {
+        el.textContent = `🔮 ${d.predictions.toLocaleString()} predictions run in the last 30 days`;
+        el.hidden = false;
+      }
+    }).catch(() => {});
+  }
   // aha-moment alert opt-in: shown right under the predicted date, at peak intent. Connected cars
   // already get live alerts, so it's offered to not-yet-connected cars with a real prediction.
   function updateAhaAlert(pred) {
@@ -1366,6 +1378,17 @@
     }
     const mSel = $("qs_market");
     if (mSel && !mSel.options.length) mSel.innerHTML = Object.keys(WEN.regions).map(m => `<option ${m === "Australia" ? "selected" : ""}>${m}</option>`).join("");
+    // default the region to the visitor's own (from a coarse edge geo header) — but never override
+    // a deep-link region or a choice the user already touched
+    if (mSel && !mSel._geo && !new URLSearchParams(location.search).get("region")) {
+      mSel._geo = true;
+      fetch("/api/geo").then(r => r.ok ? r.json() : null).then(d => {
+        if (d && d.region && !mSel._touched && [...mSel.options].some(o => o.value === d.region)) { mSel.value = d.region; syncHw(); }
+      }).catch(() => {});
+      mSel.addEventListener("change", () => { mSel._touched = true; }, { once: true });
+    }
+    // honest social proof: real recent prediction count, shown only when meaningfully large
+    fetchSocialProof();
     const syncHw = () => { $("qs_hw").value = inferHardware($("qs_model").value, $("qs_year").value); };
     syncHw();
     $("qs_model").onchange = syncHw; $("qs_year").onchange = syncHw;
