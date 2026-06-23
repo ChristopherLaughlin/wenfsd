@@ -297,6 +297,8 @@
 
         <!-- update history -> real earliness estimate -->
         <div class="history">
+          <!-- reciprocity payoff: confidence climbs as you log REAL updates -->
+          <div id="confMeter" class="conf-meter"></div>
           <div class="history-h">
             <span>Your update history</span>
             <span class="history-actions"><button class="btn-sm" id="estHistBtn" type="button">📅 Estimate</button><button class="btn-sm" id="addHistBtn" type="button">+ log update</button></span>
