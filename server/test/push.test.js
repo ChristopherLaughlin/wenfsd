@@ -19,9 +19,11 @@ test("isValidSubscription rejects junk / non-https / oversized / missing keys", 
   ]) assert.equal(isValidSubscription(bad), false, `${JSON.stringify(bad).slice(0, 50)} must be rejected`);
 });
 
-test("push is dormant by default (no VAPID env) and runPushAlerts no-ops", async () => {
-  assert.equal(pushEnabled(), false, "push disabled without VAPID keys");
+// Env-robust: passes whether or not the local env has VAPID keys (a dev may have them in .env;
+// CI does not). The invariant: no VAPID ⇒ fully dormant; with VAPID ⇒ still a safe no-op in
+// mock/no-DB mode. Either way runPushAlerts never sends here.
+test("runPushAlerts is dormant/safe and never sends without a database", async () => {
   const r = await runPushAlerts();
   assert.equal(r.sent, 0);
-  assert.equal(r.disabled, true);
+  if (!pushEnabled()) assert.equal(r.disabled, true, "no VAPID ⇒ reports disabled");
 });

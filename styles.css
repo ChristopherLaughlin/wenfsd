@@ -90,9 +90,9 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 @media(max-width:680px){.qs-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:440px){.qs-grid{grid-template-columns:1fr}}
 .qs-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px}
-.qs-go{font-size:15px;font-weight:800;padding:12px 22px}
+.qs-go{font-size:15px;font-weight:800;padding:12px 22px;min-height:44px}
 .qs-alt{font-size:12px;color:var(--mut2);line-height:1.5}
-.qs-link{background:none;border:0;color:var(--cyan);font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;padding:6px 2px}
+.qs-link{background:none;border:0;color:var(--cyan);font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;padding:9px 2px;min-height:24px}
 .qs-link:hover{color:var(--txt)}
 .field-warn{display:block;margin-top:6px;font-size:12px;color:var(--amber);line-height:1.4}
 .field-warn[hidden]{display:none}
