@@ -334,7 +334,8 @@
   const MEME = ["Two weeks. Trust me bro. 🙏", "It's basically already on the truck.", "Source: a guy on the forums.", "Definitely this OTA. Probably. Maybe.", "Patience, you magnificent early-adopter.", "Coming right after the robotaxis. 🚕", "Soon™ — on Elon Time™.", "Two more weeks. (The two weeks renew automatically.)",
     "It's in the next build. The one after the next one.", "Leaked on X by a guy with a rocket emoji. Ironclad.", "The wizard said two weeks. The wizard always says two weeks. 🧙", "Your car can feel you refreshing. It's getting embarrassed.", "So close you can almost taste the regression bugs.", "Optimus will hand-deliver it. Standby. 🤖", "Imminent. In the geological sense.", "The OTA gods are merely buffering. 🙏", "Any minute now. For a generous definition of 'minute'.",
     "It's coming. Like Christmas, but you don't know the year. 🎄", "Two weeks — now with a confidence interval of ± two weeks.", "Closer than it appears. The mirror is lying, but still.", "Your update and the robotaxi are in a footrace. Both pulled a hamstring. 🏃", "It's queued. Behind everyone in California. And Texas. And Norway. 🇳🇴", "Elon liked a tweet about it. That's basically a changelog. ❤️", "Downloading at the speed of vibes. 📶", "Patience is a virtue. Tesla is testing exactly how virtuous you are.", "It's in beta. The beta is in beta. The beta's beta has a beta. ♾️", "Manifesting. Loudly. Into the software menu. 🔮",
-    "Schrödinger's update: simultaneously rolling out and definitely not for you. 📦", "It's 90% rolled out. You are reliably, dependably, in the other 10%. 🎯", "The app says 'Up to date.' The app lies with the confidence of a used-car salesman. 📱", "Update ETA: after the Roadster, before the heat death of the universe. 🌌", "Your VIN is on a list. A long list. A suspiciously US-shaped list. 📋", "One firmware push away. Tesla just has 47 other things 'one push away' too.", "The changelog says 'minor bug fixes.' The bugs strongly disagree. 🐛", "Soon, comrade — the means of OTA production will be seized any day now. 🚩", "Buffering since the Cybertruck reveal. We've made our peace. ⏳", "It updates the moment you stop checking. So, never, because you'll never stop. 👀"];
+    "Schrödinger's update: simultaneously rolling out and definitely not for you. 📦", "It's 90% rolled out. You are reliably, dependably, in the other 10%. 🎯", "The app says 'Up to date.' The app lies with the confidence of a used-car salesman. 📱", "Update ETA: after the Roadster, before the heat death of the universe. 🌌", "Your VIN is on a list. A long list. A suspiciously US-shaped list. 📋", "One firmware push away. Tesla just has 47 other things 'one push away' too.", "The changelog says 'minor bug fixes.' The bugs strongly disagree. 🐛", "Soon, comrade — the means of OTA production will be seized any day now. 🚩", "Buffering since the Cybertruck reveal. We've made our peace. ⏳", "It updates the moment you stop checking. So, never, because you'll never stop. 👀",
+    "🇦🇺 The US got it in March. You'll get it when the regulators come back from a long lunch. 🍤", "🇳🇿 Same wait as Australia — plus the ferry. ⛴️", "🇪🇺 Europe's OTA is stuck in a 47-page consent form. Decline all? 📄", "Right-hand-drive tax: the update arrives, sees the steering wheel on the wrong side, and leaves. 🔄", "It's doing a hot lap of the Nürburgring before it'll deign to reach you. 🏁", "Mercury's in retrograde and, frankly, so is your rollout. 🪐", "It'll land the same week the Cybertruck does a right-hand-drive variant. So, never, but politely. 🛻", "Sydney has it. Melbourne's still arguing about which café got it first. ☕", "Tessie says ~4% of the fleet has it. You are aggressively, heroically median. 📊", "Brisbane got it, so it's basically national now. (It is extremely not.) 🦘", "Geneva convention: the US gets FSD, you get a strongly-worded changelog. 🇨🇭", "Your update RSVP'd 'maybe' and didn't bring a plate. 🥗"];
   // region-agnostic Tesla/FSD meme one-liners — mixed into the hero flavour for variety
   const GENERIC = [
     "Still on {ver}? It's fine. FSD is 'two weeks' away. It's always two weeks away.",
@@ -599,6 +600,10 @@
     "Currently 0% affiliated with Tesla, who would be appalled by our candour. ✌️",
     "The only Tesla timeline with error bars instead of vibes.",
     "Yes, California already has it. No, that doesn't help you. 🏖️",
+    "Built in a right-hand-drive country Tesla forgot to CC. 🇦🇺",
+    "The US gets the demo; we get the documentary about the demo. 🎬",
+    "We can't hurry the regulators — but we can time their lunch breaks. ⚖️",
+    "Made for the southern hemisphere, where the updates arrive upside down and late. 🦘",
     "Built by people who check the software menu before they check their texts.",
     "Like a horoscope, except the maths is real and the disappointment is scheduled.",
     "We cannot make your update arrive faster. We have tested this. Repeatedly. Tearfully.",
@@ -968,6 +973,16 @@
     "Manual mode works — but connect {car} read-only and your prediction settles itself: live alerts, no location, no commands, no drama. 🔓",
     "Bet you've checked the software menu today. Connect {car} read-only and we'll do it for you, then tell you the moment it's real. 🔔",
   ];
+  // rotating cheeky headers for the one consolidated alert ask (the post-prediction CTA)
+  const AHA_HEADERS = [
+    "🔔 Want a heads-up the day it's likely to land?",
+    "🛰️ We'll watch the rollout so you can stop refreshing at 2am.",
+    "📨 Be the smug one in the group chat who knew first.",
+    "🇦🇺 We'll ping you the second it clears the regulators' lunch break.",
+    "⚡ Skip the forums — we'll tell you the moment it's actually real.",
+    "👀 Your car can't tell you wen. We can. Want the ping?",
+    "🦘 Get pinged before your mate in Sydney gets to gloat.",
+  ];
   let _nudgeDismissed = false;
   function openAddByVin() {
     const g = $("garageCard"); if (g) g.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1155,6 +1170,7 @@
     const show = !!(v && !v.connected && pred && !pred.capped && !pred.unavailable);
     el.hidden = !show;
     if (!show) return;
+    const h = el.querySelector(".aha-h"); if (h) h.textContent = flavorPick("aha", AHA_HEADERS);
     const btn = $("ahaBtn");
     if (btn && !btn._wired) {
       btn._wired = true;
@@ -2422,6 +2438,26 @@
       el.innerHTML = `Not linked to a Tesla account on this device. <strong>Connect Tesla account</strong> below to auto-track — or just add your car manually above.`;
     }
   }
+
+  // --- progressive disclosure: the fleet-intelligence zone is collapsed by default so a first-time
+  //     visitor gets their answer, not a research terminal. Choice is remembered. ---
+  (function setupExploreToggle() {
+    const btn = $("exploreToggle"), zone = $("exploreZone"), caret = $("exploreCaret");
+    if (!btn || !zone) return;
+    let open = false;
+    try { open = localStorage.getItem("wf_explore_open") === "1"; } catch (e) {}
+    const apply = () => {
+      zone.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (caret) caret.textContent = open ? "▴" : "▾";
+    };
+    apply();
+    btn.addEventListener("click", () => {
+      open = !open;
+      try { localStorage.setItem("wf_explore_open", open ? "1" : "0"); } catch (e) {}
+      apply();
+    });
+  })();
 
   // --- PWA: register the service worker + surface an Install button (better mobile retention) ---
   (function setupPWA() {

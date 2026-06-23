@@ -134,6 +134,12 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
 .zone-h{display:flex;align-items:center;gap:14px;margin:40px 2px 8px}
 .zone-h .zh-t{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);white-space:nowrap}
 .zone-h .zh-line{flex:1;height:1px;background:var(--line2)}
+/* collapsible zone header (button reset + caret) */
+button.zone-toggle{width:100%;background:none;border:0;font:inherit;cursor:pointer;text-align:left;padding:0}
+button.zone-toggle:hover .zh-t{color:var(--txt)}
+button.zone-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px}
+.zone-caret{font-size:11px;color:var(--mut);transition:color .15s}
+button.zone-toggle:hover .zone-caret{color:var(--cyan)}
 
 /* hero */
 .hero{display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:center;
