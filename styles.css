@@ -108,8 +108,14 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
   border-radius:var(--radius); padding:20px; margin-top:16px; box-shadow:var(--shadow)}
 .card-h{margin:0 0 14px;font-size:15px;font-weight:700;letter-spacing:.2px;display:flex;align-items:baseline;gap:10px}
 .card-sub{font-size:12px;color:var(--mut);font-weight:500}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+/* both "how sure" charts stacked beside the garage */
+.chart-stack{display:flex;flex-direction:column;gap:16px}
+/* zone signposts — break the page into legible sections */
+.zone-h{display:flex;align-items:center;gap:14px;margin:40px 2px 8px}
+.zone-h .zh-t{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.zone-h .zh-line{flex:1;height:1px;background:var(--line2)}
 
 /* hero */
 .hero{display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:center;
