@@ -115,8 +115,10 @@ apiRouter.get("/unsubscribe", ah(async (req, res) => {
 }));
 apiRouter.post("/unsubscribe", ah(async (req, res) => {
   const t = String(req.query.t || "");
-  if (!config.mockMode && hasDb() && t) await query(`UPDATE email_subscribers SET unsubscribed_at=now() WHERE unsub_token=$1`, [t]);
-  res.type("html").send(confirmPage("Done — you're unsubscribed. No more emails. We'll miss you. 🫡"));
+  // hard-DELETE the row, not a soft flag — full erasure of the address + car context (GDPR
+  // right-to-erasure + data minimisation). Re-subscribing later goes through double opt-in again.
+  if (!config.mockMode && hasDb() && t) await query(`DELETE FROM email_subscribers WHERE unsub_token=$1`, [t]);
+  res.type("html").send(confirmPage("Done — you're unsubscribed and your address is erased. No more emails. We'll miss you. 🫡"));
 }));
 
 apiRouter.get("/fleet/firmware", ah(async (req, res) => {
