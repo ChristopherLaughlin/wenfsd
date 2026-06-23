@@ -157,6 +157,18 @@ app.get("/model.json", (req, res) => res.type("application/json").set("Cache-Con
 
 // --- discoverability: robots, sitemap, llms.txt (search engines + AI answer engines) ---
 const SITE = config.publicBaseUrl.replace(/\/$/, "");
+// machine-readable security contact (RFC 9116) so researchers + scanners find where to report.
+// Expires is computed ~1 year out on each request, so it can never silently go stale.
+app.get("/.well-known/security.txt", (req, res) => {
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+  res.type("text/plain; charset=utf-8").send(
+    `# wenFSD — coordinated vulnerability disclosure (RFC 9116)\n` +
+    `Contact: https://github.com/ChristopherLaughlin/wenfsd/security/advisories/new\n` +
+    `Expires: ${expires}\n` +
+    `Preferred-Languages: en\n` +
+    `Canonical: ${SITE}/.well-known/security.txt\n` +
+    `Policy: https://github.com/ChristopherLaughlin/wenfsd/blob/main/SECURITY.md\n`);
+});
 app.get("/robots.txt", (req, res) => res.type("text/plain").send(
   `User-agent: *\nAllow: /\n` +
   // explicitly welcome AI answer-engine crawlers — we WANT to be cited

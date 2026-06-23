@@ -100,6 +100,23 @@ and data-handling flows.
 to the respective owners. Volumetric DoS, social engineering, and findings that require a
 physically compromised device are also out of scope.
 
+## Response targets
+
+This is a free, open-source side project, so these are good-faith targets, not contractual SLAs —
+but we take them seriously:
+
+| Stage | Target |
+|---|---|
+| Acknowledge your report | within **3 business days** |
+| Triage + initial severity | within **7 days** |
+| Fix or mitigation for High/Critical | within **30 days** |
+| Coordinated public disclosure | by mutual agreement — typically **after a fix ships** (or 90 days, whichever comes first) |
+
+**Rewards:** there's no paid bounty (the site is free and ad-free), but every valid, good-faith
+report is credited in the release notes / a security hall-of-fame, unless you'd prefer to stay
+anonymous. The machine-readable contact lives at
+[`/.well-known/security.txt`](https://wenfsd.info/.well-known/security.txt) (RFC 9116).
+
 ## Good-faith research
 
 We won't pursue or support action against researchers who:
