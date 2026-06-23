@@ -77,12 +77,15 @@ function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ 
 function carLabel(meta) { return `${meta.year} ${meta.model}${meta.generation ? " " + meta.generation : ""}`; }
 
 // ---- the FSD one-liner (honest about the asymmetry: capped / gated / promised / rides-in-build) ----
-function fsdLine(fsd) {
+// Returns PLAIN text (no HTML). Callers escape per-context: esc() for HTML/attributes,
+// JSON.stringify for the JSON-LD block. This keeps escaping at the output boundary (correct) and
+// avoids regex tag-stripping (which is bypassable, and which static analysis rightly flags).
+function fsdText(fsd) {
   if (!fsd || fsd.unavailable) return "";
-  if (fsd.capped) return `FSD is capped on this hardware — ${esc(fsd.current || "your version")} is the end of the line.`;
-  if (fsd.promised) return `FSD ${esc(fsd.targetLabel || "")} is promised for this hardware, but Tesla has given no committed date.`;
-  if (fsd.notEntitled) return `The hardware can run FSD ${esc(fsd.targetLabel || "")}, but it only activates with a purchase or subscription.`;
-  if (fsd.medianDate) return `Next FSD version (${esc(fsd.targetLabel || "")}) projected around ${esc(fmtDate(fsd.medianDate))}.`;
+  if (fsd.capped) return `FSD is capped on this hardware — ${fsd.current || "your version"} is the end of the line.`;
+  if (fsd.promised) return `FSD ${fsd.targetLabel || ""} is promised for this hardware, but Tesla has given no committed date.`;
+  if (fsd.notEntitled) return `The hardware can run FSD ${fsd.targetLabel || ""}, but it only activates with a purchase or subscription.`;
+  if (fsd.medianDate) return `Next FSD version (${fsd.targetLabel || ""}) projected around ${fmtDate(fsd.medianDate)}.`;
   return "";
 }
 
@@ -99,14 +102,14 @@ export function renderPage(meta, version) {
   const ogUrl = `${SITE}/p/${base}/og.png${vq}`;
   const q = `When will the ${car} get its next software update in ${region}?`;
   const title = `${car} next update (${region}) — ${date} · wenFSD`;
-  const desc = `wenFSD predicts the ${car} gets its next Tesla software update around ${date} in ${region} (${windowLine}). ${fsdLine(fsd).replace(/<[^>]+>/g, "")} A probability, not a promise.`;
+  const desc = `wenFSD predicts the ${car} gets its next Tesla software update around ${date} in ${region} (${windowLine}). ${fsdText(fsd)} A probability, not a promise.`;
   const appLink = `${SITE}/?model=${encodeURIComponent(meta.model)}&year=${meta.year}&region=${encodeURIComponent(region)}${version ? "&v=" + encodeURIComponent(version) : ""}`;
 
   const faq = {
     "@context": "https://schema.org", "@type": "FAQPage",
     mainEntity: [
       { "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: `wenFSD predicts the next software update for a ${car} in ${region} arrives around ${date} (${windowLine}). This is a modelled probability from regional rollout cadence, not an official Tesla date.` } },
-      { "@type": "Question", name: `Does this ${car} get a new FSD version next?`, acceptedAnswer: { "@type": "Answer", text: fsdLine(fsd).replace(/<[^>]+>/g, "") || "FSD availability depends on hardware, region and entitlement." } },
+      { "@type": "Question", name: `Does this ${car} get a new FSD version next?`, acceptedAnswer: { "@type": "Answer", text: fsdText(fsd) || "FSD availability depends on hardware, region and entitlement." } },
     ],
   };
 
@@ -125,7 +128,7 @@ export function renderPage(meta, version) {
 <meta name="twitter:title" content="${esc(car)} — next update ${esc(date)}">
 <meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${esc(ogUrl)}">
 <meta name="theme-color" content="#e6394b">
-<script type="application/ld+json">${JSON.stringify(faq)}</script>
+<script type="application/ld+json">${JSON.stringify(faq).replace(/</g, "\\u003c")}</script>
 <style>
   :root{color-scheme:dark}
   body{background:#0a0d12;color:#e9eef5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;line-height:1.55}
@@ -153,7 +156,7 @@ export function renderPage(meta, version) {
     <div class="lbl">${os.confirmed ? "Next update — confirmed by the car" : "Next software update — predicted"}</div>
     <div class="date${os.confirmed ? " confirmed" : ""}">${esc(date)}</div>
     <div class="win">${esc(windowLine)} · a prediction, not a promise</div>
-    ${fsdLine(fsd) ? `<p class="fsd">🧠 ${fsdLine(fsd)}</p>` : ""}
+    ${fsdText(fsd) ? `<p class="fsd">🧠 ${esc(fsdText(fsd))}</p>` : ""}
     ${os.note ? `<p class="note">${esc(os.note)}</p>` : ""}
   </div>
   <a class="cta" href="${esc(appLink)}">Get your exact prediction →</a>
