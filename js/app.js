@@ -185,6 +185,7 @@
     setTopConnect(!!(a0 && a0.connected), !!(a0 && a0.connected && a0.optedIn));
     if (!av()) { renderEmptyState(); return; }
     if ($("quickStart")) $("quickStart").hidden = true;   // a car exists → the garage takes over
+    if ($("lede")) $("lede").hidden = true;               // returning user: drop the marketing lede, reclaim the space
     const pred = currentPrediction();
     $("curveVer").textContent = pred.targetLabel || "OS";
 
@@ -207,6 +208,7 @@
 
   function renderEmptyState() {
     if ($("quickStart")) { $("quickStart").hidden = false; wireQuickStart(); }   // front-and-centre no-login path
+    if ($("lede")) $("lede").hidden = false;              // no car yet → show the value-prop lede
     $("curveVer").textContent = "";
     $("heroEyebrow").textContent = "Welcome to wenFSD";
     $("heroDate").textContent = "wen FSD? Let's find out.";
@@ -1601,7 +1603,7 @@
       banner.hidden = false;
       banner.className = live ? "sample-banner sb-live" : "sample-banner";
       banner.innerHTML = live
-        ? `✓ Showing live fleet data aggregated from connected cars + public trackers. ${rnd(["Real numbers. No vibes.", "Freshly scraped, ethically sourced. 🌿", "As live as Tesla lets anyone be.", "These are real. The ETAs are still hopeful."])}`
+        ? `✓ <strong>Live fleet data</strong>, aggregated from connected cars + public trackers. ${rnd(["Real numbers, no vibes.", "Freshly scraped, ethically sourced. 🌿", "As live as Tesla lets anyone be.", "Aggregated, deduped, fleet-weighted."])} <span class="sb-caveat">Your predicted <em>dates</em> are still modelled estimates — that part's always honest guesswork. 🔮</span>`
         : `Showing <strong>your real car data</strong> plus <em>modelled estimates</em> for the fleet-wide views below — each one clearly badged. Estimates become live figures as real Teslas connect and we aggregate the public trackers. No figure is presented as observed unless it is. (We'd rather be honestly vague than confidently wrong.)`;
     }
   }

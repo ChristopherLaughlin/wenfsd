@@ -31,6 +31,7 @@ body{
 main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18px 60px}
 .sample-banner{background:rgba(255,181,71,.10);border:1px solid rgba(255,181,71,.30);color:var(--amber);font-size:12.5px;line-height:1.55;padding:11px 14px;border-radius:11px;margin:14px 0 0}
 .sample-banner strong{color:#ffd591}
+.sample-banner .sb-caveat{color:var(--mut);font-style:italic} .sample-banner .sb-caveat em{color:var(--mut2);font-style:normal}
 
 /* funny connect-your-Tesla nudge */
 .connect-nudge{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 0;padding:13px 16px;border-radius:12px;
