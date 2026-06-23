@@ -507,8 +507,9 @@
   <!-- ZONE: How it works & trust -->
   <div class="zone-h"><span class="zh-t">🔬 How it works &amp; trust</span><span class="zh-line"></span></div>
 
-  <!-- METHODOLOGY (collapsed — reference, not needed every visit) -->
-  <section class="card">
+  <!-- TRUST CLUSTER — methodology + open model + security, one card under the zone header -->
+  <section class="card" id="trustCard">
+    <!-- methodology -->
     <details class="why-details">
       <summary class="card-h">Why wenFSD beats the trackers <span class="card-sub">(humbly)</span></summary>
       <p class="why-answer" id="whyAnswer" role="button" tabindex="0" title="Tap for another reason"></p>
@@ -523,10 +524,10 @@
       </ul>
       <div class="stats-strip" id="statsStrip"></div>
     </details>
-  </section>
 
-  <!-- OPEN MODEL — see it, download it, tinker with it, challenge it -->
-  <section class="card" id="modelCard">
+    <div class="trust-sep"></div>
+
+    <!-- open model — see it, download it, tinker with it, challenge it -->
     <details class="why-details" id="modelDetails">
       <summary class="card-h">🔬 The model — open, and yours to tinker with <span class="card-sub">no black box</span></summary>
       <div class="why-body">
@@ -561,10 +562,10 @@
         </details>
       </div>
     </details>
-  </section>
 
-  <!-- SECURITY & PRIVACY (for the reasonably-suspicious) -->
-  <section class="card" id="securityCard">
+    <div class="trust-sep"></div>
+
+    <!-- security & privacy (for the reasonably-suspicious) -->
     <details class="why-details" id="securityDetails">
       <summary class="card-h">🔒 Security &amp; privacy <span class="card-sub">no spin, no understating it</span></summary>
       <p class="why-sub">You should be skeptical of giving any app access to your Tesla. Good. So here's the straight version — including the scary part.</p>

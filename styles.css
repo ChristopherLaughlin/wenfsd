@@ -255,6 +255,8 @@ tr.mx-click:hover td{background:#11161f}
 .why-details[open]>summary::after{content:" ▾"}
 .why-details>summary:hover{color:var(--cyan)}
 .why-details .why{margin-top:14px}
+/* separators between the three trust collapsibles now sharing one card */
+#trustCard>.trust-sep{height:1px;background:var(--line);margin:16px 0}
 .why-answer{margin:14px 0 4px;font-size:19px;font-weight:800;color:var(--txt);line-height:1.35;cursor:pointer;user-select:none}
 .why-answer .wa-but{font-weight:600;color:var(--mut)}
 .why-answer .wa-but em{font-style:normal;color:var(--cyan)}
