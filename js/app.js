@@ -787,11 +787,11 @@
     if (btn) {
       btn.classList.toggle("is-connected", connected);
       if (connected) { btn.textContent = "✓ Connected to Tesla — click to disconnect"; btn.onclick = () => { if (confirm("Disconnect your Tesla account and remove its linked data?")) disconnectTesla(); }; }
-      else { btn.textContent = "🔗 Connect Tesla account — auto-track"; btn.onclick = connectTesla; }
+      else { btn.textContent = "📨 Connect → get pinged the second it lands"; btn.onclick = connectTesla; }
     }
     if (hint) hint.innerHTML = connected
-      ? `Your Tesla is linked <strong>read-only</strong> — wenFSD reads your software version automatically and scores a prediction when you next update. ${contributing ? "You're <strong>contributing</strong> anonymised version data to fleet stats." : "You're <strong>not</strong> contributing to fleet stats — tick the box above to help everyone's predictions."}`
-      : `Linking uses Tesla's official OAuth (read-only) so wenFSD reads your software version automatically — no manual logging. You can disconnect or opt out anytime.`;
+      ? `Your Tesla is linked <strong>read-only</strong> — wenFSD watches your version so you don't have to, and <strong>pings you the moment your update lands</strong> (and auto-settles your Call Your Shot bet). ${contributing ? "You're <strong>contributing</strong> anonymised version data to fleet stats." : "You're <strong>not</strong> contributing to fleet stats — tick the box above to help everyone's predictions."}`
+      : `<strong>Stop refreshing the software menu at 2am.</strong> Connect read-only and we'll watch your car, then ping you the <strong>second</strong> your update lands — and settle your bet for you. Tesla's official OAuth; we only ever read your <strong>software version</strong>, never your location or trips. Disconnect anytime. <button type="button" class="sec-link js-open-security">🔒 Exactly what we read &amp; ignore →</button>`;
     if (chip) {
       chip.hidden = false;
       chip.className = "conn-chip " + (contributing ? "cc-on" : connected ? "cc-link" : "cc-off");
@@ -869,7 +869,7 @@
     const tc = $("topConnect"); if (!tc) return;
     tc.className = "top-connect " + (contributing ? "tc-on" : connected ? "tc-link" : "tc-off");
     tc.textContent = contributing ? "✓ Connected · sharing" : connected ? "✓ Connected" : "🔗 Connect Tesla";
-    tc.title = connected ? "Manage your Tesla connection in Your garage" : "Link your Tesla (read-only) to auto-track your version";
+    tc.title = connected ? "Manage your Tesla connection in Your garage" : "Link your Tesla (read-only) — we'll ping you the second your update lands";
     tc.onclick = connected
       ? () => { const g = $("garageCard"); if (g) g.scrollIntoView({ behavior: "smooth", block: "start" }); }
       : connectTesla;
