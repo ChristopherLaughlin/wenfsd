@@ -25,8 +25,43 @@
     app.innerHTML = `<p class="hint">Counting your adoring public… 🫶</p>`;
     fetch("/api/admin/stats", { headers: { "x-admin-token": tok, Accept: "application/json" } })
       .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j.error || ("HTTP " + r.status))))
-      .then(render)
+      .then(d => { render(d); loadEvents(tok); })
       .catch(err => { gate(); const e = $("adminErr"); if (e) e.textContent = "✗ " + (typeof err === "string" ? err : "couldn't load") + ". Wrong token, or ADMIN_TOKEN isn't set on the server."; });
+  }
+
+  // --- rollout-event review queue: confirm/dismiss is the HUMAN GATE before events go public ---
+  function loadEvents(tok) {
+    fetch("/api/admin/events", { headers: { "x-admin-token": tok, Accept: "application/json" } })
+      .then(r => r.ok ? r.json() : null).then(d => renderEvents(d && d.events || [], tok)).catch(() => {});
+  }
+  function evRow(e, tok) {
+    const pend = e.status === "pending";
+    const meta = [e.version || "next build", e.region || "global", e.source, `conf ${Math.round((e.confidence || 0) * 100)}%`].filter(Boolean).map(esc).join(" · ");
+    const btns = pend
+      ? `<button class="btn-sm" data-ev-confirm="${e.id}" style="background:rgba(55,214,122,.16);border-color:rgba(55,214,122,.4);color:#7fe0b8">✓ Confirm (go live)</button>
+         <button class="btn-sm" data-ev-dismiss="${e.id}" style="margin-left:6px">✕ Dismiss</button>`
+      : `<span class="rp-eta" style="opacity:.7">${esc(e.status)}</span>`;
+    return `<div class="rp-row" style="align-items:flex-start;gap:10px">
+      <div class="rp-name" style="min-width:84px"><strong>${esc((e.type || "").toUpperCase())}</strong></div>
+      <div style="flex:1"><div>${meta}</div>${e.reason ? `<div class="cal-sub">${esc(e.reason)}</div>` : ""}</div>
+      <div style="white-space:nowrap">${btns}</div></div>`;
+  }
+  function renderEvents(events, tok) {
+    const host = $("adminEvents"); if (!host) return;
+    const pending = events.filter(e => e.status === "pending");
+    const recent = events.filter(e => e.status !== "pending").slice(0, 8);
+    host.innerHTML =
+      `<h2 class="card-h" style="margin:22px 0 10px">Rollout events <span class="card-sub">${pending.length} awaiting your confirmation — nothing goes public until you approve it</span></h2>` +
+      `<div class="card"><div class="region-panel">` +
+      (pending.length ? pending.map(e => evRow(e, tok)).join("") : `<p class="hint">No pending events. Quiet skies. ✈️</p>`) +
+      (recent.length ? `<hr style="border:0;border-top:1px solid var(--line);margin:12px 0">` + recent.map(e => evRow(e, tok)).join("") : "") +
+      `</div><p class="hint" style="margin-top:10px">Confirmed events overlay the public prediction (freeze + honest "paused"). Pending observed/community signals never do until confirmed here.</p></div>`;
+    host.querySelectorAll("[data-ev-confirm]").forEach(b => b.onclick = () => patchEvent(b.getAttribute("data-ev-confirm"), "confirmed", tok));
+    host.querySelectorAll("[data-ev-dismiss]").forEach(b => b.onclick = () => patchEvent(b.getAttribute("data-ev-dismiss"), "dismissed", tok));
+  }
+  function patchEvent(id, status, tok) {
+    fetch("/api/admin/events/" + encodeURIComponent(id), { method: "PATCH", headers: { "x-admin-token": tok, "Content-Type": "application/json" }, body: JSON.stringify({ status }) })
+      .then(r => r.ok ? loadEvents(tok) : null).catch(() => {});
   }
 
   function tile(big, label, sub) {
@@ -110,6 +145,7 @@
         tile((d.guesses || 0).toLocaleString(), "shots called", `${(d.guessesSettled || 0)} settled · ${(d.griefLogs || 0)} grief logs`) +
         tile((d.emailSubscribers || 0).toLocaleString(), "email subscribers (no-login)", `${(d.emailConfirmed || 0)} confirmed`) +
       `</div>` +
+      `<div id="adminEvents"></div>` +
       funnelSection(d.funnel) +
       breakdownSection(d.funnelDims) +
       `<h2 class="card-h" style="margin:22px 0 10px">Signups by region <span class="card-sub">where your people are</span></h2>` +

@@ -13,6 +13,7 @@ import { encrypt, decrypt } from "../crypto.js";
 import { applyVersionReading, persistPendingUpdate } from "../poller.js";
 import { deliver, confirmMessage } from "../mailer.js";
 import { cleanEventType, cleanRegion, cleanVersion, cleanReason, HIGH_IMPACT } from "../events.js";
+import { classifyPost } from "../community.js";
 import crypto from "node:crypto";
 
 export const apiRouter = Router();
@@ -195,8 +196,32 @@ apiRouter.get("/events", ah(async (req, res) => {
   res.set("Cache-Control", "public, max-age=120").json({ events: await activeConfirmedEvents() });
 }));
 
-// community report (UGC) — fully built in PR-C; the row shape lands here so the model is ready.
-// High-impact reports enter as 'pending' (human-gated). No PII: submitter is a salted daily hash.
+// community report (UGC): owners tell us what they saw (e.g. the "rollout paused" email). Reports
+// land as 'pending' and NEVER touch the public prediction until a human confirms them in /admin.
+// No PII — submitter is a salted daily hash, free text is sanitised + length-capped.
+function submitterHash(req) {
+  const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+  const ua = String(req.get("user-agent") || "").slice(0, 200);
+  const day = new Date().toISOString().slice(0, 10);
+  return crypto.createHash("sha256").update(day + "|" + ip + "|" + ua + "|" + config.sessionSecret).digest("hex").slice(0, 32);
+}
+apiRouter.post("/report", ah(async (req, res) => {
+  const b = req.body || {};
+  // a report can be structured (type/region/version) and/or free text we classify
+  const text = typeof b.text === "string" ? b.text.replace(/[<>]/g, "").slice(0, 600) : "";
+  const guess = text ? classifyPost(text) : null;
+  const type = cleanEventType(b.type) || (guess && guess.type) || null;
+  if (!type) return res.status(400).json({ ok: false, error: "Tell us what happened (pause, resume, halt…)." });
+  const region = cleanRegion(b.region) || (guess && guess.region) || null;
+  const version = cleanVersion(b.version) || (guess && cleanVersion(guess.version)) || null;
+  const reason = cleanReason(b.reason || text);
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  await query(
+    `INSERT INTO rollout_events(type, version, region, status, reason, source, submitted_by, confidence)
+     VALUES($1,$2,$3,'pending',$4,'community-report',$5,$6)`,
+    [type, version, region, reason, submitterHash(req), guess ? guess.confidence : 0.4]);
+  res.json({ ok: true });   // generic success — we don't expose whether/when it goes live (anti-manipulation)
+}));
 
 apiRouter.get("/fleet/firmware", ah(async (req, res) => {
   if (req.query.merged) {

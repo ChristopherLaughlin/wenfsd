@@ -510,6 +510,29 @@
   <!-- ZONE: Community -->
   <div class="zone-h"><span class="zh-t" id="zh_community">🫂 Community</span><span class="zh-line"></span></div>
 
+  <!-- COMMUNITY REPORT: owners are the sensor network. Got the "rollout paused" email? Tell us. -->
+  <section class="card" id="reportCard">
+    <h2 class="card-h"><span class="ch-label">📡 Seen a rollout change?</span> <span class="card-sub">pause, halt, or it's-rolling-again — tell us</span></h2>
+    <p class="hint" style="margin:2px 0 10px">Got an email or saw word that a rollout was <strong>paused / pulled / resumed</strong>? Report it and we'll review it. Confirmed changes update everyone's prediction — <strong>nothing goes live until a human checks it</strong>, so a prankster can't move the model.</p>
+    <div class="rep-grid" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <label class="field" style="flex:0 0 auto"><span>What happened</span>
+        <select id="repType">
+          <option value="pause">⏸ Rollout paused / on hold</option>
+          <option value="halt">🛑 Rollout pulled / halted</option>
+          <option value="resume">▶️ Rolling again / resumed</option>
+          <option value="note">📝 Other news</option>
+        </select></label>
+      <label class="field" style="flex:0 0 auto"><span>Region</span><select id="repRegion"></select></label>
+      <label class="field" style="flex:1 1 160px"><span>Version <em>(if known)</em></span><input id="repVersion" placeholder="e.g. 2026.20.3" spellcheck="false" autocomplete="off"/></label>
+    </div>
+    <label class="field" style="margin-top:8px"><span>What did you see? <em>(paste the email / link)</em></span>
+      <input id="repText" placeholder="e.g. Tesla emailed that the 2026.20 AU rollout is paused for unforeseen issues" maxlength="600"/></label>
+    <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn-sm" id="repSubmit" type="button" style="background:rgba(57,212,255,.16);border-color:rgba(57,212,255,.45);color:#8fe3ff;font-weight:800">Report it 📡</button>
+      <span class="ec-status" id="repStatus" role="status" aria-live="polite"></span>
+    </div>
+  </section>
+
   <!-- THE FIVE STAGES OF wenFSD GRIEF (Kübler-Ross) — after the explanatory data, before the social board -->
   <section class="card grief-card" id="griefCard">
     <h2 class="card-h"><span class="ch-label" id="hdr_grief">The Five Stages of wenFSD Grief</span> <span class="card-sub" id="griefSub">a clinical assessment</span></h2>
