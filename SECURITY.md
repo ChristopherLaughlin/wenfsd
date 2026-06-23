@@ -40,6 +40,10 @@ If you *do* connect your Tesla account:
   **No location, no trip history, no odometer, no ownership records** — there is no such column in
   the schema (`server/db/schema.sql`).
 - **Per user:** your Tesla account id and the email from the OIDC login.
+- **Email alerts (no-login):** if you ask us to email you when your update's close, we store your
+  email + your car's region/hardware/version (to know what to alert on) — double opt-in, so we
+  can't be signed up by someone else. **Unsubscribing erases the record entirely** (a hard delete,
+  not a flag).
 - **Sharing is opt-in and off by default.** Your handle, car, or notes only appear on the public
   leaderboard/community views if you explicitly enable public sharing.
 - **No cookies, no third-party trackers, no analytics SDKs.** Aggregate visit counts use a salted
