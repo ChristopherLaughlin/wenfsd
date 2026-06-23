@@ -45,6 +45,29 @@
     }).join("") + `</div>`;
   }
 
+  // the growth funnel: events in logical order so you read activation → retention → referral
+  const FUNNEL_ORDER = [
+    ["prediction_generated", "🎯 Got a prediction (activation)"],
+    ["demo_loaded", "🚗 Loaded the demo"],
+    ["email_subscribed", "📭 Captured an email (no-login)"],
+    ["connect_clicked", "🔗 Clicked Connect Tesla"],
+    ["notify_enabled", "🔔 Enabled live notify"],
+    ["history_logged", "📅 Logged update history"],
+    ["bet_placed", "🎲 Placed a Call-Your-Shot bet"],
+    ["shared", "📣 Shared a prediction"],
+  ];
+  function funnelSection(funnel) {
+    funnel = funnel || {};
+    const rows = FUNNEL_ORDER.map(([k, label]) => ({ label, n: +funnel[k] || 0 }));
+    const max = Math.max(1, ...rows.map(r => r.n));
+    const bars = rows.map(r =>
+      `<div class="rp-row"><div class="rp-name">${esc(r.label)}</div>` +
+      `<div class="rp-bar"><span style="width:${Math.max(2, (r.n / max) * 100)}%"></span></div>` +
+      `<div class="rp-eta"><strong>${r.n.toLocaleString()}</strong></div></div>`).join("");
+    return `<h2 class="card-h" style="margin:22px 0 10px">Funnel <span class="card-sub">events, last 30 days</span></h2>` +
+      `<div class="card"><div class="region-panel">${bars}</div>` +
+      `<p class="hint" style="margin-top:10px">Cookieless aggregate counts (no user IDs). Activation = got a prediction; the rest are retention/referral actions.</p></div>`;
+  }
   function render(d) {
     const sample = d.mode === "sample";
     const totViews = (d.visitsByDay || []).reduce((a, b) => a + (+b.views || 0), 0);
@@ -56,7 +79,9 @@
         tile((d.vehicles || 0).toLocaleString(), "cars linked", `${(d.optedIn || 0)} opted into sharing`) +
         tile(totUniques.toLocaleString(), "unique visitors (last 30d)", `${totViews.toLocaleString()} page views`) +
         tile((d.guesses || 0).toLocaleString(), "shots called", `${(d.guessesSettled || 0)} settled · ${(d.griefLogs || 0)} grief logs`) +
+        tile((d.emailSubscribers || 0).toLocaleString(), "email subscribers (no-login)", `${(d.emailConfirmed || 0)} confirmed`) +
       `</div>` +
+      funnelSection(d.funnel) +
       `<h2 class="card-h" style="margin:22px 0 10px">Signups by region <span class="card-sub">where your people are</span></h2>` +
       `<div class="card">${barRows(d.byRegion, "market", ["n"])}</div>` +
       `<h2 class="card-h" style="margin:22px 0 10px">Traffic <span class="card-sub">views &amp; rough uniques, by day</span></h2>` +

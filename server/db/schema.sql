@@ -174,3 +174,6 @@ CREATE TABLE IF NOT EXISTS email_subscribers (
   unsubscribed_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_email_subs_confirmed ON email_subscribers(confirmed) WHERE unsubscribed_at IS NULL;
+-- the last predicted build we emailed this subscriber about, so the alert job never re-spams
+ALTER TABLE email_subscribers ADD COLUMN IF NOT EXISTS last_notified_version TEXT;
+ALTER TABLE email_subscribers ADD COLUMN IF NOT EXISTS last_notified_at TIMESTAMPTZ;

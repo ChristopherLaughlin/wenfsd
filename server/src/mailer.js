@@ -48,6 +48,20 @@ export function arrivalMessage({ nickname, vin, fromVersion, toVersion }) {
   };
 }
 
+// "Your window is opening" alert — the trigger that brings non-connected subscribers back.
+// Fired by the daily job when the model puts their next build within the alert window.
+export function windowAlertMessage({ version, market, daysToMedian, siteUrl, unsubUrl }) {
+  const when = daysToMedian <= 0 ? "any day now" : `in about ${daysToMedian} day${daysToMedian === 1 ? "" : "s"}`;
+  return {
+    subject: `🔔 Your Tesla update window is opening${version ? ` — ${version}` : ""}`,
+    text: `wen FSD? Soon — and that's the closest we ever get to good news. `
+      + `Our model now puts ${version || "your next build"}${market ? ` for ${market}` : ""} landing on your car ${when} (the 80% window). `
+      + `It's a prediction, not a Tesla promise — but it's close enough to start refreshing the software menu with intent. 📲\n\n`
+      + `See your full forecast: ${siteUrl}\n\n`
+      + `You're getting this because you asked us to email you when it's close. One click to stop: ${unsubUrl}`,
+  };
+}
+
 // Double-opt-in confirmation for the no-login email channel. One click to confirm; we send
 // nothing else until they do, so we can't be used to spam an address someone else typed in.
 export function confirmMessage({ market, confirmUrl, unsubUrl }) {
