@@ -151,6 +151,9 @@
   <!-- LIVE pending-update alert (connected cars only — the actual answer, from the car) -->
   <div class="update-alert" id="updateAlert" role="status" aria-live="polite" hidden></div>
 
+  <!-- ZONE: Your prediction -->
+  <div class="zone-h"><span class="zh-t">📍 Your prediction</span><span class="zh-line"></span></div>
+
   <!-- HERO PREDICTION -->
   <section class="hero card">
     <div class="hero-left">
@@ -347,6 +350,8 @@
       </div>
     </section>
 
+    <!-- both "how sure" charts, stacked beside the garage -->
+    <div class="chart-stack">
     <!-- ROLLOUT CURVE -->
     <section class="card">
       <h2 class="card-h"><span class="ch-label" id="hdr_curve">Rollout S-curve</span> <span class="card-sub" id="curveVer"></span></h2>
@@ -357,9 +362,7 @@
         <span><i class="sw sw-marker"></i>your predicted position</span>
       </div>
     </section>
-  </div>
 
-  <div class="grid2">
     <!-- DISTRIBUTION -->
     <section class="card">
       <h2 class="card-h"><span class="ch-label" id="hdr_when">When exactly?</span> <span class="card-sub" id="whenSub">probability by day</span></h2>
@@ -369,9 +372,11 @@
         <span><i class="sw sw-guess"></i>your guess</span>
       </div>
     </section>
+    </div>
+  </div>
 
-    <!-- GUESS GAME -->
-    <section class="card guess-card">
+  <!-- GUESS GAME -->
+  <section class="card guess-card">
       <h2 class="card-h"><span class="ch-label" id="hdr_shot">Call your shot 🎯</span> <span class="card-sub" id="shotSub">wen, exactly?</span></h2>
       <p class="hint">Bet on the day <strong>your</strong> car updates. Pick your nerve — the bolder the call, the bigger the bragging rights (and the more spectacular the faceplant). It's "two weeks, trust me bro" but with a paper trail. 🎲</p>
       <label class="field">
@@ -386,7 +391,9 @@
       <button class="btn" id="guessBtn">Lock in my call 🔒</button>
       <div id="guessResult" class="guess-result" role="status" aria-live="polite"></div>
     </section>
-  </div>
+
+  <!-- ZONE: Explore the fleet -->
+  <div class="zone-h"><span class="zh-t">🛰️ Explore the fleet</span><span class="zh-line"></span></div>
 
   <!-- FSD AUSTRALIA REGULATORY TRACKER -->
   <section class="card fleet-card" id="fsdCard">
@@ -478,6 +485,9 @@
   </section>
   </details>
 
+  <!-- ZONE: Community -->
+  <div class="zone-h"><span class="zh-t">🫂 Community</span><span class="zh-line"></span></div>
+
   <!-- THE FIVE STAGES OF wenFSD GRIEF (Kübler-Ross) — after the explanatory data, before the social board -->
   <section class="card grief-card" id="griefCard">
     <h2 class="card-h"><span class="ch-label" id="hdr_grief">The Five Stages of wenFSD Grief</span> <span class="card-sub" id="griefSub">a clinical assessment</span></h2>
@@ -493,6 +503,9 @@
     </div>
     <div id="leaderboardBody"></div>
   </section>
+
+  <!-- ZONE: How it works & trust -->
+  <div class="zone-h"><span class="zh-t">🔬 How it works &amp; trust</span><span class="zh-line"></span></div>
 
   <!-- METHODOLOGY (collapsed — reference, not needed every visit) -->
   <section class="card">
