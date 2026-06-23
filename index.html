@@ -136,16 +136,9 @@
     </div>
   </section>
 
-  <!-- funny, rotating "connect your Tesla" nudge — shown only when not yet linked -->
-  <div id="connectNudge" class="connect-nudge" hidden>
-    <div class="cn-text"><span class="cn-emoji" id="cnEmoji">🔗</span><span id="cnLine"></span></div>
-    <div class="cn-actions">
-      <button class="btn cn-btn" id="cnVin" type="button">Add by VIN — no login</button>
-      <button class="btn-ghost cn-btn2" id="cnConnect" type="button">or connect for auto-alerts 🔗</button>
-      <button class="cn-dismiss js-open-security" type="button" title="What can it actually access?">is this safe? 🔒</button>
-      <button class="cn-dismiss" id="cnDismiss" type="button" title="Fine, ignore me">not now 🙄</button>
-    </div>
-  </div>
+  <!-- Connect/alert asks are consolidated into the single aha-alert under the predicted date
+       (answer-first: nothing competes with the prediction above the fold). The cheeky rotating
+       connect copy now rides on that one ask. -->
 
   <!-- LIVE pending-update alert (connected cars only — the actual answer, from the car) -->
   <div class="update-alert" id="updateAlert" role="status" aria-live="polite" hidden></div>
@@ -179,7 +172,7 @@
       <!-- SOFTWARE-UPDATE detail: the odds + note all describe the OS update above (and the ring) -->
       <div class="hero-section" id="osDetail">
         <div class="sub-eyebrow">🔧 How sure are we about the <strong>software</strong> date?</div>
-        <div class="conf-head" id="confHead">Chance your <strong>software update</strong> lands within…</div>
+        <div class="conf-head" id="confHead">🎯 We're <strong>80% confident</strong> it lands in the window above. Here's how the odds stack up as the days tick by — early ones are low because, well, it's early:</div>
         <div class="confidence-row" id="confRow"></div>
         <p class="hero-flavor" id="heroFlavor"></p>
         <p class="hero-note" id="heroNote"></p>
@@ -420,8 +413,9 @@
     </section>
 
   <!-- ZONE: Explore the fleet -->
-  <div class="zone-h"><span class="zh-t" id="zh_explore">🛰️ Explore the fleet</span><span class="zh-line"></span></div>
+  <button class="zone-h zone-toggle" id="exploreToggle" type="button" aria-expanded="false" aria-controls="exploreZone"><span class="zh-t" id="zh_explore">🛰️ Explore the fleet</span><span class="zone-caret" id="exploreCaret" aria-hidden="true">▾</span><span class="zh-line"></span></button>
 
+  <div id="exploreZone" hidden>
   <!-- FSD AUSTRALIA REGULATORY TRACKER -->
   <section class="card fleet-card" id="fsdCard">
     <div class="card-h-row">
@@ -511,6 +505,7 @@
     <ul class="feed" id="feed"></ul>
   </section>
   </details>
+  </div><!-- /exploreZone -->
 
   <!-- ZONE: Community -->
   <div class="zone-h"><span class="zh-t" id="zh_community">🫂 Community</span><span class="zh-line"></span></div>
