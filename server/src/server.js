@@ -71,6 +71,8 @@ const apiLimiter = rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true
 const authLimiter = rateLimit({ windowMs: 60_000, max: 20, standardHeaders: true, legacyHeaders: false });
 // email capture sends a confirmation mail → tight per-IP cap so it can't be used to mail-bomb
 const subscribeLimiter = rateLimit({ windowMs: 60_000, max: 5, standardHeaders: true, legacyHeaders: false, message: { ok: false, error: "Too many sign-ups from here — give it a minute." } });
+// rollout-change reports: tight per-IP cap so the review queue can't be flooded
+const reportLimiter = rateLimit({ windowMs: 60_000, max: 4, standardHeaders: true, legacyHeaders: false, message: { ok: false, error: "Thanks — that's plenty of reports for now. Try again shortly." } });
 // generous catch-all so every route — including the static asset / og / robots / sitemap / key
 // handlers — is rate-limited (defence against fs-access abuse); the stricter limiters above still apply.
 app.use(rateLimit({ windowMs: 60_000, max: 600, standardHeaders: true, legacyHeaders: false }));
@@ -105,6 +107,7 @@ app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem", async (req, res)
 app.get("/healthz", (req, res) => res.json({ ok: true, mock: config.mockMode }));
 app.use("/auth", authLimiter, authRouter);
 app.use("/api/subscribe", subscribeLimiter);   // stricter cap, layered before the general api limiter
+app.use("/api/report", reportLimiter);         // anti-flood on the community report intake
 app.use("/api", apiLimiter, apiRouter);
 
 // --- static frontend: serve ONLY the known assets, never server/ or dotfiles ---
@@ -305,6 +308,9 @@ if (!config.mockMode) {
     cron.schedule("17 */6 * * *", async () => {
       try { const db = await import("./db.js"); const { refreshAll } = await import("./sources/index.js"); await refreshAll(db, { live: true }); }
       catch (e) { console.error("[sources cron]", e); }
+      // Tier-1 observed pause detection: queue any flatlined rollout as a PENDING event for review
+      try { const { runStallDetection } = await import("./eventsjob.js"); const r = await runStallDetection({ live: true }); if (r.queued) console.log("[stall-detect]", JSON.stringify(r)); }
+      catch (e) { console.error("[stall-detect cron]", e); }
     });
   }
 }

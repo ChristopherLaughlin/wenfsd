@@ -2464,6 +2464,24 @@
 
   // --- progressive disclosure: the fleet-intelligence zone is collapsed by default so a first-time
   //     visitor gets their answer, not a research terminal. Choice is remembered. ---
+  // community report intake — owners are the sensor network for rollout pauses/resumes
+  (function setupReporter() {
+    const sel = $("repRegion"), btn = $("repSubmit"); if (!sel || !btn) return;
+    if (!sel.options.length) sel.innerHTML = `<option value="">🌍 Global / not sure</option>` + Object.keys(WEN.regions).map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+    btn.onclick = () => {
+      const status = $("repStatus");
+      const body = { type: ($("repType") || {}).value, region: sel.value || null, version: ($("repVersion") || {}).value || null, text: ($("repText") || {}).value || null };
+      if (!/^https?:$/.test(location.protocol)) { if (status) { status.textContent = "Reporting runs on the live site."; status.className = "ec-status"; } return; }
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = "Sending…";
+      fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        .then(r => r.json().catch(() => ({}))).then(d => {
+          if (d && d.ok) { if (status) { status.innerHTML = "✓ Thanks — a human will review it. If it checks out, everyone's prediction updates. 🙏"; status.className = "ec-status ec-ok"; } if ($("repText")) $("repText").value = ""; }
+          else { if (status) { status.textContent = (d && d.error) || "Couldn't send that — try again in a sec."; status.className = "ec-status ec-err"; } }
+        }).catch(() => { if (status) { status.textContent = "Network hiccup — give it another go."; status.className = "ec-status ec-err"; } })
+        .finally(() => { btn.disabled = false; btn.textContent = orig; });
+    };
+  })();
+
   // pull confirmed rollout events (pauses/halts) so the prediction reflects reality, not just cadence
   (function loadRolloutEvents() {
     if (!/^https?:$/.test(location.protocol)) return;   // offline/file preview → no backend
