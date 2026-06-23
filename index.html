@@ -283,6 +283,8 @@
           <span class="refresh-status" id="refreshStatus" role="status" aria-live="polite"></span>
         </div>
 
+        <div class="garage-div">🎚️ Your spot in line <span class="gd-sub">tune how early your car usually updates — this sharpens the date</span></div>
+
         <label class="field">
           <span>How early do you usually get updates? <em id="earlyVal">average</em></span>
           <input type="range" id="earlySlider" min="3" max="97" value="42" aria-label="How early you usually get updates, as a rollout percentile" />
@@ -294,7 +296,7 @@
           <label class="switch-row inline"><input type="checkbox" id="earlyAccessChk"/> <span>I'm in the <strong>Early Access Program</strong></span></label>
           <label class="switch-row inline"><input type="checkbox" id="newCarChk"/> <span>I took delivery <strong>recently</strong> (last ~2 months)</span></label>
         </div>
-        <p class="hint"><strong>Early Access</strong> puts you in the first wave (and on a first-name basis with regression bugs). <strong>Recent delivery</strong> nudges you earlier — fresh cars sit nearer the front of the queue, like the new kid everyone's curious about. (FSD ships <em>inside</em> OS builds — so when a build <em>does</em> carry a new FSD version, the two arrive on the same day. But plenty of builds are maintenance-only and leave FSD untouched.)</p>
+        <p class="hint"><strong>Early Access</strong> puts you in the first wave (and on a first-name basis with regression bugs). <strong>Recent delivery</strong> nudges you earlier — fresh cars sit nearer the front of the queue, like the new kid everyone's curious about.</p>
 
         <!-- update history -> real earliness estimate -->
         <div class="history">
@@ -314,13 +316,14 @@
         </div>
 
         <!-- data sharing / auto-track -->
+        <div class="garage-div">🔗 Auto-track &amp; contribute <span class="gd-sub">optional — connect for live alerts, or skip it and just use the prediction</span></div>
         <div class="consent">
           <button class="btn connect-btn" id="connectTeslaBtn" type="button">📨 Connect → get pinged the second it lands</button>
           <label class="switch-row">
             <input type="checkbox" id="optInToggle"/>
             <span>Contribute this car's anonymised version data to wenFSD fleet stats</span>
           </label>
-          <p class="hint" id="connectHint">Linking uses Tesla's official OAuth — you log in on Tesla's page, we never see your password. <strong>Heads-up:</strong> Tesla's permission screen looks alarmingly broad because it's one coarse “read vehicle data” scope (there's no “version only” option) — but our code only ever reads your <strong>software version</strong>, never your location or trips. Rather grant nothing? <strong>Add by VIN</strong> works with no login at all.<br/><button type="button" class="sec-link js-open-security">🔒 Exactly what we read, store &amp; deliberately ignore →</button></p>
+          <p class="hint" id="connectHint"><strong>Stop refreshing the software menu at 2am.</strong> Connect read-only and we'll ping you the second your update lands. Tesla's official OAuth; we only ever read your <strong>software version</strong>, never your location. Rather grant nothing? <strong>Add by VIN</strong> needs no login at all. <button type="button" class="sec-link js-open-security">🔒 Exactly what we read &amp; ignore →</button></p>
 
           <!-- notify-on-arrival (connected cars only — we can only watch a car you've linked) -->
           <label class="switch-row notify-row" id="notifyRow" hidden>
