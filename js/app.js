@@ -624,9 +624,19 @@
     el.innerHTML = `<span class="ua-icon">${icon}</span><span class="ua-text">${head} <span class="ua-sub">${esc(sub)}</span></span><span class="ua-badge" title="Read live from your car via Tesla's API">✓ live from your car</span>`;
   }
 
+  const HERO_EYEBROWS = [
+    "Your next updates — software & FSD · {car}",
+    "The forecast for {car} — software & FSD",
+    "{car} · when, exactly (software + FSD)",
+    "{car}'s two-week sentence, quantified",
+    "What the maths says about {car}",
+    "{car} · software & FSD, foretold 🔮",
+    "The wen, the whole wen, and nothing but the wen · {car}",
+    "{car} — your update, with error bars",
+  ];
   function renderHero(pred) {
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
-    $("heroEyebrow").textContent = `Your next updates — software & FSD · ${av().nickname || "your car"}`;
+    $("heroEyebrow").textContent = flavorPick("heroEyebrow", HERO_EYEBROWS).replace(/\{car\}/g, av().nickname || "your car");
     $("heroDate").textContent = Predict.fmtDate(pred.medianDate);
     $("osPredVer").textContent = pred.targetLabel ? "· " + pred.targetLabel : "";
     const hw = $("heroWindow");
