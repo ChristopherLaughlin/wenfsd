@@ -38,6 +38,8 @@ export async function sendPush(sub, payload) {
 export async function runPushAlerts({ windowDays = 10 } = {}) {
   if (!pushEnabled() || config.mockMode || !hasDb()) return { sent: 0, checked: 0, disabled: !pushEnabled() };
   ensureVapid();
+  const ev = await query(`SELECT type, version, region, reason, source, effective_at, detected_at FROM rollout_events WHERE status='confirmed' AND (expires_at IS NULL OR expires_at > now())`).catch(() => null);
+  const events = (ev && ev.rows) || [];
   const subs = (await query(
     `SELECT endpoint, p256dh, auth, market, hardware, version, last_notified_version FROM push_subscriptions`)).rows;
   const base = config.publicBaseUrl.replace(/\/$/, "");
@@ -48,7 +50,7 @@ export async function runPushAlerts({ windowDays = 10 } = {}) {
       pred = predictNextOS({
         market: s.market || "Australia", hardware: s.hardware || "AI4",
         installedVersion: s.version || undefined, earliness: 0.5, earlinessSource: "default",
-      });
+      }, { events });
     } catch { continue; }
     if (!shouldAlert(pred, s.last_notified_version, windowDays)) continue;
     const days = Math.max(0, Math.round(pred.daysToMedian));

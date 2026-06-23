@@ -167,6 +167,28 @@ CREATE TABLE IF NOT EXISTS daily_funnel (
   PRIMARY KEY (day, event, source, variant)
 );
 
+-- Rollout EVENTS — discrete state-changes (pause/resume/halt/…) that the cadence model can't see.
+-- High-impact types (pause/halt) require human confirmation (status='confirmed') before they touch
+-- the public prediction. Evidence is kept (source/url) but no PII (submitter is a salted hash).
+CREATE TABLE IF NOT EXISTS rollout_events (
+  id            BIGSERIAL PRIMARY KEY,
+  type          TEXT NOT NULL,                       -- pause | resume | halt | accelerate | note
+  version       TEXT,                                -- null = applies to the next build
+  region        TEXT,                                -- null = global
+  status        TEXT NOT NULL DEFAULT 'pending',     -- pending | confirmed | dismissed | expired
+  reason        TEXT,
+  source        TEXT,                                -- observed-plateau | community-report | reddit | tmc | admin
+  source_url    TEXT,
+  submitted_by  TEXT,                                -- salted hash, never raw IP/email
+  confidence    REAL NOT NULL DEFAULT 0,
+  corroborations INT NOT NULL DEFAULT 1,
+  detected_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  effective_at  TIMESTAMPTZ,                         -- when the pause/resume took effect
+  expires_at    TIMESTAMPTZ,
+  confirmed_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS rollout_events_active ON rollout_events (status, type, region);
+
 -- Web-push subscriptions (no-login, like email alerts). Keyed by the browser's push endpoint.
 -- Stores only the push keys + the car context we'd alert on — no PII. Erased on unsubscribe.
 CREATE TABLE IF NOT EXISTS push_subscriptions (
