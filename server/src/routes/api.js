@@ -12,6 +12,7 @@ import * as tesla from "../tesla.js";
 import { encrypt, decrypt } from "../crypto.js";
 import { applyVersionReading, persistPendingUpdate } from "../poller.js";
 import { deliver, confirmMessage } from "../mailer.js";
+import { cleanEventType, cleanRegion, cleanVersion, cleanReason, HIGH_IMPACT } from "../events.js";
 import crypto from "node:crypto";
 
 export const apiRouter = Router();
@@ -178,6 +179,24 @@ apiRouter.post("/push/unsubscribe", ah(async (req, res) => {
   if (endpoint && !config.mockMode && hasDb()) await query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [endpoint]);
   res.json({ ok: true });
 }));
+
+// --- rollout events: confirmed, active events the client overlays on its prediction (PR-B) ---
+// Confirmed only + not expired → only human-verified state-changes ever reach the public UI.
+export async function activeConfirmedEvents() {
+  if (config.mockMode || !hasDb()) return [];
+  const r = await query(
+    `SELECT type, version, region, reason, source, effective_at, detected_at
+       FROM rollout_events
+      WHERE status='confirmed' AND (expires_at IS NULL OR expires_at > now())
+      ORDER BY effective_at DESC NULLS LAST LIMIT 200`).catch(() => null);
+  return (r && r.rows) || [];
+}
+apiRouter.get("/events", ah(async (req, res) => {
+  res.set("Cache-Control", "public, max-age=120").json({ events: await activeConfirmedEvents() });
+}));
+
+// community report (UGC) — fully built in PR-C; the row shape lands here so the model is ready.
+// High-impact reports enter as 'pending' (human-gated). No PII: submitter is a salted daily hash.
 
 apiRouter.get("/fleet/firmware", ah(async (req, res) => {
   if (req.query.merged) {
@@ -403,6 +422,42 @@ function adminOk(req) {
   if (!config.adminToken || !t || t.length !== config.adminToken.length) return false;
   try { return crypto.timingSafeEqual(Buffer.from(t), Buffer.from(config.adminToken)); } catch { return false; }
 }
+// --- admin: rollout-event review + manual override (the human-confirmed gate) ---
+apiRouter.get("/admin/events", ah(async (req, res) => {
+  if (!config.adminToken) return res.status(404).json({ error: "admin disabled — set ADMIN_TOKEN" });
+  if (!adminOk(req)) return res.status(401).json({ error: "bad or missing admin token" });
+  if (config.mockMode || !hasDb()) return res.json({ mode: "sample", events: [] });
+  const r = await query(`SELECT id, type, version, region, status, reason, source, source_url, confidence, corroborations, detected_at, effective_at, confirmed_at FROM rollout_events ORDER BY (status='pending') DESC, detected_at DESC LIMIT 200`);
+  res.json({ mode: "live", events: r.rows });
+}));
+apiRouter.post("/admin/events", ah(async (req, res) => {   // manual override: create (and optionally confirm) an event
+  if (!config.adminToken) return res.status(404).json({ error: "admin disabled — set ADMIN_TOKEN" });
+  if (!adminOk(req)) return res.status(401).json({ error: "bad or missing admin token" });
+  const b = req.body || {};
+  const type = cleanEventType(b.type);
+  if (!type) return res.status(400).json({ error: "bad type" });
+  const version = cleanVersion(b.version), region = cleanRegion(b.region), reason = cleanReason(b.reason);
+  const effective_at = b.effective_at ? new Date(b.effective_at) : new Date();
+  const status = b.confirm === false ? "pending" : "confirmed";   // admin-created defaults to confirmed
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true, event: { type, version, region, status } });
+  const r = await query(
+    `INSERT INTO rollout_events(type, version, region, status, reason, source, confidence, effective_at, confirmed_at)
+     VALUES($1,$2,$3,$4,$5,'admin',1,$6,CASE WHEN $4='confirmed' THEN now() ELSE NULL END) RETURNING id`,
+    [type, version, region, status, reason, effective_at]);
+  res.json({ ok: true, id: r.rows[0].id });
+}));
+apiRouter.patch("/admin/events/:id", ah(async (req, res) => {   // confirm / dismiss / expire a pending event
+  if (!config.adminToken) return res.status(404).json({ error: "admin disabled — set ADMIN_TOKEN" });
+  if (!adminOk(req)) return res.status(401).json({ error: "bad or missing admin token" });
+  const next = String((req.body && req.body.status) || "");
+  if (!["confirmed", "dismissed", "expired"].includes(next)) return res.status(400).json({ error: "bad status" });
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "bad id" });
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  await query(`UPDATE rollout_events SET status=$1, confirmed_at=CASE WHEN $1='confirmed' THEN now() ELSE confirmed_at END WHERE id=$2`, [next, id]);
+  res.json({ ok: true });
+}));
+
 apiRouter.get("/admin/stats", ah(async (req, res) => {
   if (!config.adminToken) return res.status(404).json({ error: "admin disabled — set ADMIN_TOKEN" });
   if (!adminOk(req)) return res.status(401).json({ error: "bad or missing admin token" });

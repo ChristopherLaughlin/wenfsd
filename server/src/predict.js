@@ -1,6 +1,7 @@
 // Server-side prediction — mirrors the frontend js/predict.js exactly so /api/predict
 // and the client agree. Rollout params come from wendata (mock) or DB-fitted values (real).
 import * as W from "./wendata.js";
+import { applyEventOverlay } from "./events.js";
 
 const DAY = 86400000;
 const AU_LAG = 12;
@@ -92,7 +93,7 @@ export function predictNextOS(car, opts = {}) {
     out.fsdCurrent = curFsd(car);
     out.fsdInBuild = (build && build.fsdBuild && build.fsdBuild[car.hardware]) || null;
     out.bringsNewFsd = !!(out.fsdInBuild && out.fsdInBuild !== "—" && W.fsdKey(out.fsdInBuild) > W.fsdKey(out.fsdCurrent));
-    return out;
+    return applyEventOverlay(out, opts.events, car, today);
   }
   const myKey = W.verKey(car.installedVersion || "0");
   const newer = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
@@ -127,7 +128,7 @@ export function predictNextOS(car, opts = {}) {
         ? `This is the OS software update — separate from FSD (see below). ${car.market} gets far fewer OS builds than the US/Canada, and they arrive late and on no set schedule, so a car in ${car.market} sitting ~${weeksBehind} weeks behind the newest build it's even eligible for is closer to normal than alarming — it usually reflects how sparsely Tesla ships here, not anything wrong with your car. When the next one does land it may jump you straight to ${v.version}. Because there's no predictable cadence to fit, this is a wide, low-confidence guess — not a date to bank on.`
         : `This is the OS software update — separate from FSD (see below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped the builds since. That usually means the car hasn't been pulling updates (parked offline, sitting on an old branch, or set to decline them). If it starts updating again it could jump to ${v.version} fairly quickly; until then there's no reliable cadence to fit, so this is a wide, low-confidence guess — not a date to bank on.`;
     }
-    return out;
+    return applyEventOverlay(out, opts.events, car, today);
   }
   const cad = osCadence(versions);
   const lastBranchDate = versions.map(v => v.firstSeen).sort().slice(-1)[0];
@@ -135,7 +136,7 @@ export function predictNextOS(car, opts = {}) {
   const p = W.parseOS(versions[0].version);
   const out = mcPredict({ t0Days, k: 0.33, L: 0.95, earliness, t0Sigma: cad.sd * bandFactor, floorDays: 0, today, seedStr: "OSproj" + car.market + earliness });
   out.targetLabel = `2026.${(p.week + Math.round(cad.mean / 7))}.x (projected)`; out.kind = "projected"; out.branch = "os"; out.earliness = earliness;
-  return out;
+  return applyEventOverlay(out, opts.events, car, today);
 }
 
 export function predictNextFSD(car, opts = {}) {

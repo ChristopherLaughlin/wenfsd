@@ -10,14 +10,21 @@ import { deliver, windowAlertMessage } from "./mailer.js";
 // haven't already alerted them about that exact target build.
 export function shouldAlert(pred, lastNotifiedVersion, windowDays = 10) {
   if (!pred || pred.capped || pred.unavailable) return false;
+  if (pred.paused) return false;   // rollout paused → no honest "it's close" alert until it resumes
   if (!pred.targetLabel || pred.daysToMedian == null) return false;
   if (pred.daysToMedian > windowDays || pred.daysToMedian < -30) return false;   // close, not ancient
   if (lastNotifiedVersion && lastNotifiedVersion === pred.targetLabel) return false; // already told them
   return true;
 }
 
+async function loadConfirmedEvents() {
+  const r = await query(`SELECT type, version, region, reason, source, effective_at, detected_at FROM rollout_events WHERE status='confirmed' AND (expires_at IS NULL OR expires_at > now())`).catch(() => null);
+  return (r && r.rows) || [];
+}
+
 export async function runSubscriberAlerts({ windowDays = 10 } = {}) {
   if (config.mockMode || !hasDb()) return { sent: 0, checked: 0, mock: true };
+  const events = await loadConfirmedEvents();
   const subs = (await query(
     `SELECT id, email, market, hardware, version, fsd_entitlement, last_notified_version, unsub_token
        FROM email_subscribers WHERE confirmed = true AND unsubscribed_at IS NULL`)).rows;
@@ -30,7 +37,7 @@ export async function runSubscriberAlerts({ windowDays = 10 } = {}) {
         market: s.market || "Australia", hardware: s.hardware || "AI4",
         installedVersion: s.version || undefined, earliness: 0.5, earlinessSource: "default",
         fsdEntitlement: s.fsd_entitlement || "unknown",
-      });
+      }, { events });
     } catch { continue; }
     if (!shouldAlert(pred, s.last_notified_version, windowDays)) continue;
     const msg = windowAlertMessage({
