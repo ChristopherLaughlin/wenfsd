@@ -410,7 +410,11 @@ apiRouter.post("/me/vehicle/:vin/refresh", ah(async (req, res) => {
   if (!wake.woke) return res.json({ ok: false, state: wake.state, error: "Your car didn't wake in time (deep sleep or no signal). Try again in a minute." });
   let version, update = null;
   try { ({ version, update } = await tesla.getVehicleState(access, car.vin)); }
-  catch (e) { return res.json({ ok: false, state: "online", error: "Woke the car, but couldn't read its version: " + e.message }); }
+  catch (e) {
+    // log the upstream detail server-side; never reflect Tesla's raw response body to the client
+    console.warn(`[refresh] version read failed for ${String(car.vin).slice(-6)}:`, e && e.message);
+    return res.json({ ok: false, state: "online", error: "Woke the car, but couldn't read its version just now. Give it a moment and try again." });
+  }
   if (!version) return res.json({ ok: false, state: "online", error: "Woke the car, but its version was unavailable." });
   const r = await applyVersionReading(car, version);
   await persistPendingUpdate(car, update);

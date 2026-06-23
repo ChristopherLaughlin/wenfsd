@@ -14,11 +14,21 @@ const { tesla } = config;
 export async function verifyIdToken(idToken) {
   const parts = String(idToken || "").split(".");
   if (parts.length < 2) throw new Error("malformed id_token");
-  const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
-  // non-blocking sanity check (the token is already trusted via the TLS back-channel)
-  const audOk = !payload.aud || !tesla.clientId || payload.aud === tesla.clientId ||
-    (Array.isArray(payload.aud) && payload.aud.includes(tesla.clientId));
-  if (!audOk) console.warn("[tesla] id_token aud differs from client_id:", payload.aud);
+  let payload;
+  try { payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8")); }
+  catch { throw new Error("unparseable id_token payload"); }
+  // The token arrives over our server-to-server TLS back-channel from Tesla's token endpoint, so
+  // OIDC permits TLS validation in place of signature verification for the auth-code flow. We
+  // still assert the standard claims as defence-in-depth — and now REJECT on mismatch (was warn).
+  if (payload.aud && tesla.clientId) {
+    const audMatch = payload.aud === tesla.clientId || (Array.isArray(payload.aud) && payload.aud.includes(tesla.clientId));
+    if (!audMatch) throw new Error("id_token aud does not match client_id");
+  }
+  if (payload.exp != null && Number(payload.exp) * 1000 < Date.now() - 60_000) throw new Error("id_token is expired");
+  if (payload.iss) {
+    let issHost = ""; try { issHost = new URL(payload.iss).host; } catch { /* non-URL iss */ }
+    if (!/(^|\.)tesla\.com$/i.test(issHost)) throw new Error("id_token issuer is not a tesla.com domain");
+  }
   return payload; // { sub, email, ... }
 }
 

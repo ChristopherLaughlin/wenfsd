@@ -45,7 +45,7 @@ async function fetchLive() {
   try {
     const res = await fetch(PAGE, { headers: { "User-Agent": UA, Accept: "text/html" }, signal: ctrl.signal });
     if (!res.ok) throw new Error("teslascope HTTP " + res.status);
-    html = await res.text();
+    html = (await res.text()).slice(0, 2_000_000);   // cap upstream HTML (defence-in-depth: bounds all regex parsing)
   } finally { clearTimeout(timer); }
 
   const byVer = new Map();
@@ -105,7 +105,7 @@ export async function fetchNotes(version) {
   try {
     const res = await fetch(`https://teslascope.com/software/${encodeURIComponent(version)}`, { headers: { "User-Agent": UA, Accept: "text/html" }, signal: ctrl.signal });
     if (!res.ok) throw new Error("teslascope notes HTTP " + res.status);
-    html = await res.text();
+    html = (await res.text()).slice(0, 2_000_000);   // cap upstream HTML (defence-in-depth: bounds all regex parsing)
   } finally { clearTimeout(timer); }
 
   const items = [];
