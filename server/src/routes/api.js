@@ -60,6 +60,16 @@ function confirmPage(msg) {
     + `<p style="font-size:16px;max-width:440px;line-height:1.55;color:#9fb0c3">${msg}</p>`
     + `<a href="/" style="color:#39d4ff;text-decoration:none">← back to wenFSD</a></div></body>`;
 }
+function unsubConfirmPage(t) {
+  // t is reflected only inside a URL-encoded query in the form action (no HTML-attribute breakout)
+  return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>wenFSD</title>`
+    + `<body style="background:#0a0d12;color:#e9eef5;font-family:system-ui,-apple-system,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center;padding:24px">`
+    + `<div><div style="font-size:24px;font-weight:800;margin-bottom:10px">wen<span style="color:#e62937">FSD</span></div>`
+    + `<p style="font-size:16px;max-width:440px;line-height:1.55;color:#9fb0c3">Stop wenFSD update alerts to this address?</p>`
+    + `<form method="POST" action="/api/unsubscribe?t=${encodeURIComponent(t)}">`
+    + `<button type="submit" style="background:#e62937;color:#fff;border:0;border-radius:10px;padding:11px 20px;font:inherit;font-weight:700;cursor:pointer">Yes, unsubscribe me</button></form>`
+    + `<a href="/" style="color:#39d4ff;text-decoration:none;display:inline-block;margin-top:14px">← keep me subscribed</a></div></body>`;
+}
 apiRouter.post("/subscribe", ah(async (req, res) => {
   const b = req.body || {};
   const email = String(b.email || "").trim().toLowerCase();
@@ -86,7 +96,9 @@ apiRouter.post("/subscribe", ah(async (req, res) => {
     const msg = confirmMessage({ market, confirmUrl: `${base}/api/confirm?t=${row.confirm_token}`, unsubUrl: `${base}/api/unsubscribe?t=${row.unsub_token}` });
     deliver({ to: email, subject: msg.subject, text: msg.text, event: "subscribe_confirm" }).catch(() => {});
   }
-  res.json({ ok: true, confirmed: !!row.confirmed });
+  // generic response (no `confirmed` flag) so the endpoint can't be used to enumerate which
+  // addresses are already subscribed
+  res.json({ ok: true });
 }));
 apiRouter.get("/confirm", ah(async (req, res) => {
   const t = String(req.query.t || "");
@@ -96,7 +108,12 @@ apiRouter.get("/confirm", ah(async (req, res) => {
     ? "✓ You're in. We'll email you the moment your update's close — and nothing else."
     : "This link's already been used (you're probably confirmed already). 👍"));
 }));
+// GET only shows a one-tap confirm — so an email client pre-fetching the link can't silently
+// unsubscribe you. The real action is a same-origin POST from this page (passes the CSRF guard).
 apiRouter.get("/unsubscribe", ah(async (req, res) => {
+  res.type("html").send(unsubConfirmPage(String(req.query.t || "")));
+}));
+apiRouter.post("/unsubscribe", ah(async (req, res) => {
   const t = String(req.query.t || "");
   if (!config.mockMode && hasDb() && t) await query(`UPDATE email_subscribers SET unsubscribed_at=now() WHERE unsub_token=$1`, [t]);
   res.type("html").send(confirmPage("Done — you're unsubscribed. No more emails. We'll miss you. 🫡"));
@@ -322,7 +339,7 @@ function sampleGrief(region) {
 
 // --- creator-only stats (signups, vehicles, regions, visits). Gated by ADMIN_TOKEN. ---
 function adminOk(req) {
-  const t = String(req.get("x-admin-token") || req.query.token || "");
+  const t = String(req.get("x-admin-token") || "");   // header only — never accept the token in a URL (leaks via logs/referrer/history)
   if (!config.adminToken || !t || t.length !== config.adminToken.length) return false;
   try { return crypto.timingSafeEqual(Buffer.from(t), Buffer.from(config.adminToken)); } catch { return false; }
 }

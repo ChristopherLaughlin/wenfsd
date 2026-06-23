@@ -25,9 +25,11 @@ app.disable("x-powered-by");
 // Force HTTPS. Railway terminates TLS and forwards x-forwarded-proto; if a bare-domain
 // navigation (e.g. typing "wenfsd.info" in Chrome on Android) arrives over http, 301 it to
 // https so it never dead-ends on plain http and falls back to a search.
+const CANONICAL_HOST = (() => { try { return new URL(config.publicBaseUrl).host; } catch { return ""; } })();
 app.use((req, res, next) => {
   if (config.publicBaseUrl.startsWith("https") && req.headers["x-forwarded-proto"] === "http") {
-    return res.redirect(301, "https://" + req.headers.host + req.originalUrl);
+    // redirect to our OWN canonical host, never the client-supplied Host header (open-redirect safe)
+    return res.redirect(301, "https://" + (CANONICAL_HOST || req.headers.host) + req.originalUrl);
   }
   next();
 });
@@ -64,6 +66,8 @@ app.use(cookieSession({
 // --- rate limits ---
 const apiLimiter = rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false });
 const authLimiter = rateLimit({ windowMs: 60_000, max: 20, standardHeaders: true, legacyHeaders: false });
+// email capture sends a confirmation mail → tight per-IP cap so it can't be used to mail-bomb
+const subscribeLimiter = rateLimit({ windowMs: 60_000, max: 5, standardHeaders: true, legacyHeaders: false, message: { ok: false, error: "Too many sign-ups from here — give it a minute." } });
 // generous catch-all so every route — including the static asset / og / robots / sitemap / key
 // handlers — is rate-limited (defence against fs-access abuse); the stricter limiters above still apply.
 app.use(rateLimit({ windowMs: 60_000, max: 600, standardHeaders: true, legacyHeaders: false }));
@@ -92,6 +96,7 @@ app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem", async (req, res)
 
 app.get("/healthz", (req, res) => res.json({ ok: true, mock: config.mockMode }));
 app.use("/auth", authLimiter, authRouter);
+app.use("/api/subscribe", subscribeLimiter);   // stricter cap, layered before the general api limiter
 app.use("/api", apiLimiter, apiRouter);
 
 // --- static frontend: serve ONLY the known assets, never server/ or dotfiles ---
