@@ -1369,6 +1369,16 @@
     const c = $("qsConnect"); if (c) c.onclick = connectTesla;
     const vn = $("qsVin"); if (vn) vn.onclick = openAddByVin;
     const dm = $("qsDemo"); if (dm) dm.onclick = () => { track("demo_loaded"); gstate = Garage.loadDemo(); ui.guessDays = null; clearGuess(); renderGarage(); renderActiveControls(); render(); };
+    // deep-link from a /p/ prediction page CTA (?model=&year=&region=&v=) → prefill + auto-predict
+    try {
+      const p = new URLSearchParams(location.search), dModel = p.get("model");
+      if (dModel) {
+        const setSel = (id, val) => { const el = $(id); if (el && val != null && [...el.options].some(o => o.value === val)) el.value = val; };
+        setSel("qs_model", dModel); setSel("qs_year", p.get("year")); setSel("qs_market", p.get("region"));
+        const dv = p.get("v"); if (dv && verEl && WEN.isValidVersion(dv)) verEl.value = dv;
+        syncHw(); go.click();
+      }
+    } catch (e) {}
   }
   function doDecode() {
     const d = VIN.decode($("vinInput").value);
@@ -1566,19 +1576,31 @@
     } catch (e) { return Promise.resolve(null); }
   }
   const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+  // canonical per-prediction URL (mirrors the server's slug index, so a shared link unfurls into
+  // the matching prediction card + lands on a real page). Generation is derived from model+year so
+  // it always matches the server's canonical slug, regardless of what's stored on the vehicle.
+  function predictionUrl(v) {
+    const y = +v.year || 2026;
+    if (!v.model || !v.market || y < 2017 || y > 2027) return location.origin + "/";
+    const modelSlug = String(v.model).toLowerCase().replace(/\s+/g, "-");
+    const region = String(v.market).toLowerCase().replace(/\s+/g, "-");
+    let gen = (v.model === "Model Y" && y >= 2025) ? "-juniper" : (v.model === "Model 3" && y >= 2024) ? "-highland" : "";
+    return `${location.origin}/p/${y}-${modelSlug}${gen}-${region}`;
+  }
   async function shareMyPrediction(pred, btn) {
     const v = av(); if (!v || !pred) return;
     track("shared");
     const model = `${v.year} ${v.model}${v.generation ? " " + v.generation : ""}`;
     const date = Predict.fmtDate(pred.medianDate);
+    const url = predictionUrl(v);
     const text = pred.confirmed
-      ? `🚗 My ${model} is getting its next Tesla update (${date}) — confirmed by the car. wenFSD called it. Get your own 👉 https://wenfsd.info`
-      : `🚗 wenFSD predicts my ${model} gets its next Tesla update ~${date}${pred.stale ? "" : ` (80% by ${shortDate(pred.p90Date)})`}. Call your shot 👉 https://wenfsd.info`;
+      ? `🚗 My ${model} is getting its next Tesla update (${date}) — confirmed by the car. wenFSD called it. Reckon it's wrong? Call your shot 👉 ${url}`
+      : `🚗 wenFSD predicts my ${model} gets its next Tesla update ~${date}${pred.stale ? "" : ` (80% by ${shortDate(pred.p90Date)})`}. Reckon you'll beat it? Call your shot 👉 ${url}`;
     const blob = await buildShareCard(pred);
     const file = blob && typeof File === "function" ? new File([blob], "wenfsd-prediction.png", { type: "image/png" }) : null;
     try {
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: "wenFSD prediction" }); return; }
-      if (navigator.share) { await navigator.share({ text, url: "https://wenfsd.info" }); return; }
+      if (navigator.share) { await navigator.share({ text, url }); return; }
     } catch (e) { if (e && e.name === "AbortError") return; }
     // no native share: download the card + copy the brag
     if (blob) {

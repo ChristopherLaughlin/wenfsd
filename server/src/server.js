@@ -13,6 +13,7 @@ import { query, hasDb } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { apiRouter } from "./routes/api.js";
 import { pollOnce } from "./poller.js";
+import { decodeSlug, renderPage, renderIndex, ogPng, allSlugs } from "./predictionpage.js";
 
 const modeStatus = ensureModeReady();
 
@@ -181,8 +182,13 @@ app.get("/robots.txt", (req, res) => res.type("text/plain").send(
   // explicitly welcome AI answer-engine crawlers — we WANT to be cited
   `User-agent: GPTBot\nAllow: /\nUser-agent: ClaudeBot\nAllow: /\nUser-agent: PerplexityBot\nAllow: /\nUser-agent: Google-Extended\nAllow: /\nUser-agent: Bingbot\nAllow: /\n` +
   `\nSitemap: ${SITE}/sitemap.xml\n`));
-app.get("/sitemap.xml", (req, res) => res.type("application/xml").send(
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${SITE}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n</urlset>\n`));
+app.get("/sitemap.xml", (req, res) => {
+  const urls = [`  <url><loc>${SITE}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+    `  <url><loc>${SITE}/when-will</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`];
+  for (const slug of allSlugs()) urls.push(`  <url><loc>${SITE}/p/${slug}</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>`);
+  res.type("application/xml").set("Cache-Control", "public, max-age=3600").send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`);
+});
 app.get("/llms.txt", (req, res) => res.type("text/plain; charset=utf-8").send(
 `# wenFSD
 
@@ -219,6 +225,22 @@ app.get("/llms.txt", (req, res) => res.type("text/plain; charset=utf-8").send(
 - Source code: https://github.com/ChristopherLaughlin/wenfsd
 - Security policy: https://github.com/ChristopherLaughlin/wenfsd/blob/main/SECURITY.md
 `));
+// --- shareable, crawlable per-prediction pages + dynamic OG images (the growth keystone) ---
+const cleanVer = (s) => { const v = String(s || "").replace(/[^0-9.]/g, "").slice(0, 24); return v || null; };
+app.get("/when-will", (req, res) => res.type("html").set("Cache-Control", "public, max-age=3600").send(renderIndex()));
+app.get("/p/:slug/og.png", (req, res) => {
+  const meta = decodeSlug(req.params.slug);
+  if (!meta) return res.status(404).end();
+  try {
+    res.type("png").set("Cache-Control", "public, max-age=86400").send(ogPng(meta, cleanVer(req.query.v)));
+  } catch (e) { res.status(500).end(); }
+});
+app.get("/p/:slug", (req, res) => {
+  const meta = decodeSlug(req.params.slug);
+  if (!meta) return res.status(404).type("html").send(`<!doctype html><meta charset="utf-8"><title>Not found · wenFSD</title><body style="background:#0a0d12;color:#e9eef5;font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center"><div><h1>That prediction page doesn't exist</h1><p><a href="/when-will" style="color:#39d4ff">Browse predictions by car &amp; region →</a> · <a href="/" style="color:#39d4ff">wenFSD home</a></p></div>`);
+  res.type("html").set("Cache-Control", "public, max-age=3600").send(renderPage(meta, cleanVer(req.query.v)));
+});
+
 // hard block anything sensitive even if a future static mount is added
 app.use((req, res, next) => {
   if (/^\/(server|node_modules|\.git|\.claude|memory)(\/|$)/.test(req.path)) return res.status(404).end();
