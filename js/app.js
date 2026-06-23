@@ -625,6 +625,8 @@
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
     renderBasis(pred);
     renderTips(pred);
+    const sb = $("shareBtn");
+    if (sb) { sb.textContent = flavorPick("shareBtn", SHARE_LABELS); sb.onclick = () => shareMyPrediction(pred, sb); }
   }
 
   // persistent NOW → NEXT context (region-aware) so the progression is always obvious
@@ -1405,6 +1407,69 @@
     document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(ta); if (done) done();
   }
   function clearGuess() { $("guessResult").classList.remove("show"); $("guessResult").innerHTML = ""; $("guessDate").value = ""; }
+
+  // ---- share my prediction (the growth loop): a branded image card + native share ----
+  function roundRect(x, X, Y, w, h, r) {
+    x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r);
+    x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath();
+  }
+  // Draw a 1200×630 (OG ratio) card with the user's actual prediction. Returns Promise<Blob|null>.
+  function buildShareCard(pred) {
+    try {
+      const v = av(); if (!v) return Promise.resolve(null);
+      const W = 1200, H = 630, c = document.createElement("canvas"); c.width = W; c.height = H;
+      const x = c.getContext("2d"); if (!x) return Promise.resolve(null);
+      x.fillStyle = "#0a0d12"; x.fillRect(0, 0, W, H);
+      x.fillStyle = "#0c1019"; roundRect(x, 48, 48, W - 96, H - 96, 28); x.fill();
+      x.strokeStyle = "#27384b"; x.lineWidth = 2; roundRect(x, 48, 48, W - 96, H - 96, 28); x.stroke();
+      x.fillStyle = "#e62937"; roundRect(x, 48, 48, 10, H - 96, 6); x.fill(); // brand spine
+      x.textBaseline = "alphabetic";
+      // wordmark
+      x.font = "800 46px " + SANS; x.fillStyle = "#e9eef5"; x.fillText("wen", 100, 138);
+      x.fillStyle = "#e62937"; x.fillText("FSD", 100 + x.measureText("wen").width, 138);
+      // which car
+      x.fillStyle = "#9fb0c3"; x.font = "700 27px " + SANS;
+      x.fillText(`${v.year} ${v.model}${v.generation ? " " + v.generation : ""} · ${v.market}`.toUpperCase(), 100, 214);
+      // label
+      x.fillStyle = "#6b7c91"; x.font = "800 24px " + SANS;
+      x.fillText(pred.confirmed ? "NEXT UPDATE — CONFIRMED BY THE CAR" : "NEXT SOFTWARE UPDATE — PREDICTED", 100, 280);
+      // the date
+      x.fillStyle = pred.confirmed ? "#37d67a" : "#39d4ff"; x.font = "800 98px " + SANS;
+      x.fillText(Predict.fmtDate(pred.medianDate), 96, 392);
+      // window / honesty
+      x.fillStyle = "#9fb0c3"; x.font = "500 31px " + SANS;
+      x.fillText(pred.confirmed ? "your car is already downloading it"
+        : pred.stale ? "low-confidence estimate · a prediction, not a promise"
+        : `80% by ${shortDate(pred.p90Date)} · a prediction, not a promise`, 100, 452);
+      // CTA
+      x.fillStyle = "#e62937"; x.font = "800 35px " + SANS;
+      x.fillText("call your shot 👉 wenfsd.info", 100, 548);
+      return new Promise(res => c.toBlob(b => res(b), "image/png"));
+    } catch (e) { return Promise.resolve(null); }
+  }
+  const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+  async function shareMyPrediction(pred, btn) {
+    const v = av(); if (!v || !pred) return;
+    const model = `${v.year} ${v.model}${v.generation ? " " + v.generation : ""}`;
+    const date = Predict.fmtDate(pred.medianDate);
+    const text = pred.confirmed
+      ? `🚗 My ${model} is getting its next Tesla update (${date}) — confirmed by the car. wenFSD called it. Get your own 👉 https://wenfsd.info`
+      : `🚗 wenFSD predicts my ${model} gets its next Tesla update ~${date}${pred.stale ? "" : ` (80% by ${shortDate(pred.p90Date)})`}. Call your shot 👉 https://wenfsd.info`;
+    const blob = await buildShareCard(pred);
+    const file = blob && typeof File === "function" ? new File([blob], "wenfsd-prediction.png", { type: "image/png" }) : null;
+    try {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: "wenFSD prediction" }); return; }
+      if (navigator.share) { await navigator.share({ text, url: "https://wenfsd.info" }); return; }
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    // no native share: download the card + copy the brag
+    if (blob) {
+      const u = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = u; a.download = "wenfsd-prediction.png"; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 4000);
+    }
+    copyText(text, btn);
+  }
+  const SHARE_LABELS = ["📣 Share my prediction", "📤 Brag responsibly", "🔗 Share this prediction", "📣 Show the doubters"];
 
   // ---------------- static panels ----------------
   function pctLabel(p) {
