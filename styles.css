@@ -38,6 +38,15 @@ main{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 18
   background:linear-gradient(90deg,rgba(230,57,75,.12),rgba(57,212,255,.08));border:1px solid rgba(230,57,75,.35)}
 .connect-nudge[hidden]{display:none}   /* class display:flex would otherwise override the [hidden] attribute */
 
+/* one-time onboarding bridge after the first car is added */
+.onboard-note{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 0;padding:12px 16px;border-radius:12px;
+  background:rgba(55,214,122,.08);border:1px solid rgba(55,214,122,.32);color:var(--txt);font-size:13px;line-height:1.5}
+.onboard-note[hidden]{display:none}
+.onboard-note>span{flex:1;min-width:240px}
+.onboard-note strong{color:#7fe0b8}
+.onboard-note .on-x{background:none;border:1px solid var(--line2);color:var(--mut);border-radius:8px;padding:6px 12px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.onboard-note .on-x:hover{color:var(--txt);border-color:var(--mut)}
+
 /* LIVE pending-update alert (real data, straight from the car) */
 .update-alert{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin:14px 0 0;padding:13px 16px;border-radius:12px;
   border:1px solid var(--line2);background:#0b0e14;border-left-width:4px}

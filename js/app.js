@@ -1195,6 +1195,7 @@
   // single place that builds a vehicle from form fields (used by the garage form AND the
   // top-of-page Quick Predict panel) so the two paths can't drift.
   function addVehicleAndRender({ nickname, vin, model, year, gen, hw, market, version, entitlement }) {
+    const wasEmpty = Garage.isEmpty();   // first car? → bridge the quick-predict → garage handoff
     const region = WEN.regions[market] || {};
     const fsdInfo = region.fsd ? region.fsd[hw] : null;
     gstate = Garage.add({
@@ -1210,7 +1211,22 @@
     });
     ui.guessDays = null; clearGuess();
     renderGarage(); renderActiveControls(); render();
+    maybeOnboard(wasEmpty);
     const hero = $("heroDate"); if (hero && hero.scrollIntoView) hero.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // First car ever added: surface a one-time bridge so the silent quick-predict → garage
+  // handoff is obvious (this IS your car; here's why you'd touch the garage). Dismissable + sticky.
+  function maybeOnboard(wasEmpty) {
+    const note = $("onboardNote"); if (!note) return;
+    let seen = false; try { seen = localStorage.getItem("wenfsd.onboarded") === "1"; } catch (e) {}
+    if (!wasEmpty || seen) { note.hidden = true; return; }
+    note.innerHTML = `<span>✓ <strong>Saved to Your garage</strong> below — this is your live prediction now. ` +
+      `Want it sharper? Fix your exact version, log past updates, or connect for live alerts — all in the garage.</span>` +
+      `<button type="button" class="on-x" id="onboardX">Got it 👍</button>`;
+    note.hidden = false;
+    const x = $("onboardX");
+    if (x) x.onclick = () => { note.hidden = true; try { localStorage.setItem("wenfsd.onboarded", "1"); } catch (e) {} };
   }
 
   // crude hardware inference from model + year so the Quick Predict "Hardware (auto)" is right by
