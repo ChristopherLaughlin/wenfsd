@@ -326,6 +326,17 @@
         <!-- data sharing / auto-track -->
         <div class="garage-div">🔗 Auto-track &amp; contribute <span class="gd-sub">optional — connect for live alerts, or stay manual and keep refreshing like a gremlin 😈</span></div>
         <div class="consent">
+          <!-- no-login email capture: the low-friction alternative to OAuth — works for everyone -->
+          <div class="email-capture" id="emailCapture">
+            <div class="ec-h">📭 No account? Just get an email when it's close.</div>
+            <div class="ec-row">
+              <input type="email" id="emailInput" placeholder="you@email.com" autocomplete="email" inputmode="email" spellcheck="false" aria-label="Email for update alerts"/>
+              <button class="btn-sm ec-btn" id="emailSubBtn" type="button">Notify me 🔔</button>
+            </div>
+            <p class="hint ec-hint">One email when your 80% window opens or a new build lands in your region. No spam, no selling it, unsubscribe in one click. We'll send a confirm link first.</p>
+            <div class="ec-status" id="emailSubStatus" role="status" aria-live="polite"></div>
+          </div>
+          <div class="ec-or">— or, for live alerts the <em>second</em> it lands —</div>
           <button class="btn connect-btn" id="connectTeslaBtn" type="button">📨 Connect → get pinged the second it lands</button>
           <label class="switch-row">
             <input type="checkbox" id="optInToggle"/>

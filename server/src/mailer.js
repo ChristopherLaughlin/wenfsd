@@ -47,3 +47,16 @@ export function arrivalMessage({ nickname, vin, fromVersion, toVersion }) {
       + `(You're getting this because you asked to be told the moment your update lands. Turn it off anytime in your garage.)`,
   };
 }
+
+// Double-opt-in confirmation for the no-login email channel. One click to confirm; we send
+// nothing else until they do, so we can't be used to spam an address someone else typed in.
+export function confirmMessage({ market, confirmUrl, unsubUrl }) {
+  const where = market ? ` in ${market}` : "";
+  return {
+    subject: `Confirm your wenFSD update alerts 🔔`,
+    text: `Almost there. Tap to confirm you want wenFSD to email you when your Tesla's next update`
+      + ` is close (or when a new build lands${where}):\n\n${confirmUrl}\n\n`
+      + `We'll only email you about your updates — never spam, never sold, and you can unsubscribe in one click: ${unsubUrl}\n\n`
+      + `Didn't ask for this? Someone probably mistyped their address. Just ignore this — we won't email again unless you confirm.`,
+  };
+}

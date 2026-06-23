@@ -10,6 +10,7 @@ import { computeCalibration } from "../calibration.js";
 import * as tesla from "../tesla.js";
 import { encrypt, decrypt } from "../crypto.js";
 import { applyVersionReading, persistPendingUpdate } from "../poller.js";
+import { deliver, confirmMessage } from "../mailer.js";
 import crypto from "node:crypto";
 
 export const apiRouter = Router();
@@ -46,6 +47,59 @@ apiRouter.post("/event", ah(async (req, res) => {
   await query(`INSERT INTO daily_events(day, event, count) VALUES($1, $2, 1)
                ON CONFLICT(day, event) DO UPDATE SET count = daily_events.count + 1`, [day, event]);
   res.json({ ok: true });
+}));
+
+// --- no-login email capture: the retention channel for owners who don't OAuth. Double opt-in. ---
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function isValidEmail(e) { return typeof e === "string" && e.length <= 254 && EMAIL_RE.test(e); }
+const newToken = () => crypto.randomBytes(24).toString("base64url");
+function confirmPage(msg) {
+  return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>wenFSD</title>`
+    + `<body style="background:#0a0d12;color:#e9eef5;font-family:system-ui,-apple-system,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center;padding:24px">`
+    + `<div><div style="font-size:24px;font-weight:800;margin-bottom:10px">wen<span style="color:#e62937">FSD</span></div>`
+    + `<p style="font-size:16px;max-width:440px;line-height:1.55;color:#9fb0c3">${msg}</p>`
+    + `<a href="/" style="color:#39d4ff;text-decoration:none">← back to wenFSD</a></div></body>`;
+}
+apiRouter.post("/subscribe", ah(async (req, res) => {
+  const b = req.body || {};
+  const email = String(b.email || "").trim().toLowerCase();
+  if (!isValidEmail(email)) return res.status(400).json({ ok: false, error: "That doesn't look like an email." });
+  // sanitise the car context — only what we'd email about, all optional, all validated
+  const market = b.market && W.regions[b.market] ? b.market : null;
+  const model = typeof b.model === "string" ? b.model.replace(/[<>]/g, "").slice(0, 40) : null;
+  const hardware = HARDWARE.has(b.hardware) ? b.hardware : null;
+  const version = typeof b.version === "string" ? b.version.replace(/[^0-9.]/g, "").slice(0, 24) : null;
+  const fsd = ["owned", "subscription", "none", "unknown"].includes(b.fsdEntitlement) ? b.fsdEntitlement : null;
+  if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  const confirm_token = newToken(), unsub_token = newToken();
+  await query(
+    `INSERT INTO email_subscribers(email, model, market, hardware, version, fsd_entitlement, confirm_token, unsub_token)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT(email) DO UPDATE SET model=$2, market=$3, hardware=$4, version=$5, fsd_entitlement=$6,
+       unsubscribed_at=NULL,
+       confirm_token=CASE WHEN email_subscribers.confirmed THEN email_subscribers.confirm_token ELSE $7 END,
+       unsub_token=COALESCE(email_subscribers.unsub_token, $8)`,
+    [email, model, market, hardware, version, fsd, confirm_token, unsub_token]);
+  const row = (await query(`SELECT confirmed, confirm_token, unsub_token FROM email_subscribers WHERE email=$1`, [email])).rows[0] || {};
+  if (!row.confirmed) {
+    const base = config.publicBaseUrl.replace(/\/$/, "");
+    const msg = confirmMessage({ market, confirmUrl: `${base}/api/confirm?t=${row.confirm_token}`, unsubUrl: `${base}/api/unsubscribe?t=${row.unsub_token}` });
+    deliver({ to: email, subject: msg.subject, text: msg.text, event: "subscribe_confirm" }).catch(() => {});
+  }
+  res.json({ ok: true, confirmed: !!row.confirmed });
+}));
+apiRouter.get("/confirm", ah(async (req, res) => {
+  const t = String(req.query.t || "");
+  if (config.mockMode || !hasDb() || !t) return res.type("html").send(confirmPage("Confirmation isn't available right now."));
+  const r = await query(`UPDATE email_subscribers SET confirmed=true, confirmed_at=now() WHERE confirm_token=$1 AND confirmed=false RETURNING email`, [t]);
+  res.type("html").send(confirmPage(r.rowCount
+    ? "✓ You're in. We'll email you the moment your update's close — and nothing else."
+    : "This link's already been used (you're probably confirmed already). 👍"));
+}));
+apiRouter.get("/unsubscribe", ah(async (req, res) => {
+  const t = String(req.query.t || "");
+  if (!config.mockMode && hasDb() && t) await query(`UPDATE email_subscribers SET unsubscribed_at=now() WHERE unsub_token=$1`, [t]);
+  res.type("html").send(confirmPage("Done — you're unsubscribed. No more emails. We'll miss you. 🫡"));
 }));
 
 apiRouter.get("/fleet/firmware", ah(async (req, res) => {
@@ -277,7 +331,7 @@ apiRouter.get("/admin/stats", ah(async (req, res) => {
   if (!adminOk(req)) return res.status(401).json({ error: "bad or missing admin token" });
   if (config.mockMode || !hasDb()) return res.json({ mode: "sample", ...sampleAdmin() });
   const z = (p, fb) => p.catch(() => ({ rows: [fb] }));
-  const [users, vehicles, byRegion, signupsByDay, visits, grief, guesses] = await Promise.all([
+  const [users, vehicles, byRegion, signupsByDay, visits, grief, guesses, emailSubs, events] = await Promise.all([
     z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE email IS NOT NULL)::int AS with_email FROM users`), { n: 0, with_email: 0 }),
     z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE opted_in)::int AS opted_in, count(*) FILTER (WHERE current_version IS NOT NULL)::int AS with_version FROM vehicles`), { n: 0, opted_in: 0, with_version: 0 }),
     z(query(`SELECT market, count(*)::int AS n FROM vehicles GROUP BY market ORDER BY n DESC`), null),
@@ -285,13 +339,19 @@ apiRouter.get("/admin/stats", ah(async (req, res) => {
     z(query(`SELECT to_char(v.day, 'YYYY-MM-DD') AS day, v.views::int AS views, (SELECT count(*)::int FROM daily_unique_visitors u WHERE u.day = v.day) AS uniques FROM daily_visits v ORDER BY v.day DESC LIMIT 30`), null),
     z(query(`SELECT count(*)::int AS n FROM grief_logs`), { n: 0 }),
     z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE settled)::int AS settled FROM guesses`), { n: 0, settled: 0 }),
+    z(query(`SELECT count(*)::int AS n, count(*) FILTER (WHERE confirmed)::int AS confirmed FROM email_subscribers WHERE unsubscribed_at IS NULL`), { n: 0, confirmed: 0 }),
+    z(query(`SELECT event, count::int AS n FROM daily_events WHERE day >= (CURRENT_DATE - INTERVAL '30 days') ORDER BY event`), null),
   ]);
+  // roll the per-day event rows up into a 30-day funnel total per event
+  const funnel = {}; for (const r of (events.rows || [])) funnel[r.event] = (funnel[r.event] || 0) + r.n;
   res.json({
     mode: "live",
     signups: users.rows[0].n, usersWithEmail: users.rows[0].with_email,
+    emailSubscribers: emailSubs.rows[0].n, emailConfirmed: emailSubs.rows[0].confirmed,
     vehicles: vehicles.rows[0].n, optedIn: vehicles.rows[0].opted_in, vehiclesWithVersion: vehicles.rows[0].with_version,
     byRegion: byRegion.rows || [], signupsByDay: signupsByDay.rows || [], visitsByDay: visits.rows || [],
     griefLogs: grief.rows[0].n, guesses: guesses.rows[0].n, guessesSettled: guesses.rows[0].settled,
+    funnel,
   });
 }));
 function sampleAdmin() {

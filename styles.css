@@ -857,6 +857,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   letter-spacing:.6px;text-transform:uppercase;color:var(--mut);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .garage-div .gd-sub{font-weight:500;letter-spacing:.2px;text-transform:none;color:var(--mut2);font-size:11.5px}
 .consent{margin-top:16px;padding-top:0}
+/* no-login email capture */
+.email-capture{border:1px solid var(--line2);border-radius:12px;padding:13px 14px;background:#0c1019;margin-bottom:12px}
+.ec-h{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:9px}
+.ec-row{display:flex;gap:8px;flex-wrap:wrap}
+.ec-row input{flex:1;min-width:170px;background:#0a0d12;border:1px solid var(--line);border-radius:8px;color:var(--txt);font:inherit;font-size:13px;padding:8px 10px}
+.ec-row input:focus{outline:2px solid var(--cyan);outline-offset:1px;border-color:var(--cyan)}
+.ec-btn{white-space:nowrap;background:rgba(55,214,122,.14);border-color:rgba(55,214,122,.4);color:#7fe0b8;font-weight:700}
+.ec-btn:hover{background:rgba(55,214,122,.22)}
+.ec-hint{margin:8px 0 0;font-size:11.5px}
+.ec-status{font-size:12px;margin-top:8px;line-height:1.5} .ec-status:empty{display:none}
+.ec-status.ec-ok{color:var(--green)} .ec-status.ec-err{color:#e89aa0}
+.ec-or{text-align:center;font-size:11px;color:var(--mut2);margin:4px 0 12px} .ec-or em{font-style:italic;color:var(--mut)}
 .connect-btn{width:100%;background:linear-gradient(135deg,#1a8cff,#0a5bd0);box-shadow:0 4px 14px rgba(26,140,255,.3)}
 .connect-btn:hover{box-shadow:0 6px 18px rgba(26,140,255,.45)}
 .switch-row{display:flex;gap:10px;align-items:flex-start;margin:12px 0 0;font-size:12.5px;color:var(--mut);cursor:pointer}

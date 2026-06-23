@@ -1,6 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isValidEvent, FUNNEL_EVENTS } from "../src/routes/api.js";
+import { isValidEvent, FUNNEL_EVENTS, isValidEmail } from "../src/routes/api.js";
+
+test("email validation accepts plausible addresses", () => {
+  for (const e of ["a@b.co", "juniper.joy@gmail.com", "x+tag@sub.domain.io"]) {
+    assert.equal(isValidEmail(e), true, `${e} should be valid`);
+  }
+});
+
+test("email validation rejects junk, injection, and over-long input", () => {
+  for (const bad of ["", "notanemail", "no@domain", "@nodomain.com", "spaces in@x.com", "a@b.c\nBcc: evil@x.com", null, 42, "x".repeat(250) + "@y.com"]) {
+    assert.equal(isValidEmail(bad), false, `${JSON.stringify(bad).slice(0, 40)} must be rejected`);
+  }
+});
+
+test("email_subscribed is a tracked funnel event", () => {
+  assert.equal(isValidEvent("email_subscribed"), true);
+});
 
 test("funnel event allowlist accepts the known events", () => {
   for (const e of ["prediction_generated", "connect_clicked", "email_subscribed", "shared", "bet_placed"]) {
