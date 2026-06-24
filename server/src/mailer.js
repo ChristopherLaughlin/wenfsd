@@ -4,15 +4,18 @@
 // feature is safe to ship before any provider is wired, and never blocks the poller.
 import { config } from "./config.js";
 
-export async function deliver({ to, subject, text, event }) {
+export async function deliver({ to, subject, text, event, from }) {
   // Provider order: a real email sender (Resend HTTP API) if configured, else a generic webhook,
   // else log-only. All dependency-free (plain fetch). Pick whichever you've set env for.
-  if (config.resendApiKey && config.notifyFromEmail) {
+  // `from` lets the OWNER alert use Resend's no-setup test sender (it only mails the account owner),
+  // so owner email works with just RESEND_API_KEY — without verifying a sending domain.
+  const sender = from || config.notifyFromEmail;
+  if (config.resendApiKey && sender) {
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.resendApiKey}` },
-        body: JSON.stringify({ from: config.notifyFromEmail, to: [to], subject, text }),
+        body: JSON.stringify({ from: sender, to: [to], subject, text }),
       });
       if (!res.ok) { console.warn(`[notify] resend ${res.status} for ${to}`); return { delivered: false, channel: "resend", status: res.status }; }
       return { delivered: true, channel: "resend" };
