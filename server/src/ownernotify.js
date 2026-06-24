@@ -39,7 +39,10 @@ export async function notifyOwnerOfPending(ev) {
     } catch (e) { /* best-effort */ }
   }
   if (config.ownerEmail) {
-    try { const r = await deliver({ to: config.ownerEmail, subject: msg.subject, text: msg.text, event: "owner_event_pending" }); out.email = !!(r && r.delivered !== false); }
+    // owner alert mails only YOU → can use Resend's no-setup sender when no verified domain is set,
+    // so it works with just RESEND_API_KEY + OWNER_EMAIL (no DNS/domain verification needed).
+    const from = config.notifyFromEmail || "wenFSD alerts <onboarding@resend.dev>";
+    try { const r = await deliver({ to: config.ownerEmail, subject: msg.subject, text: msg.text, event: "owner_event_pending", from }); out.email = !!(r && r.delivered !== false); }
     catch (e) { /* best-effort */ }
   }
   if (!out.webhook && !out.email) console.log("[owner-notify] no channel configured — would alert:", msg.subject);

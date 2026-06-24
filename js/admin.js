@@ -6,12 +6,14 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   function gate() {
-    const saved = sessionStorage.getItem(KEY) || "";
+    const saved = localStorage.getItem(KEY) || "";
     app.innerHTML =
       `<div class="card" style="max-width:460px">` +
+      `<div class="ec-h" style="font-size:15px;margin-bottom:6px">🔑 Owner login</div>` +
+      `<p class="hint" style="margin:0 0 12px">Paste your admin token once — this device stays logged in (bookmark this page and you're set).</p>` +
       `<label class="field"><span>Admin token</span>` +
       `<input type="password" id="adminTok" placeholder="paste your ADMIN_TOKEN" value="${esc(saved)}" autocomplete="off"/></label>` +
-      `<button class="btn" id="adminGo" style="margin-top:10px">Show me the numbers 📊</button>` +
+      `<button class="btn" id="adminGo" style="margin-top:10px">Log in 📊</button>` +
       `<p class="hint" id="adminErr" style="color:var(--acc2);margin-top:10px"></p>` +
       `</div>`;
     $("adminGo").onclick = load;
@@ -19,9 +21,9 @@
   }
 
   function load() {
-    const tok = ($("adminTok") ? $("adminTok").value : sessionStorage.getItem(KEY) || "").trim();
+    const tok = ($("adminTok") ? $("adminTok").value : localStorage.getItem(KEY) || "").trim();
     if (!tok) return;
-    sessionStorage.setItem(KEY, tok);
+    localStorage.setItem(KEY, tok);
     app.innerHTML = `<p class="hint">Counting your adoring public… 🫶</p>`;
     fetch("/api/admin/stats", { headers: { "x-admin-token": tok, Accept: "application/json" } })
       .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j.error || ("HTTP " + r.status))))
@@ -157,7 +159,7 @@
       `<div class="card">${dayTable(d.signupsByDay, ["n"])}</div>` +
       `<p class="hint" style="margin-top:18px">🔒 Visit counts are cookieless: a salted daily hash of IP+user-agent (not the IP itself), pruned after 90 days. Refresh to update. <a href="/" style="color:var(--cyan)">← back to the site</a></p>` +
       `<button class="btn-sm" id="adminLogout" style="margin-top:8px">Forget my token (this device)</button>`;
-    $("adminLogout").onclick = () => { sessionStorage.removeItem(KEY); gate(); };
+    $("adminLogout").onclick = () => { localStorage.removeItem(KEY); gate(); };
   }
   function dayTable(rows, valKeys) {
     if (!rows || !rows.length) return `<p class="hint">Nothing logged yet. Either nobody's visited or the counter just woke up. ☕</p>`;
@@ -172,5 +174,5 @@
   }
 
   // auto-load if a token is already remembered this session
-  if (sessionStorage.getItem(KEY)) load(); else gate();
+  if (localStorage.getItem(KEY)) load(); else gate();
 })();
