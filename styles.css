@@ -621,6 +621,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .btn-sm{background:#1a2030;border:1px solid var(--line2);color:var(--txt);font-size:12px;font-weight:600;
   padding:6px 11px;border-radius:8px;cursor:pointer;font-family:inherit;transition:.15s}
 .btn-sm:hover{border-color:var(--acc);color:#fff}
+/* peak-delight action row — share (accent) + alert (cyan), shown right under the prediction */
+.hero-act{display:flex;gap:10px;margin:16px 0 2px;flex-wrap:wrap}
+.hero-act[hidden]{display:none}
+.hero-act .btn-sm{flex:1 1 150px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 12px;font-size:13px;font-weight:800;white-space:nowrap}
+.hero-act-share{background:linear-gradient(135deg,var(--acc),#b3162a);border:1px solid transparent;color:#fff}
+.hero-act-share:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(230,41,55,.45);border-color:transparent;color:#fff}
+.hero-act-alert{background:rgba(57,212,255,.16);border-color:rgba(57,212,255,.45);color:#8fe3ff}
+.hero-act-alert:hover{border-color:var(--cyan);color:#bdeeff}
+@media(max-width:560px){.hero-act{flex-direction:column}.hero-act .btn-sm{width:100%;flex:1 1 auto}}
 .btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--mut);font-size:13px;font-weight:600;
   padding:11px 16px;border-radius:10px;cursor:pointer;font-family:inherit}
 .btn-ghost:hover{color:var(--txt)}

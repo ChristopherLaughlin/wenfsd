@@ -169,6 +169,14 @@
         <details class="hero-split-hint"><summary>Why two dates? <strong>FSD ships inside software builds — but most builds don't change FSD.</strong></summary><p>So your next software update might bump FSD too (we'll flag it ✅), or it might be a maintenance build that leaves FSD exactly where it is. We predict both: the next software update, and the next build that actually moves your FSD. Both are <strong>our modelled guesses</strong>, <em>not</em> Tesla announcements.</p></details>
       </div>
 
+      <!-- peak-delight actions: the date just landed — capture the two loops (share = reach,
+           alert = retention) right here, where attention peaks, not 1–2 screens down by the ring.
+           Both reuse the existing handlers; revealed by renderHero once a real prediction exists. -->
+      <div class="hero-act" id="heroAct" hidden>
+        <button class="btn-sm hero-act-share" id="heroShareBtn" type="button">📣 Share my shot</button>
+        <button class="btn-sm hero-act-alert" id="heroAlertBtn" type="button">🔔 Ping me the second it drops</button>
+      </div>
+
       <!-- SOFTWARE-UPDATE detail: the odds + note all describe the OS update above (and the ring) -->
       <div class="hero-section" id="osDetail">
         <div class="sub-eyebrow">🔧 How sure are we about the <strong>software</strong> date?</div>
