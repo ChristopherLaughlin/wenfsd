@@ -17,6 +17,14 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
 - **Stop early and say so** if there is no genuinely high-value change left. An honest "iterations
   3–10 would be low-value polish; here's what's actually worth doing next" is a SUCCESS, not a
   failure. Do not invent work to hit 10.
+- **But earn the stop — exhaust the checklist first (don't stop early out of laziness).** An honest stop
+  comes AFTER you've cleared the concrete, knowable work, not after the first fix. Before declaring done:
+  (a) clear every item a PRIOR run consciously DEFERRED ("fix when activated", "noted for later") — a
+  deferral is a TODO, not a closed item; (b) DRIVE THE ACTUAL APP in a browser at least once (preview +
+  screenshots + a real prediction + a console/a11y scan), not just the server/cards/tests; (c) run the
+  measurements (quantify prevalence, sweep all configs for anomalies). Only once that checklist is empty
+  do you weigh stop-vs-continue. "It's already polished" is a conclusion you reach by looking, not a
+  reason to skip looking. Stopping with known-deferred work on the board reads as laziness — because it is.
 - This loop spawns multiple PRs and uses significant tokens — that's expected; keep each iteration
   tight.
 
@@ -103,6 +111,13 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v7** — Added **"earn the stop — exhaust the checklist first."** The owner pushed back that prior runs
+  stopped too early (and one even asked them to decide). Both times there WAS concrete known work left:
+  a consciously-deferred frozen-clock sweep (push/subscribers/poller still on the snapshot clock) and the
+  live interactive app, which had never once been driven in a browser. This run cleared both — the alert
+  sweep (PR #78) and a browser walkthrough that verified #74/#76 in-situ and found two unlabeled form
+  controls (PR #79, an a11y fix). Lesson: clear deferred items + drive the real app + run the measurements
+  BEFORE judging stop-vs-continue; a stop with known-deferred work on the board is laziness, not honesty.
 - **v6** — Added **"quantify before dismissing as an edge case."** Run v5 (live-clock fix) made fast-region
   cards collapse to a zero-width "80% by <today>" — false precision. Run v4 had SEEN this exact card
   (Cybertruck) but dismissed it as thin-data and stopped; this run measured it first (41%, 90/219), which
