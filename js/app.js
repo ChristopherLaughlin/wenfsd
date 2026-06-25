@@ -730,6 +730,18 @@
     renderTips(pred);
     const sb = $("shareBtn");
     if (sb) { sb.textContent = flavorPick("shareBtn", SHARE_LABELS); sb.onclick = () => shareMyPrediction(pred, sb); }
+    // peak-delight action row — surface the two loops (share + alert) right at the prediction,
+    // reusing the same handlers the buried buttons use further down.
+    const ha = $("heroAct");
+    if (ha) {
+      ha.hidden = false;
+      const hsb = $("heroShareBtn"); if (hsb) hsb.onclick = () => shareMyPrediction(pred, hsb);
+      const hab = $("heroAlertBtn");
+      if (hab) hab.onclick = () => {
+        const box = $("ahaAlert"); if (box) { box.hidden = false; box.scrollIntoView({ behavior: "smooth", block: "center" }); }
+        const inp = $("ahaEmail"); if (inp) setTimeout(() => { try { inp.focus(); } catch (e) {} }, 350);
+      };
+    }
 
     // ⏸ ROLLOUT PAUSED — a confirmed pause/halt freezes the prediction. We refuse to show a
     // confident date (honesty > a wrong number); override the headline + ring + confidence.
