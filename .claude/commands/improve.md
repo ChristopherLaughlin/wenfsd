@@ -123,6 +123,15 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v10** — A wide+deep QA run (219 /p/ pages, client/server prediction PARITY [exact median/p90/target
+  match on every car], VIN decode, the event/pause engine, prediction-math invariants, adversarial
+  /api/predict inputs, security headers) — **zero real bugs; everything works as promised.** Sharpened
+  v9's contract rule: when unit-testing a function in ISOLATION, copy a REAL call site's exact arguments
+  (grep an actual invocation or a test fixture) instead of hand-rolling inputs from memory. This run had
+  FOUR false "bugs", every one from a guessed field name or incomplete object — `earliness` vs
+  `earlinessPercentile`, `decode` vs `decodeVIN`, `year` vs `model_year`, and pause/resume events
+  missing `effective_at`. The tell: a "broken" result that contradicts the app plainly working in the
+  browser → suspect the TEST inputs first, read the real signature/call-site, then re-test.
 - **v9** — A full functional-QA run ("test everything ≥5×, no assumptions"). Added: drive the REAL
   Express backend (mock mode, port 8787) for QA — the static preview can't serve `/api/*` — and a
   `wenfsd-api` launch config to make that one command. Also: verify every contract BOTH ways (client
