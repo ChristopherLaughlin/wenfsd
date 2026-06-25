@@ -29,6 +29,14 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
   layout — px from the payload to the CTA, above-vs-below-the-fold — don't just eyeball). Only once that checklist is empty
   do you weigh stop-vs-continue. "It's already polished" is a conclusion you reach by looking, not a
   reason to skip looking. Stopping with known-deferred work on the board reads as laziness — because it is.
+  **For a functional/QA pass, drive the REAL backend, not the static stub, and verify every contract
+  BOTH ways before calling anything broken.** The static preview (`wenfsd`) can't serve `/api/*`; run
+  the Express server in mock mode (`wenfsd-api`, port 8787 — it boots with zero env) so all ~38
+  endpoints + the integration flows actually execute. Before reporting a result as a bug, read BOTH the
+  client call and the server handler — two false alarms this run came from assuming the payload shape
+  (the client sends `{event}` not `{name}`; `/me/*` 401 and `push/key` 404 are BY DESIGN, not failures).
+  State-accumulation bugs only surface under repetition: the "≥5× the same action" rule is what exposed
+  the garage piling up a duplicate vehicle on every re-predict (one click looked fine; six didn't).
 - This loop spawns multiple PRs and uses significant tokens — that's expected; keep each iteration
   tight.
 
@@ -115,6 +123,15 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v9** — A full functional-QA run ("test everything ≥5×, no assumptions"). Added: drive the REAL
+  Express backend (mock mode, port 8787) for QA — the static preview can't serve `/api/*` — and a
+  `wenfsd-api` launch config to make that one command. Also: verify every contract BOTH ways (client
+  call + server handler) before calling a result a bug — two false alarms came from assuming the
+  payload shape (`{event}` not `{name}`; `/me/*` 401 / `push/key` 404 are by-design). The one real bug
+  the pass found: the garage deduped only by VIN, so re-predicting the same car piled up duplicate
+  vehicles — surfaced precisely by repeating the same action ≥5×. Fixed in PR #84. Everything else
+  (21 pages, ~38 API routes, predict/garage/bet/modal/email/report/grief, and the promises "no login
+  / nothing leaves your browser / confirm-link / 80% window") tested clean.
 - **v8** — A designer/UX/PM run. Sharpened v7's "drive the app" into **drive it at mobile AND desktop**
   (the funnel reads per-breakpoint; an uneven button-wrap showed only at 375px), added **proactively
   cache-bust the preview** before trusting computed styles (the stale CSS bit again), and **measure the
