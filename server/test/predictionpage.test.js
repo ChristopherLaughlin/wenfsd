@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decodeSlug, allSlugs, predictForSlug, renderPage, renderIndex, ogPng } from "../src/predictionpage.js";
+import { decodeSlug, allSlugs, predictForSlug, renderPage, renderIndex, ogPng, ogSvg } from "../src/predictionpage.js";
 
 test("decodeSlug round-trips a canonical slug and reads its parts", () => {
   const meta = decodeSlug("2026-model-y-juniper-australia");
@@ -61,8 +61,33 @@ test("the /p/ page reflects an FSD hold AND its auto-resume (events are honoured
   assert.ok(!/on hold in Australia/.test(renderPage(meta, null, resume)), "page no longer claims a hold after resume");
 });
 
-test("ogPng returns a real PNG buffer (magic bytes)", () => {
-  const png = ogPng(decodeSlug("2026-model-y-juniper-australia"));
-  assert.ok(Buffer.isBuffer(png) && png.length > 1000, "non-trivial buffer");
-  assert.deepEqual([...png.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47], "PNG signature");
+test("the OG card carries NO emoji (resvg has no emoji font → a stray emoji tofus the whole text run)", () => {
+  // Learned the hard way: the share card is a resvg raster, not a browser. When a <text> run
+  // contains an emoji the sans font lacks, fontdb swaps the WHOLE run to a glyph-less fallback and
+  // every character renders as ▯. So the card must stay pure Latin/punctuation. Guard every state.
+  const meta = decodeSlug("2026-model-y-l-australia");           // AU AI4 → FSD on hold (hold line shown)
+  const states = [
+    ogSvg(meta, predictForSlug(meta, null, []).os, predictForSlug(meta, null, []).fsd),                 // paused
+    ogSvg(meta, predictForSlug(meta, null, [{ type: "resume", region: "Australia", version: "v14.x" }]).os,
+               predictForSlug(meta, null, [{ type: "resume", region: "Australia", version: "v14.x" }]).fsd), // resumed
+    ogSvg(decodeSlug("2026-model-y-juniper-united-states"), predictForSlug(decodeSlug("2026-model-y-juniper-united-states")).os, predictForSlug(decodeSlug("2026-model-y-juniper-united-states")).fsd),
+  ];
+  // Pictographs / arrows / geometric shapes / variation selectors absent from Inter's latin subset
+  // (→ ▸ ⏸ all tofu; » · — are Latin/punctuation and DO render — so they're deliberately allowed).
+  const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{FE0F}\u{2190}-\u{21FF}\u{25A0}-\u{25FF}\u{2B00}-\u{2BFF}]/u;
+  for (const svg of states) {
+    assert.ok(!EMOJI.test(svg), `OG card must not contain glyphs that tofu in resvg: ${(svg.match(EMOJI) || [])[0]}`);
+  }
+});
+
+test("ogPng renders REAL text, not a blank/fontless card (the bundled font must actually load)", () => {
+  // The whole-fleet bug: Railway ships no system fonts, so loadSystemFonts found nothing and every
+  // card rendered as an empty box (~7KB). With Inter bundled and text drawn, the PNG is much larger.
+  // This guards that regression directly — a blank card collapses well below the threshold.
+  for (const slug of ["2026-model-y-juniper-australia", "2026-model-y-l-australia"]) {
+    const png = ogPng(decodeSlug(slug));
+    assert.ok(Buffer.isBuffer(png), `${slug}: buffer`);
+    assert.deepEqual([...png.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47], `${slug}: PNG signature`);
+    assert.ok(png.length > 12000, `${slug}: card must contain rendered text (got ${png.length}B; blank ≈7KB)`);
+  }
 });

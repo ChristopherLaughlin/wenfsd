@@ -7,9 +7,20 @@
  *   • SEO:   each page answers a real long-tail query ("when will my 2026 Model Y get FSD in AU?")
  */
 import { Resvg } from "@resvg/resvg-js";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { predictNextOS, predictNextFSD } from "./predict.js";
 import * as W from "./wendata.js";
 import { config } from "./config.js";
+
+// Bundle the card font with the app. resvg has NO fonts of its own, and the Railway base image
+// ships none either — so `loadSystemFonts` finds nothing and every <text> renders blank (every
+// share card in the wild was an empty box). We ship Inter (OFL) in the repo and load it explicitly
+// with loadSystemFonts:false, so cards render identically on every host (Mac, CI, Railway).
+const FONT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "assets", "fonts");
+const FONT_FILES = ["400", "500", "700", "800"].map((w) => path.join(FONT_DIR, `Inter-${w}.ttf`));
+// resvg font config reused by every raster (OG cards + PWA icon).
+const FONT = { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: "Inter" };
 
 const SITE = config.publicBaseUrl.replace(/\/$/, "");
 
@@ -193,16 +204,21 @@ export function renderIndex() {
 }
 
 // ---- dynamic OG image: build the card SVG, rasterise to PNG, cache by slug+version ----
-const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-function ogSvg(meta, os, fsd) {
+// Must name the bundled family. resvg only has Inter loaded (no system fallback), so the generic
+// keywords are inert here — the explicit name is what makes the text actually render on the server.
+const SANS = "Inter, sans-serif";
+export function ogSvg(meta, os, fsd) {
   const car = carLabel(meta).toUpperCase() + " · " + meta.region.toUpperCase();
   const date = fmtDate(os.medianDate);
   const lbl = os.confirmed ? "NEXT UPDATE — CONFIRMED BY THE CAR" : "NEXT SOFTWARE UPDATE — PREDICTED";
   const win = os.confirmed ? "your car is already downloading it" : os.stale ? "low-confidence estimate · a prediction, not a promise" : `80% by ${fmtDate(os.p90Date)} · a prediction, not a promise`;
   const dateColor = os.confirmed ? "#37d67a" : "#39d4ff";
   // when FSD is on hold here, the card leads with the timely hook (the share-worthy bit), not just the OS date
+  // NOTE: this is a resvg raster, not the browser — emoji have no font here and would
+  // tofu the WHOLE text run (fontdb swaps the run to a glyph-less fallback). Keep this
+  // line pure Latin/punctuation only. (Verified by rendering the PNG and looking at it.)
   const holdLine = (fsd && fsd.paused)
-    ? `<text x="100" y="500" font-family="${SANS}" font-size="29" font-weight="800" fill="#ffae7a">${esc(`⏸ FSD ${fsd.targetLabel || "v14"} ON HOLD in ${meta.region} — no resume date`)}</text>`
+    ? `<text x="100" y="500" font-family="${SANS}" font-size="29" font-weight="800" fill="#ffae7a">${esc(`FSD ${fsd.targetLabel || "v14"} ON HOLD in ${meta.region} · no resume date`)}</text>`
     : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0a0d12"/>
@@ -214,7 +230,7 @@ function ogSvg(meta, os, fsd) {
   <text x="96" y="388" font-family="${SANS}" font-size="98" font-weight="800" fill="${dateColor}">${esc(date)}</text>
   <text x="100" y="446" font-family="${SANS}" font-size="29" font-weight="500" fill="#9fb0c3">${esc(win)}</text>
   ${holdLine}
-  <text x="100" y="552" font-family="${SANS}" font-size="34" font-weight="800" fill="#e62937">call your shot 👉 wenfsd.info</text>
+  <text x="100" y="552" font-family="${SANS}" font-size="34" font-weight="800" fill="#e62937">call your shot » wenfsd.info</text>
 </svg>`;
 }
 
@@ -224,7 +240,7 @@ export function iconPng(size) {
   const s = Math.max(48, Math.min(1024, parseInt(size, 10) || 192));
   if (_iconCache.has(s)) return _iconCache.get(s);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 192 192"><rect width="192" height="192" rx="42" fill="#e6394b"/><text x="96" y="142" font-family="${SANS}" font-size="132" font-weight="800" text-anchor="middle" fill="#ffffff">?</text></svg>`;
-  const png = new Resvg(svg, { fitTo: { mode: "width", value: s }, font: { loadSystemFonts: true } }).render().asPng();
+  const png = new Resvg(svg, { fitTo: { mode: "width", value: s }, font: FONT }).render().asPng();
   _iconCache.set(s, png);
   return png;
 }
@@ -236,7 +252,7 @@ export function ogPng(meta, version, events) {
   const key = canonicalSlug(meta.year, meta.model, meta.region) + "|" + (version || "") + "|" + evSig;
   if (_ogCache.has(key)) return _ogCache.get(key);
   const { os, fsd } = predictForSlug(meta, version, events);
-  const png = new Resvg(ogSvg(meta, os, fsd), { fitTo: { mode: "width", value: 1200 }, font: { loadSystemFonts: true } }).render().asPng();
+  const png = new Resvg(ogSvg(meta, os, fsd), { fitTo: { mode: "width", value: 1200 }, font: FONT }).render().asPng();
   if (_ogCache.size > 500) _ogCache.clear();   // crude bound; pages are deterministic so just rebuild
   _ogCache.set(key, png);
   return png;
