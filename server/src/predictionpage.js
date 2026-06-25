@@ -191,12 +191,16 @@ export function renderIndex() {
 
 // ---- dynamic OG image: build the card SVG, rasterise to PNG, cache by slug+version ----
 const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-function ogSvg(meta, os) {
+function ogSvg(meta, os, fsd) {
   const car = carLabel(meta).toUpperCase() + " · " + meta.region.toUpperCase();
   const date = fmtDate(os.medianDate);
   const lbl = os.confirmed ? "NEXT UPDATE — CONFIRMED BY THE CAR" : "NEXT SOFTWARE UPDATE — PREDICTED";
   const win = os.confirmed ? "your car is already downloading it" : os.stale ? "low-confidence estimate · a prediction, not a promise" : `80% by ${fmtDate(os.p90Date)} · a prediction, not a promise`;
   const dateColor = os.confirmed ? "#37d67a" : "#39d4ff";
+  // when FSD is on hold here, the card leads with the timely hook (the share-worthy bit), not just the OS date
+  const holdLine = (fsd && fsd.paused)
+    ? `<text x="100" y="500" font-family="${SANS}" font-size="29" font-weight="800" fill="#ffae7a">${esc(`⏸ FSD ${fsd.targetLabel || "v14"} ON HOLD in ${meta.region} — no resume date`)}</text>`
+    : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0a0d12"/>
   <rect x="48" y="48" width="1104" height="534" rx="28" fill="#0c1019" stroke="#27384b" stroke-width="2"/>
@@ -204,9 +208,10 @@ function ogSvg(meta, os) {
   <text x="100" y="138" font-family="${SANS}" font-size="46" font-weight="800"><tspan fill="#e9eef5">wen</tspan><tspan fill="#e62937">FSD</tspan></text>
   <text x="100" y="214" font-family="${SANS}" font-size="27" font-weight="700" fill="#9fb0c3">${esc(car)}</text>
   <text x="100" y="280" font-family="${SANS}" font-size="24" font-weight="800" fill="#6b7c91">${esc(lbl)}</text>
-  <text x="96" y="392" font-family="${SANS}" font-size="98" font-weight="800" fill="${dateColor}">${esc(date)}</text>
-  <text x="100" y="452" font-family="${SANS}" font-size="31" font-weight="500" fill="#9fb0c3">${esc(win)}</text>
-  <text x="100" y="548" font-family="${SANS}" font-size="35" font-weight="800" fill="#e62937">call your shot 👉 wenfsd.info</text>
+  <text x="96" y="388" font-family="${SANS}" font-size="98" font-weight="800" fill="${dateColor}">${esc(date)}</text>
+  <text x="100" y="446" font-family="${SANS}" font-size="29" font-weight="500" fill="#9fb0c3">${esc(win)}</text>
+  ${holdLine}
+  <text x="100" y="552" font-family="${SANS}" font-size="34" font-weight="800" fill="#e62937">call your shot 👉 wenfsd.info</text>
 </svg>`;
 }
 
@@ -225,8 +230,8 @@ const _ogCache = new Map(); // slug+version → PNG Buffer (deterministic inputs
 export function ogPng(meta, version) {
   const key = canonicalSlug(meta.year, meta.model, meta.region) + "|" + (version || "");
   if (_ogCache.has(key)) return _ogCache.get(key);
-  const { os } = predictForSlug(meta, version);
-  const png = new Resvg(ogSvg(meta, os), { fitTo: { mode: "width", value: 1200 }, font: { loadSystemFonts: true } }).render().asPng();
+  const { os, fsd } = predictForSlug(meta, version);
+  const png = new Resvg(ogSvg(meta, os, fsd), { fitTo: { mode: "width", value: 1200 }, font: { loadSystemFonts: true } }).render().asPng();
   if (_ogCache.size > 500) _ogCache.clear();   // crude bound; pages are deterministic so just rebuild
   _ogCache.set(key, png);
   return png;
