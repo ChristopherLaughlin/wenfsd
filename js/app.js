@@ -2044,7 +2044,7 @@
       `<div class="grief-pred grief-${stage.key}"><div class="gp-h">🩺 Our diagnosis: <strong>${stage.emoji} ${stage.name}</strong></div><div class="gp-line">${esc(stage.line)}</div><div class="gp-why">${esc(pg.why)}</div></div>` +
       `<div class="grief-ask">Be honest — where are <em>you</em>, actually?</div>` +
       `<div class="grief-chips">${chips}</div>` +
-      `<textarea id="griefNote" class="grief-note" maxlength="180" rows="2" placeholder="${esc(rnd(GRIEF_PLACEHOLDERS))}">${latest ? esc(latest.note || "") : ""}</textarea>` +
+      `<textarea id="griefNote" class="grief-note" maxlength="180" rows="2" aria-label="How you're feeling about the wait" placeholder="${esc(rnd(GRIEF_PLACEHOLDERS))}">${latest ? esc(latest.note || "") : ""}</textarea>` +
       `<button class="btn-sm" id="griefLog" type="button">🕯️ Log how I'm feeling</button>` +
       `<span class="grief-savehint" id="griefSaveHint"></span>` +
       `<div id="griefHistory" class="grief-history"></div>` +
