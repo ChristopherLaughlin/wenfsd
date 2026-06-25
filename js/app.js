@@ -1,7 +1,11 @@
 /* wenFSD — app wiring (garage-driven) */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const today = WEN.today;
+  // The real current date (UTC, matching the server) — NOT WEN.today, which is the data-snapshot
+  // date baked into the model. Using the snapshot as the clock froze every prediction, chart and the
+  // "today" label, sliding dates into the past as real time advanced past it. Anchors stay frozen
+  // (that's the snapshot); the observer clock is live and must agree with the server's /p/ pages.
+  const today = new Date().toISOString().slice(0, 10);
 
   let gstate = Garage.get();           // { vehicles, activeId }
   const ui = { target: "standard", guessDays: null, addingHistory: false, exploreRegion: null, guessRisk: "bold", rnFilter: "all", paceWindow: "day", trackRegion: null, griefPick: null };

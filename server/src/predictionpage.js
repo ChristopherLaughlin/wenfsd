@@ -102,9 +102,11 @@ export function predictForSlug(meta, version, events) {
     earlinessSource: "default",
     fsdEntitlement: "unknown",
   };
-  // pass confirmed rollout events so the /p/ page reflects a pause AND its auto-resume — otherwise
-  // a shared link would keep saying "on hold" after the rollout's actually back (stale = dishonest).
-  const opts = { events: events || [] };
+  // "today" is the REAL current date, not W.today (the data-snapshot date baked into the model).
+  // W.today was being used as the prediction clock, so as real time advanced past it every card
+  // showed a "next update — PREDICTED" date that had already passed (a US card read "21 Jun" on the
+  // 25th). The model anchors stay frozen (that's the snapshot); only the observer clock is live.
+  const opts = { events: events || [], today: new Date().toISOString().slice(0, 10) };
   return { car, os: predictNextOS(car, opts), fsd: predictNextFSD(car, opts) };
 }
 
@@ -268,11 +270,14 @@ export function iconPng(size) {
   return png;
 }
 
-const _ogCache = new Map(); // slug+version → PNG Buffer (deterministic inputs, safe to cache)
+const _ogCache = new Map(); // slug+version+events+day → PNG Buffer
 export function ogPng(meta, version, events) {
-  // event signature in the key so a confirmed pause/resume invalidates the cached image
+  // event signature in the key so a confirmed pause/resume invalidates the cached image; the day is
+  // in the key too because the predicted date now tracks the real clock (predictForSlug) — without
+  // it a card would freeze at whatever date it was first rendered and drift into the past.
   const evSig = (events || []).map(e => `${e.type}:${e.region || ""}:${e.version || ""}`).join(",");
-  const key = canonicalSlug(meta.year, meta.model, meta.region) + "|" + (version || "") + "|" + evSig;
+  const day = new Date().toISOString().slice(0, 10);
+  const key = canonicalSlug(meta.year, meta.model, meta.region) + "|" + (version || "") + "|" + evSig + "|" + day;
   if (_ogCache.has(key)) return _ogCache.get(key);
   const { os, fsd } = predictForSlug(meta, version, events);
   const png = new Resvg(ogSvg(meta, os, fsd), { fitTo: { mode: "width", value: 1200 }, font: FONT }).render().asPng();
