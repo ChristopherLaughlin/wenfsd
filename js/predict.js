@@ -235,6 +235,12 @@ const Predict = (function () {
     const f = region && region.fsd ? region.fsd[car.hardware] : null;
     if (!f) return { unavailable: true, current: car.fsdVersion || "—", note: `No FSD data for ${car.hardware} in ${car.market}.` };
     if (f.mode === "capped") return { capped: true, current: f.current, note: `${car.hardware} is capped at ${f.current} — Tesla has stated this hardware can't run newer FSD.` };
+    // 'paused' — the rollout began, then Tesla put it on hold. Freeze the estimate, no invented date.
+    if (f.mode === "paused") return {
+      paused: true, current: f.current, targetLabel: f.next, mode: "paused", branch: "fsd",
+      pausedSince: f.pausedSince || null,
+      note: f.note || `The ${f.next} rollout for ${car.hardware} in ${car.market} is on hold — no committed resume date.`,
+    };
     // 'promised' — promised but never delivered, with NO committed timeline. We refuse to invent a
     // date (the whole point of the site). Return an honest no-ETA result the UI renders as such.
     if (f.mode === "promised") return {
