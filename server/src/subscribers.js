@@ -37,7 +37,9 @@ export async function runSubscriberAlerts({ windowDays = 10 } = {}) {
         market: s.market || "Australia", hardware: s.hardware || "AI4",
         installedVersion: s.version || undefined, earliness: 0.5, earlinessSource: "default",
         fsdEntitlement: s.fsd_entitlement || "unknown",
-      }, { events });
+        // real current date, not the frozen snapshot clock — so the alert window is judged against
+        // the actual day (otherwise emails fire days early/late as the snapshot ages).
+      }, { events, today: new Date().toISOString().slice(0, 10) });
     } catch { continue; }
     if (!shouldAlert(pred, s.last_notified_version, windowDays)) continue;
     const msg = windowAlertMessage({

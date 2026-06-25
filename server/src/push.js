@@ -50,7 +50,9 @@ export async function runPushAlerts({ windowDays = 10 } = {}) {
       pred = predictNextOS({
         market: s.market || "Australia", hardware: s.hardware || "AI4",
         installedVersion: s.version || undefined, earliness: 0.5, earlinessSource: "default",
-      }, { events });
+        // real current date, not the frozen snapshot clock — so "your update is close" fires on the
+        // actual day rather than days off as the data snapshot ages.
+      }, { events, today: new Date().toISOString().slice(0, 10) });
     } catch { continue; }
     if (!shouldAlert(pred, s.last_notified_version, windowDays)) continue;
     const days = Math.max(0, Math.round(pred.daysToMedian));
