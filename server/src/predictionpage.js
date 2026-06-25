@@ -80,8 +80,9 @@ function carLabel(meta) { return `${meta.year} ${meta.model}${meta.generation ? 
 // Returns PLAIN text (no HTML). Callers escape per-context: esc() for HTML/attributes,
 // JSON.stringify for the JSON-LD block. This keeps escaping at the output boundary (correct) and
 // avoids regex tag-stripping (which is bypassable, and which static analysis rightly flags).
-function fsdText(fsd) {
+function fsdText(fsd, region) {
   if (!fsd || fsd.unavailable) return "";
+  if (fsd.paused) return `⏸ FSD ${fsd.targetLabel || "v14"} is on hold in ${region || "this market"} — Tesla paused the rollout, with no committed resume date.`;
   if (fsd.capped) return `FSD is capped on this hardware — ${fsd.current || "your version"} is the end of the line.`;
   if (fsd.promised) return `FSD ${fsd.targetLabel || ""} is promised for this hardware, but Tesla has given no committed date.`;
   if (fsd.notEntitled) return `The hardware can run FSD ${fsd.targetLabel || ""}, but it only activates with a purchase or subscription.`;
@@ -102,14 +103,14 @@ export function renderPage(meta, version) {
   const ogUrl = `${SITE}/p/${base}/og.png${vq}`;
   const q = `When will the ${car} get its next software update in ${region}?`;
   const title = `${car} next update (${region}) — ${date} · wenFSD`;
-  const desc = `wenFSD predicts the ${car} gets its next Tesla software update around ${date} in ${region} (${windowLine}). ${fsdText(fsd)} A probability, not a promise.`;
+  const desc = `wenFSD predicts the ${car} gets its next Tesla software update around ${date} in ${region} (${windowLine}). ${fsdText(fsd, region)} A probability, not a promise.`;
   const appLink = `${SITE}/?model=${encodeURIComponent(meta.model)}&year=${meta.year}&region=${encodeURIComponent(region)}${version ? "&v=" + encodeURIComponent(version) : ""}`;
 
   const faq = {
     "@context": "https://schema.org", "@type": "FAQPage",
     mainEntity: [
       { "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: `wenFSD predicts the next software update for a ${car} in ${region} arrives around ${date} (${windowLine}). This is a modelled probability from regional rollout cadence, not an official Tesla date.` } },
-      { "@type": "Question", name: `Does this ${car} get a new FSD version next?`, acceptedAnswer: { "@type": "Answer", text: fsdText(fsd) || "FSD availability depends on hardware, region and entitlement." } },
+      { "@type": "Question", name: `Does this ${car} get a new FSD version next?`, acceptedAnswer: { "@type": "Answer", text: fsdText(fsd, region) || "FSD availability depends on hardware, region and entitlement." } },
     ],
   };
 
@@ -143,6 +144,7 @@ export function renderPage(meta, version) {
   .date.confirmed{color:#37d67a}
   .win{color:#9fb0c3}
   .fsd{margin:14px 0 0;color:#cdd9e6}
+  .fsd-hold{margin:16px 0 0;padding:12px 14px;border:1px solid #5a3a2a;border-radius:12px;background:rgba(230,100,57,.08);color:#ffd9c2;font-weight:600}
   .note{color:#9fb0c3;font-size:15px;margin-top:14px}
   .cta{display:inline-block;background:#e62937;color:#fff;text-decoration:none;font-weight:800;border-radius:12px;padding:13px 22px;margin-top:8px}
   .foot{color:#6b7c91;font-size:13px;margin-top:26px}
@@ -156,7 +158,7 @@ export function renderPage(meta, version) {
     <div class="lbl">${os.confirmed ? "Next update — confirmed by the car" : "Next software update — predicted"}</div>
     <div class="date${os.confirmed ? " confirmed" : ""}">${esc(date)}</div>
     <div class="win">${esc(windowLine)} · a prediction, not a promise</div>
-    ${fsdText(fsd) ? `<p class="fsd">🧠 ${esc(fsdText(fsd))}</p>` : ""}
+    ${fsdText(fsd, region) ? `<p class="fsd${fsd && fsd.paused ? " fsd-hold" : ""}">${fsd && fsd.paused ? "" : "🧠 "}${esc(fsdText(fsd, region))}</p>` : ""}
     ${os.note ? `<p class="note">${esc(os.note)}</p>` : ""}
   </div>
   <a class="cta" href="${esc(appLink)}">Get your exact prediction →</a>
@@ -169,8 +171,10 @@ export function renderPage(meta, version) {
 export function renderIndex() {
   const top = [];
   for (const region of ["Australia", "New Zealand", "United States", "Europe", "Canada"]) {
-    for (const model of ["Model Y", "Model 3"]) {
-      const year = model === "Model Y" ? 2026 : 2025;
+    // Model Y L ships in AU/NZ/China — surface it there (lots of new RHD deliveries still waiting on FSD)
+    const models = (region === "Australia" || region === "New Zealand") ? ["Model Y", "Model Y L", "Model 3"] : ["Model Y", "Model 3"];
+    for (const model of models) {
+      const year = model === "Model 3" ? 2025 : 2026;
       top.push({ slug: canonicalSlug(year, model, region), label: `${year} ${model}${generationOf(model, year) ? " " + generationOf(model, year) : ""} · ${region}` });
     }
   }
