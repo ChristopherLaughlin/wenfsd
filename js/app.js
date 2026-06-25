@@ -161,6 +161,7 @@
       if (quipEl) quipEl.textContent = state ? fsdPredQuip(state, v ? v.market : "") : "";
     };
     if (!v || !fsd || fsd.unavailable) { set("fsd-none", "", "—", "no FSD data for this car", ""); return; }
+    if (fsd.paused) { set("fsd-none", fsd.targetLabel, "⏸ On hold", `${fsd.targetLabel} rollout paused in ${v.market} — no resume date`, "promised"); return; }
     if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `promised for HW3 in ${v.market}, never delivered`, "promised"); return; }
     if (fsd.capped) { set("fsd-none", "", "Not coming", `${v.hardware} can't run newer FSD — capped`, "capped"); return; }
     // car has no FSD plan — feature stays dormant regardless of which build lands
@@ -195,6 +196,7 @@
     if (isDownUnderHW3(v)) { renderDoom(el, v, false); return; }   // 🇦🇺/🇳🇿 + HW3 → the give-up special
     if (fsd === undefined) { try { fsd = Predict.predictNextFSD(car(), today); } catch (e) { fsd = null; } }
     if (!fsd || fsd.unavailable) { el.innerHTML = ""; return; }
+    if (fsd.paused) { el.innerHTML = `<div class="fsum fsum-promised">⏸ <strong>FSD ${esc(fsd.targetLabel)} rollout is on hold in ${esc(v.market)}.</strong> ${esc(fsd.note || "Tesla paused it — no committed resume date.")}</div>`; return; }
     if (fsd.promised) { el.innerHTML = `<div class="fsum fsum-promised">🤷 <strong>FSD ${esc(fsd.targetLabel)} — promised, no timeline.</strong> ${esc(fsd.note || "")}</div>`; return; }
     if (fsd.capped) { el.innerHTML = `<div class="fsum fsum-capped">🪚 <strong>FSD:</strong> ${esc(fsd.current || "your version")} is the end of the line for your ${esc(v.hardware)} hardware — Tesla caps it here.</div>`; return; }
     if (fsd.notEntitled) {

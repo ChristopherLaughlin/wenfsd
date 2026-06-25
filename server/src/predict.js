@@ -146,6 +146,8 @@ export function predictNextFSD(car, opts = {}) {
   const f = region && region.fsd ? region.fsd[car.hardware] : null;
   if (!f) return { unavailable: true, current: car.fsdVersion || "—" };
   if (f.mode === "capped") return { capped: true, current: f.current };
+  // PAUSED — the rollout started then Tesla put it on hold. Freeze: no invented date (mirrors client).
+  if (f.mode === "paused") return { paused: true, current: f.current, targetLabel: f.next, mode: "paused", branch: "fsd", pausedSince: f.pausedSince || null, note: f.note || null };
   // promised but never delivered, no committed timeline — refuse to invent a date (mirrors client)
   if (f.mode === "promised") return { promised: true, current: f.current, targetLabel: f.next, mode: "promised", branch: "fsd", note: f.note || null };
 

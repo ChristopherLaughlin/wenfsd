@@ -15,7 +15,7 @@ const SITE = config.publicBaseUrl.replace(/\/$/, "");
 
 // ---- config space ----
 const YEARS = []; for (let y = 2027; y >= 2017; y--) YEARS.push(y);
-const MODELS = [["Model Y", "model-y"], ["Model 3", "model-3"], ["Model S", "model-s"], ["Model X", "model-x"], ["Cybertruck", "cybertruck"]];
+const MODELS = [["Model Y", "model-y"], ["Model Y L", "model-y-l"], ["Model 3", "model-3"], ["Model S", "model-s"], ["Model X", "model-x"], ["Cybertruck", "cybertruck"]];
 const MODEL_BY_SLUG = new Map(MODELS.map(([name, slug]) => [slug, name]));
 const SLUG_BY_MODEL = new Map(MODELS.map(([name, slug]) => [name, slug]));
 const REGION_SLUG = { "United States": "united-states", "Canada": "canada", "Europe": "europe", "Australia": "australia", "New Zealand": "new-zealand" };

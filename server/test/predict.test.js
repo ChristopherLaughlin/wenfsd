@@ -56,6 +56,9 @@ test("US HW3 gets FSD v14 Lite first (a real date), AU/NZ do not", () => {
 });
 
 const auAI4 = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.45, earlinessSource: "default", earlyAccess: false };
+// New Zealand HW4 is still actively rolling v14 (same profile AU had before its rollout was paused),
+// so the FSD bundling/sameFsd/entitlement/invariant logic is exercised against a live-rolling region.
+const nzAI4 = { ...auAI4, market: "New Zealand" };
 
 test("predictNextOS picks the newest distributed build above yours", () => {
   const p = predictNextOS(auAI4);
@@ -87,8 +90,8 @@ test("within-window probabilities are monotonic and in [0,1]", () => {
 
 test("when the next OS build bumps FSD, it bundles (same build, same date, real FSD version)", () => {
   // AU AI4 on 2026.14.6 (FSD v13.2.9) → next build 2026.20.3 carries FSD v14.3.4 → they ride together
-  const fsd = predictNextFSD(auAI4);
-  const os = predictNextOS(auAI4);
+  const fsd = predictNextFSD(nzAI4);
+  const os = predictNextOS(nzAI4);
   assert.match(fsd.targetLabel, /^v14/, "FSD target is the concrete version the build carries, not a placeholder");
   assert.equal(fsd.branch, "fsd");
   assert.equal(fsd.fsdChanges, true);
@@ -98,7 +101,7 @@ test("when the next OS build bumps FSD, it bundles (same build, same date, real 
 
 test("a maintenance build that keeps the same FSD is flagged sameFsd (no invented FSD date)", () => {
   // AU AI4 already on 2026.14.6.11 / FSD v14.3.4 → next build 2026.20.3 ALSO carries v14.3.4
-  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4", earliness: 0.45, earlinessSource: "default" };
+  const car = { market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4", earliness: 0.45, earlinessSource: "default" };
   const fsd = predictNextFSD(car);
   assert.equal(fsd.sameFsd, true, "next software update carries no newer FSD");
   assert.ok(!fsd.medianDate, "we must NOT fabricate an FSD date when nothing newer is in the pipeline");
@@ -129,7 +132,7 @@ test("INVARIANT: FSD never predicted before the next software update (it ships i
   // live-data path: trackers often omit per-build FSD. A car on v13 whose region is actively
   // rolling v14 must BUNDLE with the next software update — never get an earlier, separate date.
   const liveVersions = versions.map((v) => ({ ...v, fsdBuild: undefined }));
-  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", earlinessSource: "default" };
+  const car = { market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", earlinessSource: "default" };
   const os = predictNextOS(car, { versions: liveVersions });
   const fsd = predictNextFSD(car, { versions: liveVersions });
   assert.equal(fsd.bundledWith, os.targetLabel, "unknown per-build FSD + region rolling → bundle with next update");
@@ -148,12 +151,13 @@ test("no-date FSD modes expose NO probWithin() (the /api/predict crash contract)
   // /api/predict must not call probWithin() on these; this locks the shape so the P0 can't regress.
   const cases = [
     { market: "Australia", hardware: "AI3", installedVersion: "2026.14.6", fsdVersion: "none" },            // promised
-    { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4" },        // sameFsd
-    { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "none" }, // notEntitled
+    { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9" },           // paused (AU v14 on hold)
+    { market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4" },      // sameFsd
+    { market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "none" }, // notEntitled
   ];
   for (const c of cases) {
     const p = predictNextFSD(c);
-    assert.ok(p.promised || p.sameFsd || p.notEntitled, `expected a no-date mode for ${JSON.stringify(c)}`);
+    assert.ok(p.promised || p.paused || p.sameFsd || p.notEntitled, `expected a no-date mode for ${JSON.stringify(c)}`);
     assert.equal(typeof p.probWithin, "undefined", "no-date modes must not carry probWithin()");
   }
   // a normal dated prediction DOES carry probWithin()
@@ -162,7 +166,7 @@ test("no-date FSD modes expose NO probWithin() (the /api/predict crash contract)
 });
 
 test("FSD entitlement: a car with no FSD plan gets no FSD date (feature stays dormant)", () => {
-  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "none", earlinessSource: "default" };
+  const car = { market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "none", earlinessSource: "default" };
   const fsd = predictNextFSD(car);
   assert.equal(fsd.notEntitled, true, "no plan → not entitled");
   assert.ok(!fsd.medianDate, "must not invent an FSD arrival date for a car that can't activate it");
@@ -173,10 +177,19 @@ test("FSD entitlement: a car with no FSD plan gets no FSD date (feature stays do
 
 test("FSD entitlement: an owned/subscription car still gets a normal FSD prediction", () => {
   for (const ent of ["owned", "subscription", "unknown", undefined]) {
-    const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: ent, earlinessSource: "default" };
+    const car = { market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: ent, earlinessSource: "default" };
     const fsd = predictNextFSD(car);
     assert.ok(!fsd.notEntitled, `entitlement ${ent} should predict normally`);
   }
+});
+
+test("a PAUSED FSD rollout (AU v14) is frozen: no date, no probWithin, honest note", () => {
+  const fsd = predictNextFSD({ market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "owned" });
+  assert.equal(fsd.paused, true);
+  assert.equal(fsd.mode, "paused");
+  assert.ok(!fsd.medianDate, "no invented date while paused");
+  assert.equal(typeof fsd.probWithin, "undefined", "paused must not carry probWithin()");
+  assert.match(fsd.note, /hold|paused/i);
 });
 
 test("predictNextOS reports whether the next software build changes FSD", () => {
