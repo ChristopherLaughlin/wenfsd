@@ -1,7 +1,7 @@
 // Server-side prediction — mirrors the frontend js/predict.js exactly so /api/predict
 // and the client agree. Rollout params come from wendata (mock) or DB-fitted values (real).
 import * as W from "./wendata.js";
-import { applyEventOverlay } from "./events.js";
+import { applyEventOverlay, fsdResumed } from "./events.js";
 
 const DAY = 86400000;
 const AU_LAG = 12;
@@ -146,8 +146,9 @@ export function predictNextFSD(car, opts = {}) {
   const f = region && region.fsd ? region.fsd[car.hardware] : null;
   if (!f) return { unavailable: true, current: car.fsdVersion || "—" };
   if (f.mode === "capped") return { capped: true, current: f.current };
-  // PAUSED — the rollout started then Tesla put it on hold. Freeze: no invented date (mirrors client).
-  if (f.mode === "paused") return { paused: true, current: f.current, targetLabel: f.next, mode: "paused", branch: "fsd", pausedSince: f.pausedSince || null, note: f.note || null };
+  // PAUSED — the rollout started then Tesla put it on hold. Freeze (no invented date) UNLESS a
+  // confirmed resume event has cleared it (auto-unpause). Mirrors client.
+  if (f.paused && !fsdResumed(opts.events, car.market, f.next)) return { paused: true, current: f.current, targetLabel: f.next, mode: "paused", branch: "fsd", pausedSince: f.pausedSince || null, note: f.pauseNote || f.note || null };
   // promised but never delivered, no committed timeline — refuse to invent a date (mirrors client)
   if (f.mode === "promised") return { promised: true, current: f.current, targetLabel: f.next, mode: "promised", branch: "fsd", note: f.note || null };
 
