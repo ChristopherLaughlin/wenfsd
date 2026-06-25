@@ -20,9 +20,13 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
 - **But earn the stop — exhaust the checklist first (don't stop early out of laziness).** An honest stop
   comes AFTER you've cleared the concrete, knowable work, not after the first fix. Before declaring done:
   (a) clear every item a PRIOR run consciously DEFERRED ("fix when activated", "noted for later") — a
-  deferral is a TODO, not a closed item; (b) DRIVE THE ACTUAL APP in a browser at least once (preview +
-  screenshots + a real prediction + a console/a11y scan), not just the server/cards/tests; (c) run the
-  measurements (quantify prevalence, sweep all configs for anomalies). Only once that checklist is empty
+  deferral is a TODO, not a closed item; (b) DRIVE THE ACTUAL APP in a browser at MOBILE *and* desktop
+  widths (preview + screenshots + a real prediction + a console/a11y scan), not just the server/cards/
+  tests — layout/UX defects are width-specific (an uneven button-wrap showed only at 375px); when
+  verifying CSS/JS edits, proactively cache-bust the static preview (`link.href+'?v='+Date.now()`)
+  BEFORE trusting computed styles (the preview caches assets — see preview-cache gotcha); (c) run the
+  measurements (quantify prevalence, sweep all configs for anomalies, and for DESIGN work measure the
+  layout — px from the payload to the CTA, above-vs-below-the-fold — don't just eyeball). Only once that checklist is empty
   do you weigh stop-vs-continue. "It's already polished" is a conclusion you reach by looking, not a
   reason to skip looking. Stopping with known-deferred work on the board reads as laziness — because it is.
 - This loop spawns multiple PRs and uses significant tokens — that's expected; keep each iteration
@@ -111,6 +115,14 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v8** — A designer/UX/PM run. Sharpened v7's "drive the app" into **drive it at mobile AND desktop**
+  (the funnel reads per-breakpoint; an uneven button-wrap showed only at 375px), added **proactively
+  cache-bust the preview** before trusting computed styles (the stale CSS bit again), and **measure the
+  layout for design work** (px from payload→CTA). This run: measuring the reveal showed the share button
+  sat ~1,190px / 1.6 screens below the date and the alert capture ~617px down — so the two growth loops
+  were buried below peak attention. Fixes: a peak-delight Share + alert row right at the prediction
+  (PR #81) and a coherent rolling-now confidence module (PR #82, no more three redundant 100% chips).
+  Humor preserved throughout per the owner's standing constraint.
 - **v7** — Added **"earn the stop — exhaust the checklist first."** The owner pushed back that prior runs
   stopped too early (and one even asked them to decide). Both times there WAS concrete known work left:
   a consciously-deferred frozen-clock sweep (push/subscribers/poller still on the snapshot clock) and the
