@@ -1,5 +1,5 @@
 ---
-description: Run up to 10 disciplined, verified improvement iterations on wenFSD, then report.
+description: Run up to 10 Council-vetted improvement iterations on wenFSD, report, then improve the loop itself.
 ---
 
 # wenFSD — perpetual improvement loop (10 iterations)
@@ -41,6 +41,10 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
    Ground the choice in the real code/data and the memory files (project, growth plan, event engine,
    preview-cache gotcha, autonomy preference). Prefer impact over novelty. If the Council concludes
    the real constraint is distribution/activation rather than code, SAY SO and stop — don't build slop.
+   **Cross-surface consistency scan (learned the hard way):** a feature is only "done" when it behaves
+   identically on EVERY surface — interactive site, `/p/` share pages, OG cards, email/push alerts,
+   admin. The real bugs hide in the gaps between surfaces (e.g. a state that updates on the main page
+   but goes stale on the share pages). Scan for those before picking new work.
 2. **Build it end-to-end on a branch:** implement → `node --check` / run `npm test` (in `server/`) →
    verify in the live preview if it's browser-observable (respect the preview-cache gotcha: confirm
    via the served file + the engine, not the stale page) → open a PR → wait for CI green
@@ -60,5 +64,26 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
 - What's left that's genuinely high-value, and what needs the owner (activation, decisions).
 - One-line bottom line on the site's current state.
 
-Begin with Iteration 1 now. Work autonomously through to the report — do not stop to ask between
-iterations unless you hit a genuine blocker or an owner-only decision.
+## Loop retrospective — improve the loop itself (do this AFTER the report)
+The loop must get smarter every run. Convene one more Council round focused on the **process, not the
+product**. Each advisor, one line: what made this run sharp or dull, and the single change that would
+make the NEXT `/improve` run better. Then:
+- **Converge on 1–3 concrete improvements to THIS command file** — a better pickup signal, a scan we
+  skipped, a sharper stop rule, a guardrail that should've fired, a recurring bug-class to check first.
+- **Apply the top one** by editing `.claude/commands/improve.md` and ship it with the run, so the loop
+  compounds — each run leaves the next one smarter. (Edit the protocol above; add a changelog line below.)
+- **Same honesty bar:** only apply a genuinely valuable process change. If the protocol is already sound,
+  write "no process change earns its keep this run" and apply nothing — never bloat the command for show.
+- Mine the run for the **why behind the bugs**, not just the bugs: if two fixes shared a root cause,
+  encode a check for that class so it's caught up front next time.
+
+### Loop changelog (newest first)
+- **v3** — Added this self-retrospective so the loop improves itself each run, and a **cross-surface
+  consistency scan** to the pickup step. Root cause of the two real bugs found in the prior runs:
+  features that worked on the interactive site but went stale on the `/p/` share pages — i.e. surface
+  gaps. Now checked up front.
+- **v2** — Added the Claude Council (5 advisors debate → converge) before each pick.
+- **v1** — Initial: up to 10 disciplined, verified iterations; honest early-stop instead of slop.
+
+Begin with Iteration 1 now. Work autonomously through to the report + retrospective — do not stop to ask
+between iterations unless you hit a genuine blocker or an owner-only decision.
