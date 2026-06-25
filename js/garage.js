@@ -81,6 +81,20 @@ const Garage = (function () {
     if (vin) {
       const existing = s.vehicles.find(v => (v.vin || "").toUpperCase() === vin);
       if (existing) { Object.assign(existing, vehicle, { id: existing.id, history: existing.history || [] }); s.activeId = existing.id; save(s); return s; }
+    } else {
+      // dedupe VIN-less cars (the Quick Predict path) by car identity — re-predicting the same
+      // model/year/region/hardware just updates its current version instead of piling up identical
+      // garage entries. Preserve accumulated state (history, bet, fitted earliness, opt-in).
+      const idy = v => [v.model, +v.year || "", v.market, v.hardware, v.generation || ""].join("|");
+      const k = idy(vehicle);
+      const existing = s.vehicles.find(v => !(v.vin || "").trim() && idy(v) === k);
+      if (existing) {
+        if (vehicle.installedVersion) existing.installedVersion = vehicle.installedVersion;
+        if (vehicle.fsdEntitlement) existing.fsdEntitlement = vehicle.fsdEntitlement;
+        if (vehicle.fsdVersion) existing.fsdVersion = vehicle.fsdVersion;
+        if (!existing.nickname && vehicle.nickname) existing.nickname = vehicle.nickname;
+        s.activeId = existing.id; save(s); return s;
+      }
     }
     vehicle.id = uid();
     if (vehicle.earliness == null) vehicle.earliness = 0.5;
