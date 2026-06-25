@@ -45,6 +45,18 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
    identically on EVERY surface — interactive site, `/p/` share pages, OG cards, email/push alerts,
    admin. The real bugs hide in the gaps between surfaces (e.g. a state that updates on the main page
    but goes stale on the share pages). Scan for those before picking new work.
+   **LOOK at rendered artifacts — don't trust "valid buffer / 200 OK" (the most expensive lesson):**
+   a server-rendered image, PDF, or card can return a perfectly valid PNG and HTTP 200 while being
+   visibly BLANK or full of tofu — and "is it a valid buffer?" / "does it 200?" will never catch it.
+   Every production OG card was an empty box for ~24 PRs because each check asserted bytes, never
+   pixels. So for any visual/binary surface: render it AND **Read the actual image** (or fetch the
+   LIVE production artifact and Read it) before believing it works. Verify on a host that mimics
+   production (e.g. resvg with `loadSystemFonts:false`), not just your font-rich dev machine.
+   **When you change a shared format/contract, sweep every producer AND consumer:** if an iteration
+   changes a slug scheme, API shape, cache key, event type, or any cross-module contract, immediately
+   grep for everything that builds or reads it (client + server + sitemap + tests) and fix them in the
+   same breath — a contract change silently breaks the surfaces you didn't touch (one run's fix #3
+   existed only because fix #2 changed the slug rules and left the client building dead links).
 2. **Build it end-to-end on a branch:** implement → `node --check` / run `npm test` (in `server/`) →
    verify in the live preview if it's browser-observable (respect the preview-cache gotcha: confirm
    via the served file + the engine, not the stale page) → open a PR → wait for CI green
@@ -78,6 +90,14 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v4** — Added **"LOOK at rendered artifacts"** (Read the actual pixels / fetch the live production
+  artifact — never trust "valid buffer / 200 OK"; verify on a production-like host) and a
+  **contract-change sweep** (change a slug/API/cache-key/event format → grep every producer+consumer
+  the same iteration). Root cause of this run's 3 fixes: every OG share card was rendering BLANK in
+  production (Railway has no system fonts; resvg has none) and had been for ~24 PRs because every
+  prior check asserted bytes, not pixels — found instantly the moment the scan said "render it and
+  look." Fix #3 also showed a contract change (slug rules) breaking an untouched surface (client
+  share links). PRs #70 (font bundling), #71 (no phantom pages), #72 (client/server slug parity).
 - **v3** — Added this self-retrospective so the loop improves itself each run, and a **cross-surface
   consistency scan** to the pickup step. Root cause of the two real bugs found in the prior runs:
   features that worked on the interactive site but went stale on the `/p/` share pages — i.e. surface
