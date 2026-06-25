@@ -72,7 +72,9 @@ export async function ensurePrediction(c) {
       installedVersion: c.current_version,
       earliness: c.earliness != null ? c.earliness : 0.5, earlyAccess: !!c.early_access,
     };
-    const p = predictNextOS(car);
+    // real current date, not the frozen data-snapshot clock (W.today) — otherwise stored predictions
+    // drift days into the past as real time advances (matches predictionpage.js / the display surfaces).
+    const p = predictNextOS(car, { today: new Date().toISOString().slice(0, 10) });
     if (!p || !p.medianDate) return;
     await query(
       `INSERT INTO predictions(vehicle_id, from_version, target_label, median_date, p10_date, p90_date)
