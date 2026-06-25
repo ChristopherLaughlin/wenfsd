@@ -57,6 +57,11 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
    grep for everything that builds or reads it (client + server + sitemap + tests) and fix them in the
    same breath — a contract change silently breaks the surfaces you didn't touch (one run's fix #3
    existed only because fix #2 changed the slug rules and left the client building dead links).
+   **Quantify before dismissing as an edge case:** when a possible issue looks marginal ("just thin-data
+   Cybertruck", "rare"), MEASURE its prevalence across the whole catalog before waving it off — edge-case
+   vs widespread is a COUNT, not a guess. A prior run saw the exact degenerate card and stopped calling it
+   an edge case; the next run measured it and it was 41% (90/219) — which flipped the decision from stop to
+   fix. One `node` loop over `allSlugs()` (or the equivalent enumeration) turns a hunch into a number.
    **Frozen-clock / time-drift check (a value that's right today and rots tomorrow):** compare every
    date or relative-time the USER sees against the REAL current date — not the model's internal clock.
    A hardcoded or data-snapshot "today" (e.g. `W.today`/`WEN.today`) used as the prediction clock is
@@ -98,6 +103,11 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v6** — Added **"quantify before dismissing as an edge case."** Run v5 (live-clock fix) made fast-region
+  cards collapse to a zero-width "80% by <today>" — false precision. Run v4 had SEEN this exact card
+  (Cybertruck) but dismissed it as thin-data and stopped; this run measured it first (41%, 90/219), which
+  flipped the call from stop to fix. Lesson: when something looks marginal, count its prevalence across the
+  catalog before waving it off. PR #76 (server card/page + client hero say "rolling out now").
 - **v5** — Added the **frozen-clock / time-drift check**. This run's single fix: both the share cards
   and the interactive site computed predictions against a frozen data-snapshot `today` (`W.today`/
   `WEN.today` = 2026-06-21), so as real time advanced every "next update — PREDICTED" date slid into
