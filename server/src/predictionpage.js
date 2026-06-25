@@ -119,6 +119,19 @@ function carLabel(meta) { return `${meta.year} ${meta.model}${meta.generation ? 
 // Returns PLAIN text (no HTML). Callers escape per-context: esc() for HTML/attributes,
 // JSON.stringify for the JSON-LD block. This keeps escaping at the output boundary (correct) and
 // avoids regex tag-stripping (which is bypassable, and which static analysis rightly flags).
+// A "rolling now" prediction: the model's distribution has collapsed to a today-spike — the newest
+// build for this region is effectively fully rolled out, so p90 ≈ median ≈ today. Saying "80% by
+// <today>" for a zero-width interval is false precision (wrong even with a fresh data snapshot); we
+// say "rolling out now" instead. Presentation only — the model math is untouched. (The underlying
+// spread for fast regions recovers once the data snapshot is refreshed; that's the owner's lever.)
+const DAY_MS = 86400000;
+function osRollingNow(os) {
+  if (!os || os.confirmed || os.stale || !os.medianDate || !os.p90Date) return false;
+  const today = Date.parse(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
+  const med = +new Date(os.medianDate), p90 = +new Date(os.p90Date);
+  return (p90 - med) <= DAY_MS && (med - today) <= DAY_MS;
+}
+
 function fsdText(fsd, region) {
   if (!fsd || fsd.unavailable) return "";
   if (fsd.paused) return `⏸ FSD ${fsd.targetLabel || "v14"} is on hold in ${region || "this market"} — Tesla paused the rollout, with no committed resume date.`;
@@ -135,7 +148,7 @@ export function renderPage(meta, version, events) {
   const car = carLabel(meta);
   const region = meta.region;
   const date = fmtDate(os.medianDate);
-  const windowLine = os.confirmed ? "already downloading" : os.stale ? "low-confidence estimate" : `80% by ${fmtDate(os.p90Date)}`;
+  const windowLine = os.confirmed ? "already downloading" : osRollingNow(os) ? "rolling out now" : os.stale ? "low-confidence estimate" : `80% by ${fmtDate(os.p90Date)}`;
   const base = canonicalSlug(meta.year, meta.model, meta.region);
   const vq = version ? "?v=" + encodeURIComponent(version) : "";
   const url = `${SITE}/p/${base}${vq}`;
@@ -235,8 +248,9 @@ const SANS = "Inter, sans-serif";
 export function ogSvg(meta, os, fsd) {
   const car = carLabel(meta).toUpperCase() + " · " + meta.region.toUpperCase();
   const date = fmtDate(os.medianDate);
-  const lbl = os.confirmed ? "NEXT UPDATE — CONFIRMED BY THE CAR" : "NEXT SOFTWARE UPDATE — PREDICTED";
-  const win = os.confirmed ? "your car is already downloading it" : os.stale ? "low-confidence estimate · a prediction, not a promise" : `80% by ${fmtDate(os.p90Date)} · a prediction, not a promise`;
+  const rolling = osRollingNow(os);
+  const lbl = os.confirmed ? "NEXT UPDATE — CONFIRMED BY THE CAR" : rolling ? "NEWEST BUILD — ROLLING OUT NOW" : "NEXT SOFTWARE UPDATE — PREDICTED";
+  const win = os.confirmed ? "your car is already downloading it" : rolling ? `${os.targetLabel || "the newest build"} is reaching ${meta.region} now` : os.stale ? "low-confidence estimate · a prediction, not a promise" : `80% by ${fmtDate(os.p90Date)} · a prediction, not a promise`;
   const dateColor = os.confirmed ? "#37d67a" : "#39d4ff";
   // when FSD is on hold here, the card leads with the timely hook (the share-worthy bit), not just the OS date
   // NOTE: this is a resvg raster, not the browser — emoji have no font here and would

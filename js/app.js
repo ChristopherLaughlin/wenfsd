@@ -681,6 +681,15 @@
     "The wen, the whole wen, and nothing but the wen · {car}",
     "{car} — your update, with error bars",
   ];
+  // Mirrors the server's osRollingNow (predictionpage.js): the prediction has collapsed to a
+  // today-spike (newest build effectively fully rolled out → p90 ≈ median ≈ today). "Most likely
+  // X – X · 80% confidence" is false precision for a zero-width window, so we say "rolling out now".
+  function osRollingNow(pred) {
+    if (!pred || pred.confirmed || pred.stale || pred.paused || !pred.medianDate || !pred.p90Date) return false;
+    const t = Date.parse(today + "T00:00:00Z");
+    const med = +new Date(pred.medianDate), p90 = +new Date(pred.p90Date);
+    return (p90 - med) <= 86400000 && (med - t) <= 86400000;
+  }
   function renderHero(pred) {
     $("heroFlavor").innerHTML = heroFlavorLine(pred);
     $("heroEyebrow").textContent = flavorPick("heroEyebrow", HERO_EYEBROWS).replace(/\{car\}/g, av().nickname || "your car");
@@ -690,7 +699,9 @@
     const hw = $("heroWindow");
     hw.textContent = pred.confirmed
       ? `✓ confirmed by your car — ${pred.pendingStatus || "incoming"}`
-      : (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
+      : osRollingNow(pred)
+        ? `📡 ${pred.targetLabel || "the newest build"} is rolling out to your region now`
+        : (pred.stale ? "⚠️ low confidence · " : "") + "Most likely " + shortDate(pred.p10Date) + " – " + shortDate(pred.p90Date) + (pred.stale ? "" : " · 80% confidence");
     hw.classList.toggle("hw-stale", !!pred.stale);
     hw.classList.toggle("hw-confirmed", !!pred.confirmed);
     // the software card's "📡 prediction" pill becomes "✓ confirmed" when the car itself reported it
