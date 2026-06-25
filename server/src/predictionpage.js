@@ -59,7 +59,7 @@ function representativeVersion(market) {
   return (settled && settled.version) || (inReg[1] && inReg[1].version) || (inReg[0] && inReg[0].version) || "2026.0";
 }
 
-export function predictForSlug(meta, version) {
+export function predictForSlug(meta, version, events) {
   const car = {
     market: meta.region,
     hardware: inferHardware(meta.model, meta.year),
@@ -68,7 +68,10 @@ export function predictForSlug(meta, version) {
     earlinessSource: "default",
     fsdEntitlement: "unknown",
   };
-  return { car, os: predictNextOS(car), fsd: predictNextFSD(car) };
+  // pass confirmed rollout events so the /p/ page reflects a pause AND its auto-resume — otherwise
+  // a shared link would keep saying "on hold" after the rollout's actually back (stale = dishonest).
+  const opts = { events: events || [] };
+  return { car, os: predictNextOS(car, opts), fsd: predictNextFSD(car, opts) };
 }
 
 // ---- escaping ----
@@ -91,8 +94,8 @@ function fsdText(fsd, region) {
 }
 
 // ---- HTML page (server-rendered, crawlable; CSP-safe — inline styles only, no inline script) ----
-export function renderPage(meta, version) {
-  const { os, fsd } = predictForSlug(meta, version);
+export function renderPage(meta, version, events) {
+  const { os, fsd } = predictForSlug(meta, version, events);
   const car = carLabel(meta);
   const region = meta.region;
   const date = fmtDate(os.medianDate);
@@ -227,10 +230,12 @@ export function iconPng(size) {
 }
 
 const _ogCache = new Map(); // slug+version → PNG Buffer (deterministic inputs, safe to cache)
-export function ogPng(meta, version) {
-  const key = canonicalSlug(meta.year, meta.model, meta.region) + "|" + (version || "");
+export function ogPng(meta, version, events) {
+  // event signature in the key so a confirmed pause/resume invalidates the cached image
+  const evSig = (events || []).map(e => `${e.type}:${e.region || ""}:${e.version || ""}`).join(",");
+  const key = canonicalSlug(meta.year, meta.model, meta.region) + "|" + (version || "") + "|" + evSig;
   if (_ogCache.has(key)) return _ogCache.get(key);
-  const { os, fsd } = predictForSlug(meta, version);
+  const { os, fsd } = predictForSlug(meta, version, events);
   const png = new Resvg(ogSvg(meta, os, fsd), { fitTo: { mode: "width", value: 1200 }, font: { loadSystemFonts: true } }).render().asPng();
   if (_ogCache.size > 500) _ogCache.clear();   // crude bound; pages are deterministic so just rebuild
   _ogCache.set(key, png);
