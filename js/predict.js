@@ -134,6 +134,15 @@ const Predict = (function () {
     const resumed = evs.some(e => (e.type === "resume" || e.type === "accelerate") && _evMs(e) >= _evMs(latest));
     return resumed ? null : latest;
   }
+  // confirmed RESUME event that clears an FSD hold for this region (FSD-scoped = blank/v-prefixed version)
+  function fsdResumedClient(market, fsdNext) {
+    return (WEN.rolloutEvents || []).some(e => {
+      if (e.type !== "resume" && e.type !== "accelerate") return false;
+      if (e.region && e.region !== market) return false;
+      const v = e.version || "";
+      return v === "" || /^v/i.test(v) || (fsdNext && v === fsdNext);
+    });
+  }
   function applyEvents(out, car) {
     if (!out || out.capped || out.unavailable) return out;
     const p = activePause(out, car.market);
@@ -235,11 +244,12 @@ const Predict = (function () {
     const f = region && region.fsd ? region.fsd[car.hardware] : null;
     if (!f) return { unavailable: true, current: car.fsdVersion || "—", note: `No FSD data for ${car.hardware} in ${car.market}.` };
     if (f.mode === "capped") return { capped: true, current: f.current, note: `${car.hardware} is capped at ${f.current} — Tesla has stated this hardware can't run newer FSD.` };
-    // 'paused' — the rollout began, then Tesla put it on hold. Freeze the estimate, no invented date.
-    if (f.mode === "paused") return {
+    // 'paused' — the rollout began, then Tesla put it on hold. Freeze (no invented date) UNLESS a
+    // confirmed resume event has cleared it (auto-unpause, from /api/events → WEN.rolloutEvents).
+    if (f.paused && !fsdResumedClient(car.market, f.next)) return {
       paused: true, current: f.current, targetLabel: f.next, mode: "paused", branch: "fsd",
       pausedSince: f.pausedSince || null,
-      note: f.note || `The ${f.next} rollout for ${car.hardware} in ${car.market} is on hold — no committed resume date.`,
+      note: f.pauseNote || f.note || `The ${f.next} rollout for ${car.hardware} in ${car.market} is on hold — no committed resume date.`,
     };
     // 'promised' — promised but never delivered, with NO committed timeline. We refuse to invent a
     // date (the whole point of the site). Return an honest no-ETA result the UI renders as such.

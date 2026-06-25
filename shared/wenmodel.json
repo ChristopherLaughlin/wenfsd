@@ -168,10 +168,18 @@
         "AI4": {
           "current": "v13.2.9",
           "next": "v14.x",
-          "mode": "paused",
+          "mode": "early",
+          "firstSeen": "2026-06-09",
           "fleetPct": 18,
+          "k": 0.11,
+          "t0": "2026-06-23",
+          "t0Sigma": 6,
+          "newDeliveryFirst": true,
+          "existingFleetDelayDays": 55,
+          "existingFleetSigma": 21,
+          "paused": true,
           "pausedSince": "2026-06-23",
-          "note": "FSD (Supervised) v14 started reaching AU HW4 cars in June 2026, then Tesla put the rollout on hold (official messaging + widespread owner reports). No committed resume date — including the many new Model Y / Model Y L deliveries still waiting. We've frozen the estimate rather than show a date that no longer holds."
+          "pauseNote": "FSD (Supervised) v14 started reaching AU HW4 cars in June 2026, then Tesla put the rollout on hold (official messaging + widespread owner reports). No committed resume date — including the many new Model Y / Model Y L deliveries still waiting. We've frozen the estimate rather than show a date that no longer holds. It un-freezes automatically once enough owners report it rolling again."
         },
         "AI3": {
           "current": "none",
