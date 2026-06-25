@@ -725,6 +725,12 @@
     const w7 = Math.round(pred.probWithin(7) * 100), w14 = Math.round(pred.probWithin(14) * 100), w30 = Math.round(pred.probWithin(30) * 100);
     $("confRow").innerHTML = [chip("a week", w7), chip("two weeks 🙏", w14), chip("a month", w30)].join("");
     const ch = $("confHead"); if (ch) { if (ch._default == null) ch._default = ch.innerHTML; if (!pred.paused) ch.innerHTML = ch._default; }   // restore after a prior paused render
+    // rolling-now: the distribution has collapsed to ~today, so a date "window" and three identical
+    // 100% chips are noise. Say it plainly instead (mirrors the paused special-case below).
+    if (!pred.paused && osRollingNow(pred)) {
+      $("confRow").innerHTML = "";
+      if (ch) ch.innerHTML = "📡 <strong>It's reaching your region now</strong> — the 80% window has collapsed to basically today. Go refresh your software menu before we finish this sen—";
+    }
     $("heroNote").innerHTML = `${esc(pred.note || "")} <span class="mut-i">Placed by your <strong>${pctLabel(effEarliness(av()))}</strong> rollout position${av().earlyAccess ? " (incl. Early Access)" : ""}.</span>`;
     renderBasis(pred);
     renderTips(pred);
