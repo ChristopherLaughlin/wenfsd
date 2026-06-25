@@ -21,7 +21,17 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
   tight.
 
 ## Each iteration (repeat up to 10×)
-1. **Pick the next best step.** Derive it fresh — don't follow a stale list. Priority order:
+1. **Pick the next best step — convene the Claude Council first.** Before choosing, run a short,
+   honest debate between five advisors, then converge on ONE decision. Each gets 1–3 crisp lines;
+   they may disagree — surface it, don't paper over it:
+   - **Strategist** — does this move the long-term goal, or is it motion? What's the real constraint?
+   - **Skeptic** — the weak assumption, the risk, the blind spot. Is this vanity work? Is the product
+     even being *used*? (Engineering on an unused product is the classic trap.)
+   - **Creative** — is there a sharper, higher-leverage angle than the obvious one?
+   - **Operator** — concretely shippable this iteration (build→test→CI→merge)? Smallest viable cut?
+   - **Audience Advocate** — what does the actual Tesla owner need right now? Does this serve them?
+   **Converge:** state the single highest-value step and *why the Council landed there* (note any
+   dissent and why you overrode it). Tiebreaker priority order:
    1. Correctness/bugs (anything wrong, misleading, or broken — highest priority for the honesty brand)
    2. Security/privacy regressions
    3. Activation gaps that block a built feature from working
@@ -29,7 +39,8 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
    5. Growth loops (acquisition/retention/virality) and prediction-model accuracy
    6. Performance, accessibility, then cosmetic polish
    Ground the choice in the real code/data and the memory files (project, growth plan, event engine,
-   preview-cache gotcha, autonomy preference). Prefer impact over novelty.
+   preview-cache gotcha, autonomy preference). Prefer impact over novelty. If the Council concludes
+   the real constraint is distribution/activation rather than code, SAY SO and stop — don't build slop.
 2. **Build it end-to-end on a branch:** implement → `node --check` / run `npm test` (in `server/`) →
    verify in the live preview if it's browser-observable (respect the preview-cache gotcha: confirm
    via the served file + the engine, not the stale page) → open a PR → wait for CI green
