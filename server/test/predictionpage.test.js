@@ -50,6 +50,17 @@ test("renderIndex links several /p/ pages", () => {
   assert.ok((html.match(/href="[^"]*\/p\//g) || []).length >= 4);
 });
 
+test("the /p/ page reflects an FSD hold AND its auto-resume (events are honoured)", () => {
+  const meta = decodeSlug("2026-model-y-l-australia");
+  // AU FSD-14 is on hold → the page (and FAQ/description) says so
+  assert.ok(predictForSlug(meta, null, []).fsd.paused, "paused by default");
+  assert.match(renderPage(meta, null, []), /on hold in Australia/);
+  // a confirmed resume event must un-freeze the shared page too (no stale 'on hold' after it's back)
+  const resume = [{ type: "resume", region: "Australia", version: "v14.x" }];
+  assert.ok(!predictForSlug(meta, null, resume).fsd.paused, "resume clears it on the /p/ surface");
+  assert.ok(!/on hold in Australia/.test(renderPage(meta, null, resume)), "page no longer claims a hold after resume");
+});
+
 test("ogPng returns a real PNG buffer (magic bytes)", () => {
   const png = ogPng(decodeSlug("2026-model-y-juniper-australia"));
   assert.ok(Buffer.isBuffer(png) && png.length > 1000, "non-trivial buffer");

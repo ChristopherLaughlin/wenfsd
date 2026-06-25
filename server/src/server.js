@@ -11,7 +11,7 @@ import crypto from "node:crypto";
 import { config, ensureModeReady } from "./config.js";
 import { query, hasDb } from "./db.js";
 import { authRouter } from "./routes/auth.js";
-import { apiRouter } from "./routes/api.js";
+import { apiRouter, activeConfirmedEvents } from "./routes/api.js";
 import { pollOnce } from "./poller.js";
 import { decodeSlug, renderPage, renderIndex, ogPng, allSlugs, iconPng } from "./predictionpage.js";
 
@@ -246,17 +246,19 @@ app.get("/llms.txt", (req, res) => res.type("text/plain; charset=utf-8").send(
 // --- shareable, crawlable per-prediction pages + dynamic OG images (the growth keystone) ---
 const cleanVer = (s) => { const v = String(s || "").replace(/[^0-9.]/g, "").slice(0, 24); return v || null; };
 app.get("/when-will", (req, res) => res.type("html").set("Cache-Control", "public, max-age=3600").send(renderIndex()));
-app.get("/p/:slug/og.png", (req, res) => {
+app.get("/p/:slug/og.png", async (req, res) => {
   const meta = decodeSlug(req.params.slug);
   if (!meta) return res.status(404).end();
   try {
-    res.type("png").set("Cache-Control", "public, max-age=86400").send(ogPng(meta, cleanVer(req.query.v)));
+    const events = await activeConfirmedEvents();   // so the card reflects a pause AND its auto-resume
+    res.type("png").set("Cache-Control", "public, max-age=3600").send(ogPng(meta, cleanVer(req.query.v), events));
   } catch (e) { res.status(500).end(); }
 });
-app.get("/p/:slug", (req, res) => {
+app.get("/p/:slug", async (req, res) => {
   const meta = decodeSlug(req.params.slug);
   if (!meta) return res.status(404).type("html").send(`<!doctype html><meta charset="utf-8"><title>Not found · wenFSD</title><body style="background:#0a0d12;color:#e9eef5;font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center"><div><h1>That prediction page doesn't exist</h1><p><a href="/when-will" style="color:#39d4ff">Browse predictions by car &amp; region →</a> · <a href="/" style="color:#39d4ff">wenFSD home</a></p></div>`);
-  res.type("html").set("Cache-Control", "public, max-age=3600").send(renderPage(meta, cleanVer(req.query.v)));
+  const events = await activeConfirmedEvents().catch(() => []);
+  res.type("html").set("Cache-Control", "public, max-age=3600").send(renderPage(meta, cleanVer(req.query.v), events));
 });
 
 // hard block anything sensitive even if a future static mount is added
