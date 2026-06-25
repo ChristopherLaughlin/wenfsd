@@ -1659,12 +1659,29 @@
     } catch (e) { return Promise.resolve(null); }
   }
   const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+  // Must mirror the server's MODEL_AVAIL (predictionpage.js): the /p/ index only has cars that
+  // actually exist in a region, so a slug for e.g. "Model Y L in the United States" now 404s. If the
+  // user's pick isn't a real config, we share the homepage instead of a dead link. (regions:null = all.)
+  const MODEL_AVAIL = {
+    "Model Y": { since: 2020, regions: null },
+    "Model Y L": { since: 2025, regions: ["Australia", "New Zealand"] },
+    "Model 3": { since: 2017, regions: null },
+    "Model S": { since: 2017, regions: null },
+    "Model X": { since: 2017, regions: null },
+    "Cybertruck": { since: 2024, regions: ["United States", "Canada"] },
+  };
+  function configExists(model, year, region) {
+    const a = MODEL_AVAIL[model];
+    if (!a || year < a.since) return false;
+    return a.regions ? a.regions.includes(region) : true;
+  }
   // canonical per-prediction URL (mirrors the server's slug index, so a shared link unfurls into
   // the matching prediction card + lands on a real page). Generation is derived from model+year so
   // it always matches the server's canonical slug, regardless of what's stored on the vehicle.
   function predictionUrl(v) {
     const y = +v.year || 2026;
     if (!v.model || !v.market || y < 2017 || y > 2027) return location.origin + "/";
+    if (!configExists(v.model, y, v.market)) return location.origin + "/";  // no phantom-page links
     const modelSlug = String(v.model).toLowerCase().replace(/\s+/g, "-");
     const region = String(v.market).toLowerCase().replace(/\s+/g, "-");
     let gen = (v.model === "Model Y" && y >= 2025) ? "-juniper" : (v.model === "Model 3" && y >= 2024) ? "-highland" : "";
