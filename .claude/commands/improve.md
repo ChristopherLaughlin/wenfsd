@@ -57,6 +57,14 @@ iterations**. Each iteration ships ONE genuinely valuable, fully-verified improv
    grep for everything that builds or reads it (client + server + sitemap + tests) and fix them in the
    same breath — a contract change silently breaks the surfaces you didn't touch (one run's fix #3
    existed only because fix #2 changed the slug rules and left the client building dead links).
+   **Frozen-clock / time-drift check (a value that's right today and rots tomorrow):** compare every
+   date or relative-time the USER sees against the REAL current date — not the model's internal clock.
+   A hardcoded or data-snapshot "today" (e.g. `W.today`/`WEN.today`) used as the prediction clock is
+   correct the day it's authored and silently slides into the past as real time advances: a whole run
+   was one bug where every "next update — PREDICTED" date had drifted days into the past on every
+   surface, plus a stale "today" label. Ask up front: does any shown date come from a frozen `today`?
+   Is anything displayed already in the past? Render/predict on the REAL clock and confirm dates land
+   today-or-future.
 2. **Build it end-to-end on a branch:** implement → `node --check` / run `npm test` (in `server/`) →
    verify in the live preview if it's browser-observable (respect the preview-cache gotcha: confirm
    via the served file + the engine, not the stale page) → open a PR → wait for CI green
@@ -90,6 +98,13 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v5** — Added the **frozen-clock / time-drift check**. This run's single fix: both the share cards
+  and the interactive site computed predictions against a frozen data-snapshot `today` (`W.today`/
+  `WEN.today` = 2026-06-21), so as real time advanced every "next update — PREDICTED" date slid into
+  the PAST (a US card read "21 Jun" on the 25th) and the site showed a stale "today" label. Surfaced
+  by v4's "exercise edge cases" (rendering the Cybertruck/NZ cards, not just the happy path). The
+  check — compare every shown date to the REAL clock, flag anything from a frozen `today` — finds the
+  whole class up front. PR #74 (live-clock predictions, server + client).
 - **v4** — Added **"LOOK at rendered artifacts"** (Read the actual pixels / fetch the live production
   artifact — never trust "valid buffer / 200 OK"; verify on a production-like host) and a
   **contract-change sweep** (change a slug/API/cache-key/event format → grep every producer+consumer
