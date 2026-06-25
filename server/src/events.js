@@ -55,6 +55,17 @@ export function applyEventOverlay(out, events, car, today) {
   return out;
 }
 
+// Has a confirmed RESUME event cleared an FSD hold for this region? FSD-scoped resumes carry a
+// version that's blank or v-prefixed (e.g. "v14.x"), distinguishing them from OS-build resumes.
+export function fsdResumed(events, market, fsdNext) {
+  return (events || []).some(e => {
+    if (e.type !== "resume" && e.type !== "accelerate") return false;
+    if (e.region && e.region !== market) return false;
+    const v = e.version || "";
+    return v === "" || /^v/i.test(v) || (fsdNext && v === fsdNext);
+  });
+}
+
 // ---- Tier-1 OBSERVED detection: a mid-rollout build whose daily installs collapse to ~0 is a
 // de-facto pause — quantitative, already-ingested (TeslaFi daily series), no scraping/rumor. ----
 // series item: { version, daily:[oldest→newest] }. Returns candidate {version, stalledDays, ...}.

@@ -228,6 +228,20 @@ apiRouter.post("/report", ah(async (req, res) => {
        AND COALESCE(region,'')=COALESCE($3,'') AND status='pending' AND detected_at > now() - interval '24 hours'`,
     [type, version, region]).catch(() => null);
   if (fresh && fresh.rows[0].n === 1) notifyOwnerOfPending({ type, version, region, reason, source: "community-report" }).catch(() => {});
+
+  // AUTO-UNPAUSE: if owners corroborate that a held rollout is rolling again, clear it automatically
+  // (no manual step). Triggers only for a region that currently HAS an FSD hold, and only once
+  // ≥2 distinct submitters report a resume — then we confirm it (so /api/events clears the freeze)
+  // and email the owner so they can sanity-check. A wrong auto-unpause is recoverable from /admin.
+  if (type === "resume" && region && W.regions[region] && W.regions[region].fsd
+      && Object.values(W.regions[region].fsd).some(h => h && h.paused)) {
+    const corr = await query(`SELECT count(DISTINCT submitted_by)::int AS n FROM rollout_events WHERE type='resume' AND region=$1 AND detected_at > now() - interval '14 days'`, [region]).catch(() => null);
+    if (corr && corr.rows[0].n >= 2) {
+      const already = await query(`SELECT 1 FROM rollout_events WHERE type='resume' AND region=$1 AND status='confirmed' LIMIT 1`, [region]).catch(() => null);
+      await query(`UPDATE rollout_events SET status='confirmed', confirmed_at=now() WHERE type='resume' AND region=$1 AND status='pending'`, [region]).catch(() => {});
+      if (!(already && already.rowCount)) notifyOwnerOfPending({ type: "resume", version: null, region, reason: `Auto-unpaused: ${corr.rows[0].n} owners independently report the rollout has resumed in ${region}. Predictions are live again. If that's wrong, re-pause it in /admin.`, source: "auto-resume" }).catch(() => {});
+    }
+  }
   res.json({ ok: true });   // generic success — we don't expose whether/when it goes live (anti-manipulation)
 }));
 

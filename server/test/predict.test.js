@@ -192,6 +192,18 @@ test("a PAUSED FSD rollout (AU v14) is frozen: no date, no probWithin, honest no
   assert.match(fsd.note, /hold|paused/i);
 });
 
+test("a confirmed RESUME event AUTO-UNPAUSES the AU FSD hold (no manual step)", () => {
+  const car = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", fsdVersion: "v13.2.9", fsdEntitlement: "owned" };
+  assert.equal(predictNextFSD(car).paused, true, "paused by default");
+  const resumed = predictNextFSD(car, { events: [{ type: "resume", region: "Australia", version: "v14.x" }] });
+  assert.ok(!resumed.paused, "a confirmed FSD resume clears the hold");
+  assert.ok(resumed.medianDate || resumed.bundledWith, "and it predicts again");
+  // a resume for a DIFFERENT region must not clear AU's hold
+  assert.equal(predictNextFSD(car, { events: [{ type: "resume", region: "Europe", version: "v14.x" }] }).paused, true);
+  // an OS-build resume (numeric version) must not clear the FSD hold
+  assert.equal(predictNextFSD(car, { events: [{ type: "resume", region: "Australia", version: "2026.20.3" }] }).paused, true);
+});
+
 test("predictNextOS reports whether the next software build changes FSD", () => {
   const bumps = predictNextOS(auAI4); // v13.2.9 → next build carries v14.3.4
   assert.equal(bumps.bringsNewFsd, true);
