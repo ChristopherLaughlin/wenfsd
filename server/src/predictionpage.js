@@ -31,6 +31,28 @@ const MODEL_BY_SLUG = new Map(MODELS.map(([name, slug]) => [slug, name]));
 const SLUG_BY_MODEL = new Map(MODELS.map(([name, slug]) => [name, slug]));
 const REGION_SLUG = { "United States": "united-states", "Canada": "canada", "Europe": "europe", "Australia": "australia", "New Zealand": "new-zealand" };
 
+// Which configs actually EXIST — so we never publish a crawlable prediction page for a car that was
+// never made or isn't sold in a region (e.g. "2017 Model Y L in the United States"). The honesty
+// brand applies to the index too: a confident date for a non-existent car is a lie. One table, the
+// single source of truth — decodeSlug, the sitemap and the index page all derive from it.
+// `regions: null` means every modelled region. (China is a real Model Y L / fleet market but the
+// data model has no China version data yet — adding it half-baked would yield empty predictions, so
+// it's an owner/data follow-up, not a slug we fake here.)
+const MODEL_AVAIL = {
+  "Model Y":    { since: 2020, regions: null },               // launched 2020
+  "Model Y L":  { since: 2025, regions: ["Australia", "New Zealand"] }, // 2025+, RHD AU/NZ (+China pending data)
+  "Model 3":    { since: 2017, regions: null },
+  "Model S":    { since: 2017, regions: null },
+  "Model X":    { since: 2017, regions: null },
+  "Cybertruck": { since: 2024, regions: ["United States", "Canada"] },  // 2024+, North America only
+};
+function configExists(model, year, region) {
+  const a = MODEL_AVAIL[model];
+  if (!a) return false;
+  if (year < a.since) return false;
+  return a.regions ? a.regions.includes(region) : true;
+}
+
 function generationOf(model, year) {
   if (model === "Model Y" && year >= 2025) return "Juniper";
   if (model === "Model 3" && year >= 2024) return "Highland";
@@ -51,6 +73,7 @@ function canonicalSlug(year, model, region) {
 const SLUG_INDEX = (() => {
   const m = new Map();
   for (const year of YEARS) for (const [model] of MODELS) for (const region of Object.keys(REGION_SLUG)) {
+    if (!configExists(model, year, region)) continue;   // only index cars that actually exist there
     m.set(canonicalSlug(year, model, region), { year, model, region, generation: generationOf(model, year) });
   }
   return m;

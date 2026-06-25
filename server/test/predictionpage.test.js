@@ -23,6 +23,28 @@ test("every generated slug decodes (index is internally consistent)", () => {
   for (const s of slugs) assert.ok(decodeSlug(s), `${s} should decode`);
 });
 
+test("the index only contains cars that actually exist (no honesty-breaking phantom pages)", () => {
+  const all = allSlugs();
+  // Model Y L: 2025+ and only the markets we model it in (AU/NZ). Never US/Canada/Europe, never pre-2025.
+  for (const s of all.filter((x) => x.includes("model-y-l"))) {
+    assert.ok(/-(australia|new-zealand)$/.test(s), `Model Y L sold only in AU/NZ here, not: ${s}`);
+    assert.ok(Number(s.slice(0, 4)) >= 2025, `Model Y L launched 2025, not: ${s}`);
+  }
+  // Cybertruck: North America only, 2024+.
+  for (const s of all.filter((x) => x.includes("cybertruck"))) {
+    assert.ok(/-(united-states|canada)$/.test(s), `Cybertruck is North America only, not: ${s}`);
+    assert.ok(Number(s.slice(0, 4)) >= 2024, `Cybertruck launched 2024, not: ${s}`);
+  }
+  // Model Y proper launched 2020.
+  for (const s of all.filter((x) => /^\d+-model-y(-juniper)?-/.test(x))) {
+    assert.ok(Number(s.slice(0, 4)) >= 2020, `Model Y launched 2020, not: ${s}`);
+  }
+  // Spot-check the specific phantom slugs that used to (wrongly) decode.
+  for (const bad of ["2017-model-y-l-united-states", "2026-model-y-l-united-states", "2019-model-y-australia", "2022-cybertruck-europe"]) {
+    assert.equal(decodeSlug(bad), null, `${bad} is not a real car and must not decode`);
+  }
+});
+
 test("predictForSlug produces a dated OS prediction", () => {
   const { os } = predictForSlug(decodeSlug("2026-model-y-juniper-australia"));
   assert.ok(os.medianDate instanceof Date && !isNaN(+os.medianDate), "has a median date");
