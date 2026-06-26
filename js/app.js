@@ -2195,14 +2195,23 @@
     const rollingShare = (WEN.versions || []).filter(v => /rolling|tapering/.test(v.status)).reduce((s, v) => s + (v.fleetPct || 0), 0);
     const observed = Math.min(N, Math.round(N * rollingShare / 100)); // merged tracker %s can sum >100; never claim more than the fleet
     const newest = (WEN.versions || [])[0];
+    // HONESTY: the middle tile + footer count are only "real" when we're on live tracker/fleet data.
+    // In sample/demo mode they're computed from the seed fleet %s, so they must read as modelled — not
+    // "✓ real" (that label is the one thing the rest of the page refuses to show over sample numbers).
+    const live = WEN.dataMode === "live";
 
     $("paceStats").innerHTML =
       `<div class="pace-stat pace-est"><div class="pace-num">~${fmtN(winN)}</div><div class="pace-lbl">est. cars updating · <b>${winLbl}</b></div><div class="pace-sub">🔮 modelled</div></div>` +
-      `<div class="pace-stat pace-obs"><div class="pace-num">${fmtN(observed)}</div><div class="pace-lbl">cars observed on the current wave</div><div class="pace-sub">✓ real · trackers + connected cars</div></div>` +
+      (live
+        ? `<div class="pace-stat pace-obs"><div class="pace-num">${fmtN(observed)}</div><div class="pace-lbl">cars observed on the current wave</div><div class="pace-sub">✓ real · trackers + connected cars</div></div>`
+        : `<div class="pace-stat pace-est"><div class="pace-num">~${fmtN(observed)}</div><div class="pace-lbl">cars on the current wave</div><div class="pace-sub">🔮 modelled (sample)</div></div>`) +
       `<div class="pace-stat"><div class="pace-num">~${fmtN(series[peakI].cars)}<span class="pace-day">/day</span></div><div class="pace-lbl">projected peak · <b>${esc(peakDate)}</b></div><div class="pace-sub">🔮 modelled</div></div>`;
 
     const monthTot = sum(0, 29);
-    $("paceFoot").innerHTML = `Across ~${fmtN(N)} tracked cars${newest ? `, the current front-runner is <strong>${esc(newest.version)}</strong> (${newest.fleetPct}% of the fleet)` : ""}. ` +
+    const fleetCtx = live
+      ? `Across ~${fmtN(N)} tracked cars${newest ? `, the current front-runner is <strong>${esc(newest.version)}</strong> (${newest.fleetPct}% of the fleet)` : ""}. `
+      : `Across a ~${fmtN(N)}-car sample model${newest ? `, the current front-runner is <strong>${esc(newest.version)}</strong> (~${newest.fleetPct}% modelled)` : ""}. `;
+    $("paceFoot").innerHTML = fleetCtx +
       `The model expects <strong>~${fmtN(monthTot)}</strong> cars to move onto a newer build over the next month. ${rnd(["Your turn's in there somewhere. 🤞", "Statistically, someone's updating right now and bragging about it.", "Two weeks. For ~" + fmtN(Math.round(winN)) + " of them, maybe literally."])}`;
 
     // window toggle
