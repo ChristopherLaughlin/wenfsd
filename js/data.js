@@ -92,7 +92,7 @@ const WEN = (function () {
       AI4: { current: "v14.3.4", next: "v14.4.x", mode: "current", k: 0.16, cadenceDays: 28 },
       AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "HW3 is capped at FSD v12.6.4. Tesla has teased a reduced 'v14 Lite' for HW3 — US first, targeted for around late June 2026 — but committed to no firm date, and these builds still ship v12.6.4. We won't fake a date until it actually lands." } } },
     "Canada": { osLagDays: 3, drive: "LHD", fsd: {
-      AI4: { current: "v14.3.3", next: "v14.3.4", mode: "rolling", k: 0.18, t0: "2026-06-26" },
+      AI4: { current: "v13.2.9", next: "v14.3.4", mode: "rolling", k: 0.18, t0: "2026-06-26" },
       AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "HW3 is capped at FSD v12.6.4. v14 Lite rolls out in the US first; international markets follow with no committed date." } } },
     "Europe": { osLagDays: 9, drive: "LHD", fsd: {
       AI4: { current: "v14.2.2.6", next: "v14.3.x", mode: "gated", approval: { earliestDays: 20, modeDays: 70, latestDays: 180 }, k: 0.09 },
