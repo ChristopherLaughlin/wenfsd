@@ -73,6 +73,10 @@ const authLimiter = rateLimit({ windowMs: 60_000, max: 20, standardHeaders: true
 const subscribeLimiter = rateLimit({ windowMs: 60_000, max: 5, standardHeaders: true, legacyHeaders: false, message: { ok: false, error: "Too many sign-ups from here — give it a minute." } });
 // rollout-change reports: tight per-IP cap so the review queue can't be flooded
 const reportLimiter = rateLimit({ windowMs: 60_000, max: 4, standardHeaders: true, legacyHeaders: false, message: { ok: false, error: "Thanks — that's plenty of reports for now. Try again shortly." } });
+// share/OG render: CPU-bound (resvg rasterizes a 1200×630 PNG, ~16ms each, synchronously). Cap per-IP
+// so a flood of unique `?v=` values can't force unbounded fresh renders and saturate the event loop.
+// Generous enough for social unfurlers + humans browsing prediction pages (each card unfurls once).
+const ogLimiter = rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false });
 // generous catch-all so every route — including the static asset / og / robots / sitemap / key
 // handlers — is rate-limited (defence against fs-access abuse); the stricter limiters above still apply.
 app.use(rateLimit({ windowMs: 60_000, max: 600, standardHeaders: true, legacyHeaders: false }));
@@ -246,9 +250,12 @@ app.get("/llms.txt", (req, res) => res.type("text/plain; charset=utf-8").send(
 - Security policy: https://github.com/ChristopherLaughlin/wenfsd/blob/main/SECURITY.md
 `));
 // --- shareable, crawlable per-prediction pages + dynamic OG images (the growth keystone) ---
-const cleanVer = (s) => { const v = String(s || "").replace(/[^0-9.]/g, "").slice(0, 24); return v || null; };
+// Sanitize the ?v= installed-version param: strip to digits/dots, and REQUIRE a real version shape
+// (YYYY.W…). This collapses junk values ("1", "99999999", "0.0.0") to null → the representative card,
+// so an attacker can't mint unbounded distinct cache keys (each a fresh resvg render + cache eviction).
+const cleanVer = (s) => { const v = String(s || "").replace(/[^0-9.]/g, "").slice(0, 24); return /^\d{4}\.\d/.test(v) ? v : null; };
 app.get("/when-will", (req, res) => res.type("html").set("Cache-Control", "public, max-age=3600").send(renderIndex()));
-app.get("/p/:slug/og.png", async (req, res) => {
+app.get("/p/:slug/og.png", ogLimiter, async (req, res) => {
   const meta = decodeSlug(req.params.slug);
   if (!meta) return res.status(404).end();
   try {
@@ -256,7 +263,7 @@ app.get("/p/:slug/og.png", async (req, res) => {
     res.type("png").set("Cache-Control", "public, max-age=3600").send(ogPng(meta, cleanVer(req.query.v), events));
   } catch (e) { res.status(500).end(); }
 });
-app.get("/p/:slug", async (req, res) => {
+app.get("/p/:slug", ogLimiter, async (req, res) => {
   const meta = decodeSlug(req.params.slug);
   if (!meta) return res.status(404).type("html").send(`<!doctype html><meta charset="utf-8"><title>Not found · wenFSD</title><body style="background:#0a0d12;color:#e9eef5;font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center"><div><h1>That prediction page doesn't exist</h1><p><a href="/when-will" style="color:#39d4ff">Browse predictions by car &amp; region →</a> · <a href="/" style="color:#39d4ff">wenFSD home</a></p></div>`);
   const events = await activeConfirmedEvents().catch(() => []);
