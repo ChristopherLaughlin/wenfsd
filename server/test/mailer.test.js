@@ -1,6 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { arrivalMessage, deliver } from "../src/mailer.js";
+import { arrivalMessage, deliver, resumeAlertMessage } from "../src/mailer.js";
+
+test("resumeAlertMessage announces the resume with region + version + unsub, and stays honest", () => {
+  const m = resumeAlertMessage({ version: "v14.x", region: "Australia", siteUrl: "https://wenfsd.info", unsubUrl: "https://wenfsd.info/api/unsubscribe?t=abc" });
+  assert.match(m.subject, /rolling again/i);
+  assert.match(m.subject, /Australia/);
+  assert.match(m.subject, /v14\.x/);
+  assert.match(m.text, /Australia/);
+  assert.match(m.text, /prediction, not a Tesla promise/i, "stays honest — no fabricated certainty");
+  assert.match(m.text, /unsubscribe\?t=abc/, "one-click off");
+});
+
+test("resumeAlertMessage degrades gracefully with no version/region", () => {
+  const m = resumeAlertMessage({ siteUrl: "https://wenfsd.info", unsubUrl: "https://wenfsd.info/u" });
+  assert.match(m.subject, /rolling again/i);
+  assert.ok(m.text.length > 40);
+});
 
 test("arrivalMessage builds an on-brand, accurate subject + body", () => {
   const m = arrivalMessage({ nickname: "JuniperJoy", fromVersion: "2026.14.6", toVersion: "2026.20.3" });

@@ -65,6 +65,22 @@ export function windowAlertMessage({ version, market, daysToMedian, siteUrl, uns
   };
 }
 
+// "It's rolling again" — the resume alarm. Fired the moment a held rollout is confirmed resumed
+// (via corroborated owner reports / admin). This is the killer hook for a paused region: people
+// hand over an email precisely so they can stop refreshing the trackers for the resume.
+export function resumeAlertMessage({ version, region, siteUrl, unsubUrl }) {
+  const what = version ? `FSD ${version}` : "the FSD rollout";
+  const where = region || "your region";
+  return {
+    subject: `🚀 It's moving — ${what} is rolling again in ${where}`,
+    text: `wen FSD? Now-ish — and for once that's not a joke. ${what} has started reaching cars again in ${where}, `
+      + `corroborated by enough owner reports that we've un-frozen the estimate. `
+      + `This is the exact moment you asked us to watch for, so you can stop refreshing the software menu like it owes you money. 📲\n\n`
+      + `See your predicted arrival + the live 80% window: ${siteUrl}\n\n`
+      + `(You're getting this because you asked to be told the second the rollout moved. It's still a prediction, not a Tesla promise. One click to stop: ${unsubUrl})`,
+  };
+}
+
 // Double-opt-in confirmation for the no-login email channel. One click to confirm; we send
 // nothing else until they do, so we can't be used to spam an address someone else typed in.
 export function confirmMessage({ market, confirmUrl, unsubUrl }) {

@@ -224,3 +224,6 @@ CREATE INDEX IF NOT EXISTS idx_email_subs_confirmed ON email_subscribers(confirm
 -- the last predicted build we emailed this subscriber about, so the alert job never re-spams
 ALTER TABLE email_subscribers ADD COLUMN IF NOT EXISTS last_notified_version TEXT;
 ALTER TABLE email_subscribers ADD COLUMN IF NOT EXISTS last_notified_at TIMESTAMPTZ;
+-- the last confirmed RESUME event we alerted this subscriber about (so the "it's rolling again!"
+-- ping fires once per resume, never twice)
+ALTER TABLE email_subscribers ADD COLUMN IF NOT EXISTS last_resume_event_id BIGINT;
