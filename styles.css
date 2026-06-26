@@ -458,9 +458,11 @@ tr.fw-next td{background:rgba(70,180,140,.05)}
 .field>span{display:block;font-size:12.5px;color:var(--mut);margin-bottom:7px}
 .field>span em{color:var(--cyan);font-style:normal;font-weight:600}
 .field>span em.ver-warn{color:var(--amber)}
-select,input[type=date]{width:100%;background:#0b0e14;border:1px solid var(--line2);color:var(--txt);
+select,input[type=date],input[type=text],input[type=number],input[type=search],input[type=tel],input[type=url],input:not([type]){width:100%;background:#0b0e14;border:1px solid var(--line2);color:var(--txt);
   border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;outline:none}
 select:focus,input:focus{border-color:var(--acc)}
+/* themed inputs get a muted placeholder that reads on the dark field (not the browser's grey-on-white) */
+input::placeholder{color:var(--mut2);opacity:1}
 input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:5px;
   background:linear-gradient(90deg,var(--green),var(--amber),var(--acc));outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
@@ -680,7 +682,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .history-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mut);
   text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 .hist-form{display:flex;gap:8px;margin-bottom:10px}
-.hist-form select{flex:1} .hist-form input[type=date]{flex:1}
+.hist-form select{flex:1} .hist-form input[type=date]{flex:1} .hist-form input[type=text]{flex:1} .hist-form input:not([type]){flex:1}
 .hist-list{list-style:none;margin:0;padding:0}
 .hist-list li{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line);font-family:var(--mono)}
 .hist-list li span:first-child{font-weight:700}
