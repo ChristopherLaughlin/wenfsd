@@ -318,5 +318,12 @@ if (!config.mockMode) {
       try { const { runStallDetection } = await import("./eventsjob.js"); const r = await runStallDetection({ live: true }); if (r.queued) console.log("[stall-detect]", JSON.stringify(r)); }
       catch (e) { console.error("[stall-detect cron]", e); }
     });
+    // DAILY rollout reconciliation (08:33): compare the live consensus (OS builds + FSD versions)
+    // against the model's seed and queue any drift — new builds, new FSD versions, a stale date — as
+    // 'model-update' events for the owner to apply. Human-gated: we never auto-rewrite the seed.
+    cron.schedule("33 8 * * *", async () => {
+      try { const { runRolloutReconciliation } = await import("./rolloutcheck.js"); const r = await runRolloutReconciliation({ live: true }); if (r.queued) console.log("[rollout-reconcile]", JSON.stringify(r)); }
+      catch (e) { console.error("[rollout-reconcile cron]", e); }
+    });
   }
 }
