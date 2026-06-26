@@ -180,17 +180,19 @@ export function predictNextFSD(car, opts = {}) {
   const cur = curFsd(car);
   const curKey = W.fsdKey(cur);
 
+  // entitlement — FSD only activates on cars with it purchased/subscribed (mirrors client). This
+  // must come BEFORE any date-producing path (incl. the gated regulatory window): if the car has no
+  // FSD package, "you don't have FSD" is the honest answer — never an ETA it can't receive.
+  if (car.fsdEntitlement === "none") {
+    const capable = f.next || f.current || "FSD";
+    return { notEntitled: true, current: cur, targetLabel: capable, mode: "notEntitled", branch: "fsd" };
+  }
+
   // gated — regulators haven't cleared it for this region → modelled regulatory window
   if (f.mode === "gated") {
     const out = mcPredict({ approval: f.approval, k: f.k, L: 0.9, earliness, today, seedStr: "FSDg" + f.next + car.market + earliness });
     out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness;
     return out;
-  }
-
-  // entitlement — FSD only activates on cars with it purchased/subscribed (mirrors client)
-  if (car.fsdEntitlement === "none") {
-    const capable = f.next || f.current || "FSD";
-    return { notEntitled: true, current: cur, targetLabel: capable, mode: "notEntitled", branch: "fsd" };
   }
 
   // FSD rides inside OS builds, but most builds keep the same FSD version. Does the next software
@@ -221,9 +223,16 @@ export function predictNextFSD(car, opts = {}) {
     if (carrierBundles || unknownButRolling) return bundleWithNext(f.next);
     // (2) genuinely forthcoming FSD (no build carries it yet) → later, separate build; floor it at
     //     the next-OS midpoint so it can never land before your next software update.
-    const floorDays = nextIsConcrete && osNext.daysToMedian != null ? osNext.daysToMedian + 7 : 0;
+    // Floor the forthcoming FSD at the next-OS midpoint so it can never land before your next software
+    // update — this must hold even when that next update is PROJECTED (you're already on the newest
+    // in-region build): otherwise a forthcoming FSD with an early t0 could be shown arriving before the
+    // build that would carry it (the NZ AI4 case). Concrete next-OS keeps a +7 buffer; for a projected
+    // next-OS (already fuzzy/later) we floor at its midpoint itself.
+    const floorDays = osNext.daysToMedian != null ? osNext.daysToMedian + (nextIsConcrete ? 7 : 0) : 0;
     const t0Days = Math.max(f.t0 ? daysBetween(today, f.t0) : 30, floorDays);
-    const out = mcPredict({ t0Days, k: f.k || 0.1, L: 0.9, earliness, t0Sigma: f.t0Sigma || 14, today, seedStr: "FSDfb" + car.market });
+    // floor EVERY sample (not just t0) at the next-OS midpoint: an extreme-early earliness pulls
+    // logit(p)/k strongly negative and would otherwise drag the median before your next OS update.
+    const out = mcPredict({ t0Days, k: f.k || 0.1, L: 0.9, earliness, t0Sigma: f.t0Sigma || 14, floorDays, today, seedStr: "FSDfb" + car.market });
     out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.earliness = earliness; out.fsdChanges = true;
     return out;
   }
