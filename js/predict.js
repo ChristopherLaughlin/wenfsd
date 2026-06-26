@@ -176,8 +176,9 @@ const Predict = (function () {
       // we have no measured earliness (real history/manual override always wins).
       const pc = WEN.parseOS(car.installedVersion), pn = WEN.parseOS(v.version);
       const weeksBehind = (pc && pn) ? Math.max(0, (pn.year * 52 + pn.week) - (pc.year * 52 + pc.week)) : 0;
-      const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
-      const stale = noHistory && weeksBehind >= 9;   // ~2+ branches behind
+      // 9+ weeks (~2 branches) behind = laggard, even with a logged early history — being this far
+      // behind overrides the rosy earliness (else an early history collapsed a way-behind car to "NOW").
+      const stale = weeksBehind >= 9;
       // regions that simply receive OS builds slowly + infrequently (RHD / EU — high osLag). For
       // these, being many weeks behind is the NORM Tesla creates, not evidence the owner's car is
       // doing anything wrong. We frame the lag honestly by cause rather than blaming the car.
