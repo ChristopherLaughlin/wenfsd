@@ -30,7 +30,9 @@ test("a deep laggard is flagged stale + WIDE, but its median stays near the next
   // the uncertainty shows up as a WIDE window, not a late median
   const widthDays = (new Date(lag.p90Date) - new Date(lag.p10Date)) / 86400000;
   assert.ok(widthDays >= 40, `stale window should be wide, got ${Math.round(widthDays)}d`);
-  assert.equal(near.stale, false, "a 1-branch-behind car is not stale");
+  // the laggard guard itself must not fire on the near-current car (it's <9 weeks behind). It may
+  // still carry the separate slow-region fresh-build flag — that's a different, correct signal.
+  assert.ok(near.weeksBehind < 9, "a 1-branch-behind car is not a deep laggard");
 });
 
 test("a deep laggard is flagged stale even WITH a logged early history (the early-user 'NOW' bug)", () => {
@@ -40,9 +42,30 @@ test("a deep laggard is flagged stale even WITH a logged early history (the earl
   const far = predictNextOS({ market: "Australia", hardware: "AI3", installedVersion: "2026.2.6.1", earliness: 0.05, earlinessSource: "history" });
   assert.equal(far.stale, true, "18 weeks behind is a laggard regardless of a logged early history");
   assert.ok(far.daysToMedian > 1, `must not collapse to NOW, got ${far.daysToMedian}d`);
-  // but history is still respected for a car only ~1 branch behind — it is NOT auto-flagged stale
-  const near = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "history" });
-  assert.ok(!near.stale, "a near-current car with history is not auto-flagged stale");
+  // but the LAGGARD guard must NOT over-fire on a near-current car with history. Use a US car (the
+  // US leads the rollout, so there's no slow-region fresh-build wait to confound this check).
+  const near = predictNextOS({ market: "United States", hardware: "AI4", installedVersion: "2026.20", earliness: 0.5, earlinessSource: "history" });
+  assert.ok(!near.stale, "a near-current US car with history is not auto-flagged stale");
+});
+
+test("a fresh, still-rolling build does NOT promise a slow RHD region a near-term date (the AU 'tomorrow' bug)", () => {
+  // Reported by AU users: a car only ~6 weeks behind was told a still-rolling, US-led build (2026.20.3,
+  // t0 = tomorrow, ~10% global fleet) would land "tomorrow" — near-impossible for right-hand-drive AU,
+  // which sits at the back of every rollout queue. The fix flags it low-confidence + pushes the median
+  // into the regional tail + widens, rather than showing a confident near-term date.
+  for (const market of ["Australia", "New Zealand"]) {
+    const p = predictNextOS({ market, hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "default" });
+    assert.equal(p.targetLabel, "2026.20.3", `${market} should still target the newest in-region build`);
+    assert.equal(p.freshWait, true, `${market} should get the fresh-build wait treatment`);
+    assert.equal(p.stale, true, `${market} fresh-build wait must read as low-confidence`);
+    assert.ok(p.daysToMedian >= 14, `${market} median must not be near-term, got ${p.daysToMedian}d`);
+    const widthDays = (new Date(p.p90Date) - new Date(p.p10Date)) / 86400000;
+    assert.ok(widthDays >= 30, `${market} window must be honestly wide, got ${Math.round(widthDays)}d`);
+    assert.match(p.note || "", /US and Canada first|near the back|low-confidence/i);
+  }
+  // the US LEADS the rollout — it must NOT get the fresh-build wait (no false delay for fast markets)
+  const us = predictNextOS({ market: "United States", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "default" });
+  assert.equal(us.freshWait, false, "the US leads rollout — no fresh-build wait");
 });
 
 test("AU/NZ HW3 FSD is 'promised' with NO invented date (never delivered)", () => {
