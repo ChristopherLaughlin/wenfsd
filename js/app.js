@@ -850,7 +850,7 @@
     const segs = ["Low", "Medium", "High"].map((n, i) =>
       `<span class="cm-seg ${i <= t.idx ? "cm-on cm-" + t.key : ""}">${n}</span>`).join("");
     const msg = t.key === "high"
-      ? `🎯 <strong>High confidence</strong> — fit from <strong>${t.real}</strong> of your real updates. This is <em>your</em> data, not a guess. Keep logging to keep it sharp.`
+      ? `🎯 <strong>High confidence in your rollout position</strong> — fit from <strong>${t.real}</strong> of your real updates, so we place you in the wave from <em>your</em> data, not a typical-owner guess. (The arrival <em>window</em> itself is still modelled — your history sharpens where you sit, not Tesla's schedule.)`
       : t.key === "med"
       ? `📈 <strong>Medium</strong> — fit from <strong>${t.real}</strong> real update${t.real > 1 ? "s" : ""}. Log <strong>${t.need} more</strong> to unlock <strong>High</strong> — every real date makes <em>your</em> prediction sharper.`
       : `🔮 <strong>Low</strong> — we're using a <strong>typical-owner prior</strong> (a fair guess, not your data). Log <strong>3 real updates</strong> below and your prediction switches to <em>fit from your own history</em>.`;
