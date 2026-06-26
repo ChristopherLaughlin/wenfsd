@@ -123,6 +123,16 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v11** — A deep design/aesthetics run. All three wins were the SAME class — **browser-native defaults
+  leaking through the custom dark theme**, invisible to the eye until queried: 9 text inputs rendered as
+  white default boxes (the themed rule matched `select,input[type=date]` but the inputs carry no `type`
+  attribute, so `input[type=text]` never matched — needed `input:not([type])`); `color-scheme` was never
+  declared, so native date-pickers/scrollbars/spinners/autofill rendered light; and `::selection` was the
+  default browser blue. Lesson for design passes: run a **native-default-leakage scan** —
+  programmatically read computed styles of every form control (flag white/near-white bg, mismatched
+  radius/height vs siblings), and check for a missing `:root{color-scheme}` and an unstyled `::selection`.
+  These silently bypass a theme and don't show up in a glance. PRs #87 (theme inputs), #88 (color-scheme),
+  #89 (branded selection). Humor untouched (pure CSS).
 - **v10** — A wide+deep QA run (219 /p/ pages, client/server prediction PARITY [exact median/p90/target
   match on every car], VIN decode, the event/pause engine, prediction-math invariants, adversarial
   /api/predict inputs, security headers) — **zero real bugs; everything works as promised.** Sharpened
