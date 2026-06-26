@@ -1,5 +1,6 @@
 /* wenFSD — styles */
 :root{
+  color-scheme:dark;  /* native UI (date-picker popups + calendar icons, scrollbars, number spinners, autofill) renders dark to match the theme */
   --bg:#0a0c10; --bg2:#0e1117; --card:#141821; --card2:#1a1f2b;
   --line:#232a38; --line2:#2e3647;
   --txt:#e8edf6; --mut:#8b95a8; --mut2:#7a8498;  /* --mut2 raised from #5f6878 for WCAG AA contrast */
