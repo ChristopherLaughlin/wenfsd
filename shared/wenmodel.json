@@ -113,9 +113,8 @@
         "AI3": {
           "current": "v12.6.4",
           "next": "v14 Lite",
-          "mode": "rolling",
-          "k": 0.1,
-          "t0": "2026-06-30"
+          "mode": "promised",
+          "note": "Tesla has teased a reduced 'v14 Lite' for HW3 — US first — but committed to no date, and these builds still ship v12.6.4 to HW3 cars. We won't fake a date until it actually lands."
         }
       }
     },

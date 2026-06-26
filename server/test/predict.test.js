@@ -54,12 +54,16 @@ test("AU/NZ HW3 FSD is 'promised' with NO invented date (never delivered)", () =
   }
 });
 
-test("US HW3 gets FSD v14 Lite first (a real date), AU/NZ do not", () => {
+test("HW3 v14 Lite is 'promised' (no fabricated date) in every region — the US is no longer special-cased", () => {
+  // Owner-confirmed: v14 Lite for HW3 is teased but UNCONFIRMED and ships in no build (every build keeps
+  // HW3 on v12.6.4), so we refuse to invent a date anywhere — not even the US. (Was: US got a real date,
+  // which contradicted the OS data and over-promised an in-development feature — an early-user report.)
   const us = predictNextFSD({ market: "United States", hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
-  assert.ok(!us.promised, "US HW3 should have an actual rollout, not 'promised'");
-  assert.ok(us.medianDate, "US HW3 should produce a date");
+  assert.equal(us.promised, true, "US HW3 v14 Lite must be 'promised', not a confident date");
+  assert.ok(!us.medianDate, "US HW3 must not fabricate a v14 Lite date");
+  assert.equal(us.targetLabel, "v14 Lite");
   const au = predictNextFSD({ market: "Australia", hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
-  assert.equal(au.promised, true);
+  assert.equal(au.promised, true, "AU HW3 stays promised — now consistent with the US");
 });
 
 const auAI4 = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.45, earlinessSource: "default", earlyAccess: false };
@@ -146,12 +150,14 @@ test("INVARIANT: FSD never predicted before the next software update (it ships i
   assert.equal(+new Date(fsd.medianDate), +new Date(os.medianDate), "bundled → identical date");
 });
 
-test("a forthcoming FSD (US v14 Lite) lands on/after the next software update, never before", () => {
-  const car = { market: "United States", hardware: "AI3", installedVersion: "2026.14.6", fsdVersion: "v12.6.4", earlinessSource: "default" };
+test("a forthcoming FSD that rides in a later build lands on/after the next software update, never before", () => {
+  // NZ HW4 is still actively rolling v14 — a real forthcoming bundled FSD with a modelled date.
+  // (Was US HW3 v14 Lite, now correctly 'promised'/date-less per the owner.)
+  const car = { market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6", earlinessSource: "default" };
   const os = predictNextOS(car);
   const fsd = predictNextFSD(car);
-  assert.ok(fsd.medianDate, "US HW3 Lite has a modelled date");
-  assert.ok(new Date(fsd.medianDate) >= new Date(os.medianDate), "FSD must not precede the next software update");
+  assert.ok(fsd.medianDate, "a forthcoming bundled FSD has a modelled date");
+  assert.ok(new Date(fsd.medianDate) >= new Date(os.medianDate), "FSD must not precede the software update that carries it");
 });
 
 test("no-date FSD modes expose NO probWithin() (the /api/predict crash contract)", () => {
