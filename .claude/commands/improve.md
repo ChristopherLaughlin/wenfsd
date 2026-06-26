@@ -123,6 +123,19 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v13** — A dedicated SECURITY audit (3 agents per attack-surface + my own npm-audit/SQL/fs/innerHTML
+  scans). Refined v12 into: **for an audit pass, make agents PROVE THE NEGATIVE, not just assert "clean."**
+  A surface is only trustworthy-clean when the agent shows a *repro that the defense holds* — e.g. "I
+  forced `</title><script>alert(1)` through `renderPage`/`ogPng` and the output contains `&lt;script&gt;`,
+  not `<script>`", or "ReDoS regex is linear: here's why", or "the auto-unpause needs ≥2 distinct submitter
+  hashes, so one attacker can't flip it." Proven-clean negatives are what *earn the stop* — they let you
+  end after the one real fix instead of second-guessing. This run that discipline gave high-confidence
+  cleans across injection/auth/headers/secrets/IDOR/ReDoS/deps, and surfaced exactly ONE real, reproduced
+  vuln: an unauthenticated CPU-amplification DoS — `/p/<slug>/og.png?v=<junk>` rasterized a fresh ~16ms
+  resvg PNG per distinct `?v` (unbounded cache key), one IP forcing ~10 CPU-sec/min + evicting the legit
+  card cache. Fixed with a per-route limiter + collapsing junk `?v` to the representative card (#108),
+  verified end-to-end (130 reqs → 118×200/12×429; garbage `?v` → identical cached PNG) AND by reading the
+  rendered card pixels. Honest stop after one fix — earned by proven-clean negatives, not assumed.
 - **v12** — An audit/review run (parallel agents scanning security, prediction/parity, honesty, client).
   The agents were great at coverage but **three of their findings were FALSE POSITIVES**, and acting on
   one ("seed.js is dead code, delete it") broke the suite — the file is imported and served by the
