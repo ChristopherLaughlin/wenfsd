@@ -388,6 +388,18 @@ tr.fw-next td{background:rgba(70,180,140,.05)}
 .vmodal-card{position:relative;z-index:1;width:min(560px,100%);max-height:86vh;overflow:auto;background:linear-gradient(180deg,var(--card),var(--bg2));border:1px solid var(--line2);border-radius:16px;padding:22px}
 .vmodal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--mut);font-size:24px;line-height:1;cursor:pointer}
 .vmodal-close:hover{color:var(--txt)}
+/* share menu — just the channels that actually distribute (X / Facebook / forum link) */
+.share-card{width:min(360px,100%);text-align:left}
+.share-h{font-size:18px;font-weight:800;margin:0 0 6px}
+.share-sub{font-size:12.5px;color:var(--mut);line-height:1.45;margin:0 0 16px}
+.share-opts{display:flex;flex-direction:column;gap:10px}
+.share-opt{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;border-radius:11px;border:1px solid var(--line2);background:#0b0e14;color:var(--txt);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;text-align:left}
+.share-opt:hover{transform:translateY(-1px)}
+.share-opt .share-ic{flex:0 0 22px;width:22px;text-align:center;font-size:18px;line-height:1}
+.share-x{background:#000;border-color:#3a3a3a;color:#fff} .share-x:hover{border-color:#777}
+.share-fb{background:#1877f2;border-color:#1877f2;color:#fff} .share-fb:hover{background:#1466d6;border-color:#1466d6}
+.share-fb .share-ic{font-weight:900;font-style:italic}
+.share-copy:hover{border-color:var(--cyan);color:#fff}
 .vm-title{font-size:22px;margin:0 0 8px}
 .vm-rel-row{margin-bottom:14px}
 .vm-rel{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid}
