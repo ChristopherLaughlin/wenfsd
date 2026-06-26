@@ -123,7 +123,7 @@
       "drive": "LHD",
       "fsd": {
         "AI4": {
-          "current": "v14.3.3",
+          "current": "v13.2.9",
           "next": "v14.3.4",
           "mode": "rolling",
           "k": 0.18,
