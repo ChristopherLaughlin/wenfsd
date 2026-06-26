@@ -33,9 +33,16 @@ test("a deep laggard is flagged stale + WIDE, but its median stays near the next
   assert.equal(near.stale, false, "a 1-branch-behind car is not stale");
 });
 
-test("measured history overrides the staleness guard (no false 'stale')", () => {
-  const p = predictNextOS({ market: "Australia", hardware: "AI3", installedVersion: "2026.2.6.1", earliness: 0.5, earlinessSource: "history" });
-  assert.ok(!p.stale, "a car with real update history should not be auto-flagged stale");
+test("a deep laggard is flagged stale even WITH a logged early history (the early-user 'NOW' bug)", () => {
+  // Reported by early users: logging an early-adopter history on a car ~18 weeks behind bypassed the
+  // laggard guard and collapsed its next-update prediction to "NOW" (absurd — you can't be 18 weeks
+  // behind AND get the newest right now). Being this far behind is itself laggard evidence.
+  const far = predictNextOS({ market: "Australia", hardware: "AI3", installedVersion: "2026.2.6.1", earliness: 0.05, earlinessSource: "history" });
+  assert.equal(far.stale, true, "18 weeks behind is a laggard regardless of a logged early history");
+  assert.ok(far.daysToMedian > 1, `must not collapse to NOW, got ${far.daysToMedian}d`);
+  // but history is still respected for a car only ~1 branch behind — it is NOT auto-flagged stale
+  const near = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "history" });
+  assert.ok(!near.stale, "a near-current car with history is not auto-flagged stale");
 });
 
 test("AU/NZ HW3 FSD is 'promised' with NO invented date (never delivered)", () => {

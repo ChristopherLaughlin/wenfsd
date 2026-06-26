@@ -105,8 +105,11 @@ export function predictNextOS(car, opts = {}) {
     // active-fleet midpoint. Push late, delay, widen. Only when we have no measured earliness.
     const pc = W.parseOS(car.installedVersion || "0"), pn = W.parseOS(v.version);
     const weeksBehind = (pc && pn) ? Math.max(0, (pn.year * 52 + pn.week) - (pc.year * 52 + pc.week)) : 0;
-    const noHistory = car.earlinessSource == null || car.earlinessSource === "default";
-    const stale = noHistory && weeksBehind >= 9;
+    // A car 9+ weeks (~2 branches) behind the newest build is a laggard — even if it logged an early
+    // adopter history. Being this far behind is itself evidence it isn't pulling promptly, so it
+    // overrides the rosy earliness (otherwise logging an early history collapsed a way-behind car's
+    // prediction to "NOW" — reported by early users).
+    const stale = weeksBehind >= 9;
     if (stale) {
       // far-behind + no history: the newest build still reaches an online car on its own rollout
       // schedule (a laggard catches the next wave like everyone else), so keep the MEDIAN near
