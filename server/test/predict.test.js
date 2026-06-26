@@ -50,19 +50,20 @@ test("a deep laggard is flagged stale even WITH a logged early history (the earl
 });
 
 test("a fresh, still-rolling build does NOT promise a slow RHD region a near-term date (the AU 'tomorrow' bug)", () => {
-  // Reported by AU users: a car only ~6 weeks behind was told a still-rolling, US-led build (2026.20.3,
-  // t0 = tomorrow, ~10% global fleet) would land "tomorrow" — near-impossible for right-hand-drive AU,
-  // which sits at the back of every rollout queue. The fix flags it low-confidence + pushes the median
-  // into the regional tail + widens, rather than showing a confident near-term date.
+  // Two AU owner signals bracketed the truth: (1) a still-rolling US-led build landing "tomorrow" is
+  // near-impossible for RHD AU, but (2) the rollout is ACTIVELY reaching AU now (some cars already had
+  // 2026.20.3) — so ~3 weeks out was too far. The freshWait tail is calibrated to the real ~1-week AU
+  // arrival: median is a modest few-days-to-~2-weeks (NOT "tomorrow", NOT weeks out), with a wide window
+  // that opens today (some already have it) and an "actively rolling now" note.
   for (const market of ["Australia", "New Zealand"]) {
     const p = predictNextOS({ market, hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "default" });
     assert.equal(p.targetLabel, "2026.20.3", `${market} should still target the newest in-region build`);
     assert.equal(p.freshWait, true, `${market} should get the fresh-build wait treatment`);
-    assert.equal(p.stale, true, `${market} fresh-build wait must read as low-confidence`);
-    assert.ok(p.daysToMedian >= 14, `${market} median must not be near-term, got ${p.daysToMedian}d`);
+    assert.equal(p.stale, true, `${market} fresh-build wait reads as a wide, low-confidence window`);
+    assert.ok(p.daysToMedian >= 4 && p.daysToMedian <= 20, `${market} median ~a week out (not tomorrow, not weeks), got ${p.daysToMedian}d`);
     const widthDays = (new Date(p.p90Date) - new Date(p.p10Date)) / 86400000;
-    assert.ok(widthDays >= 30, `${market} window must be honestly wide, got ${Math.round(widthDays)}d`);
-    assert.match(p.note || "", /US and Canada first|near the back|low-confidence/i);
+    assert.ok(widthDays >= 20, `${market} window must be honestly wide, got ${Math.round(widthDays)}d`);
+    assert.match(p.note || "", /actively rolling|already have it|wide window/i);
   }
   // the US LEADS the rollout — it must NOT get the fresh-build wait (no false delay for fast markets)
   const us = predictNextOS({ market: "United States", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "default" });

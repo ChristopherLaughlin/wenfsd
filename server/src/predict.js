@@ -137,19 +137,21 @@ export function predictNextOS(car, opts = {}) {
       t0Sigma = Math.max(18, Math.min(60, Math.round(weeksBehind * 1.6)));
     }
     if (freshWait) {
-      // A still-rolling, US-led build reaches slow RHD/EU regions weeks after its global midpoint —
-      // ADDITIVE to any laggard nudge (the build is late here regardless of how behind the car is),
-      // so a deep laggard never predicts a fresh build sooner than a moderately-behind car. The tail
-      // is tied to the region's own steady-state lag (~1.8×, capped), pending real AU/NZ arrival
-      // data — owner-tunable. Widen the window to honest weeks (keeping any wider laggard sigma).
-      // The region's rollout of this build hasn't started yet, so even a usually-early adopter waits
-      // for the regional delay — clamp earliness up so extreme-early history can't collapse to "today".
+      // A still-rolling, US-led build reaches slow RHD/EU regions a little later than its global
+      // midpoint — but MAINSTREAM OS builds roll out globally FAST. Real owner-reported arrival data:
+      // AU/NZ received 2026.20.3 within ~a week of the global rollout (some cars already had it), so the
+      // regional tail is ~0.9× the steady-state lag (≈1 week) — NOT the conservative 1.8×/≈3 weeks we
+      // assumed before any real data landed. ADDITIVE to any laggard nudge. Clamp earliness up so an
+      // extreme-early history can't collapse the median to "today" (mild clamp — keep Early Access &
+      // a logged-early history meaningfully ahead), and keep a wide window (rollout order is VIN luck).
       eff = Math.max(eff, 0.4);
-      t0Days += Math.min(45, Math.round(((W.regions[car.market] || {}).osLagDays || 12) * 1.8));
+      t0Days += Math.min(45, Math.round(((W.regions[car.market] || {}).osLagDays || 12) * 0.9));
       t0Sigma = Math.max(t0Sigma || 2.4, 16);
     }
     const lowConf = stale || freshWait;
-    const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, floorDays: 0, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") + (freshWait ? "f" : "") });
+    // freshWait floors the median at ~1 day: the build is rolling NOW but a not-yet-updated car can't
+    // honestly be predicted to land "today" under a low-confidence flag (the window p10 still opens now).
+    const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, floorDays: freshWait ? 1 : 0, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") + (freshWait ? "f" : "") });
     out.targetLabel = v.version; out.kind = lowConf ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = lowConf; out.weeksBehind = weeksBehind; out.freshWait = freshWait;
     // does this particular software update change the FSD version, or leave it untouched? A build only
     // BRINGS new FSD if the region's FSD for this hardware is actively flowing — a mainstream OS build
@@ -164,7 +166,7 @@ export function predictNextOS(car, opts = {}) {
         ? `This is the OS software update — separate from FSD (see below). ${car.market} gets far fewer OS builds than the US/Canada, and they arrive late and on no set schedule, so a car in ${car.market} sitting ~${weeksBehind} weeks behind the newest build it's even eligible for is closer to normal than alarming — it usually reflects how sparsely Tesla ships here, not anything wrong with your car. When the next one does land it may jump you straight to ${v.version}. Because there's no predictable cadence to fit, this is a wide, low-confidence guess — not a date to bank on.`
         : `This is the OS software update — separate from FSD (see below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped the builds since. That usually means the car hasn't been pulling updates (parked offline, sitting on an old branch, or set to decline them). If it starts updating again it could jump to ${v.version} fairly quickly; until then there's no reliable cadence to fit, so this is a wide, low-confidence guess — not a date to bank on.`;
     } else if (freshWait) {
-      out.note = `This is the OS software update — separate from FSD (see below). ${v.version} is still rolling out, and Tesla ships it to the US and Canada first. ${car.market} sits near the back of that queue and usually gets new builds weeks later, on no set schedule — so pinning a confident near-term date here would be fiction. This is a wide, low-confidence guess; when it does land it may jump you straight to ${v.version}. Not a date to bank on.`;
+      out.note = `This is the OS software update — separate from FSD (see below). ${v.version} is actively rolling out to ${car.market} right now — some cars already have it, others are still waiting (Tesla seeds it by VIN, in no fixed order). So this is a wide window, not a precise day: you're most likely in the next wave, but it could land any day now or take a couple more weeks.`;
     }
     return applyEventOverlay(out, opts.events, car, today);
   }
