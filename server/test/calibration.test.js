@@ -35,16 +35,28 @@ test("backtest returns null without enough branch history", () => {
 });
 
 test("backtest scores a regular-cadence history near 100% in-window", () => {
-  // perfectly regular 42-day cadence → every prediction should land in the 80% window
+  // perfectly regular 42-day cadence → every prediction should land in the 80% window. Use 13 branches
+  // so the walk-forward tests ≥8 releases and the coverage % is actually published (it's gated below 8).
+  const hist = [];
+  let d = Date.parse("2025-01-01");
+  for (let i = 0; i < 13; i++) { hist.push({ version: `2025.${i * 4 + 2}`, firstSeen: new Date(d).toISOString().slice(0, 10) }); d += 42 * 86400000; }
+  const bt = backtest(hist);
+  assert.ok(bt, "expected a backtest result");
+  assert.ok(bt.tested >= 8, "should test ≥8 releases so the coverage % is published");
+  assert.equal(bt.targetCoverage, 80);
+  assert.ok(bt.coveragePct >= 80, `regular cadence should be well-calibrated, got ${bt.coveragePct}%`);
+  assert.ok(bt.medianAbsErrorDays <= 3, `regular cadence error should be tiny, got ${bt.medianAbsErrorDays}d`);
+});
+
+test("backtest gates the coverage % to null on too-thin history (but still reports median error)", () => {
+  // 8 branches → only 4 walk-forward trials — too few to headline an 80%-window hit-rate honestly.
   const hist = [];
   let d = Date.parse("2025-01-01");
   for (let i = 0; i < 8; i++) { hist.push({ version: `2025.${i * 6 + 2}`, firstSeen: new Date(d).toISOString().slice(0, 10) }); d += 42 * 86400000; }
   const bt = backtest(hist);
-  assert.ok(bt, "expected a backtest result");
-  assert.ok(bt.tested >= 1, "should test at least one release");
-  assert.equal(bt.targetCoverage, 80);
-  assert.ok(bt.coveragePct >= 80, `regular cadence should be well-calibrated, got ${bt.coveragePct}%`);
-  assert.ok(bt.medianAbsErrorDays <= 3, `regular cadence error should be tiny, got ${bt.medianAbsErrorDays}d`);
+  assert.equal(bt.tested, 4);
+  assert.equal(bt.coveragePct, null, "coverage % must be gated (null) below 8 trials — no thin-data hit-rate");
+  assert.ok(bt.medianAbsErrorDays >= 0, "median error is robust at small n and still reported");
 });
 
 test("backtest coverage + median error are sane bounds", () => {
@@ -56,7 +68,7 @@ test("backtest coverage + median error are sane bounds", () => {
   ];
   const bt = backtest(hist);
   assert.ok(bt && bt.tested > 0);
-  assert.ok(bt.coveragePct >= 0 && bt.coveragePct <= 100);
+  assert.ok(bt.coveragePct == null || (bt.coveragePct >= 0 && bt.coveragePct <= 100), "coverage % is either gated (null) or a sane percentage");
   assert.ok(bt.medianAbsErrorDays >= 0);
 });
 
