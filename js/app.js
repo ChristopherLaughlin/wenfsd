@@ -1720,28 +1720,51 @@
     let gen = (v.model === "Model Y" && y >= 2025) ? "-juniper" : (v.model === "Model 3" && y >= 2024) ? "-highland" : "";
     return `${location.origin}/p/${y}-${modelSlug}${gen}-${region}`;
   }
-  async function shareMyPrediction(pred, btn) {
+  function shareMyPrediction(pred, btn) {
     const v = av(); if (!v || !pred) return;
     track("shared");
     const model = `${v.year} ${v.model}${v.generation ? " " + v.generation : ""}`;
     const date = Predict.fmtDate(pred.medianDate);
     const url = predictionUrl(v);
-    const text = pred.confirmed
-      ? `🚗 My ${model} is getting its next Tesla update (${date}) — confirmed by the car. wenFSD called it. Reckon it's wrong? Call your shot 👉 ${url}`
-      : `🚗 wenFSD predicts my ${model} gets its next Tesla update ~${date}${pred.stale ? "" : ` (80% by ${shortDate(pred.p90Date)})`}. Reckon you'll beat it? Call your shot 👉 ${url}`;
-    const blob = await buildShareCard(pred);
-    const file = blob && typeof File === "function" ? new File([blob], "wenfsd-prediction.png", { type: "image/png" }) : null;
-    try {
-      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: "wenFSD prediction" }); return; }
-      if (navigator.share) { await navigator.share({ text, url }); return; }
-    } catch (e) { if (e && e.name === "AbortError") return; }
-    // no native share: download the card + copy the brag
-    if (blob) {
-      const u = URL.createObjectURL(blob), a = document.createElement("a");
-      a.href = u; a.download = "wenfsd-prediction.png"; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(u), 4000);
-    }
-    copyText(text, btn);
+    const brag = pred.confirmed
+      ? `🚗 My ${model} is getting its next Tesla update (${date}) — confirmed by the car. wenFSD called it. Reckon it's wrong?`
+      : `🚗 wenFSD predicts my ${model} gets its next Tesla update ~${date}${pred.stale ? "" : ` (80% by ${shortDate(pred.p90Date)})`}. Reckon you'll beat it?`;
+    openShareMenu(brag, url);
+  }
+
+  // wenFSD distributes by spreading the LINK (which auto-unfurls the OG prediction card) — not via the
+  // OS share sheet, which on desktop is a junk drawer (AirDrop, Notes, Reminders, Freeform…). Offer only
+  // the channels that actually distribute: X, Facebook, and a copyable link for forums.
+  function openShareMenu(brag, url) {
+    document.querySelectorAll(".share-modal").forEach(e => e.remove());
+    const enc = encodeURIComponent;
+    const xUrl = `https://twitter.com/intent/tweet?text=${enc(brag + " Call your shot 👉")}&url=${enc(url)}`;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`;
+    const el = document.createElement("div");
+    el.className = "vmodal share-modal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Share your prediction");
+    el.innerHTML =
+      `<div class="vmodal-backdrop"></div>` +
+      `<div class="vmodal-card share-card" role="document">` +
+        `<button class="vmodal-close" aria-label="Close">×</button>` +
+        `<div class="share-h">📣 Share your shot</div>` +
+        `<p class="share-sub">Spread the prophecy. Or the cope. 🔮 The link unfurls your prediction card automatically.</p>` +
+        `<div class="share-opts">` +
+          `<button class="share-opt share-x" type="button"><span class="share-ic">𝕏</span><span>Post on X</span></button>` +
+          `<button class="share-opt share-fb" type="button"><span class="share-ic">f</span><span>Share on Facebook</span></button>` +
+          `<button class="share-opt share-copy" type="button"><span class="share-ic">🔗</span><span>Copy link (for forums)</span></button>` +
+        `</div>` +
+      `</div>`;
+    document.body.appendChild(el);
+    const close = () => { document.removeEventListener("keydown", onKey); el.remove(); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    const openWin = (u) => { window.open(u, "_blank", "noopener,noreferrer,width=600,height=540"); close(); };
+    el.querySelector(".vmodal-backdrop").onclick = close;
+    el.querySelector(".vmodal-close").onclick = close;
+    el.querySelector(".share-x").onclick = () => openWin(xUrl);
+    el.querySelector(".share-fb").onclick = () => openWin(fbUrl);
+    el.querySelector(".share-copy").onclick = (e) => copyText(url, e.currentTarget.querySelector("span:last-child"));
+    document.addEventListener("keydown", onKey);
+    const first = el.querySelector(".share-x"); if (first) first.focus();
   }
   const SHARE_LABELS = ["📣 Share my prediction", "📤 Brag responsibly", "🔗 Share this prediction", "📣 Show the doubters"];
 
