@@ -56,7 +56,6 @@ const Charts = (function () {
 
     // your predicted position (median) marker
     const myDay = Math.max(0, Math.min(horizon, pred.median));
-    const myPct = Predict.adoption(myDay - (pred.curve.length ? curveT0(pred) : 0), 0, 0); // not used
     svg.appendChild(el("line", { x1: x(myDay), y1: m.t, x2: x(myDay), y2: m.t + ih, class: "marker" }));
     const dot = el("circle", { cx: x(myDay), cy: y(estPctAt(pred, myDay)), r: 6, class: "markerdot" });
     svg.appendChild(dot);
@@ -66,7 +65,6 @@ const Charts = (function () {
 
     container.appendChild(svg);
   }
-  function curveT0(pred) { return 0; }
   function estPctAt(pred, day) {
     if (!pred.curve || !pred.curve.length) return 50;
     const c = pred.curve[Math.min(pred.curve.length - 1, Math.max(0, Math.round(day)))];

@@ -3,6 +3,7 @@
 // Docs: https://developer.tesla.com/docs/fleet-api
 import crypto from "node:crypto";
 import { config } from "./config.js";
+import * as W from "./wendata.js";
 
 const { tesla } = config;
 
@@ -162,7 +163,10 @@ export async function listVehicles(accessToken) {
 // Returns just the software version string (vehicle_state.car_version), e.g. "2026.20.3 ..."
 export async function getVehicleVersion(accessToken, vin) {
   if (config.mockMode) {
-    const pool = ["2026.14.6", "2026.14.6.11", "2026.20", "2026.20.3"];
+    // Demo connected cars get a REAL, current mainstream build, derived from the canonical model so it
+    // can't drift to a removed version (a hardcoded list here had gone stale — e.g. 2026.14.6.11).
+    const mainstream = W.versions.filter(v => (v.markets || []).length >= 5).map(v => v.version);
+    const pool = mainstream.length ? mainstream : W.versions.map(v => v.version);
     return pool[Math.floor((vin.charCodeAt(4) + Date.now() / 3.6e6) % pool.length)];
   }
   const data = await fleetGet(accessToken, `/api/1/vehicles/${encodeURIComponent(vin)}/vehicle_data?endpoints=${encodeURIComponent("vehicle_state")}`);
