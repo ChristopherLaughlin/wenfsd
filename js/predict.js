@@ -281,6 +281,17 @@ const Predict = (function () {
     const cur = curFsd(car, region);          // the FSD version this car is on now
     const curKey = WEN.fsdKey(cur);
 
+    // ENTITLEMENT — FSD features only ACTIVATE on cars that have FSD purchased or subscribed.
+    // A car with no FSD plan still receives the software builds that carry FSD, but the module
+    // stays dormant. So we don't hand out an "FSD arrives on X" date; we explain it needs a plan.
+    // This must come BEFORE any date-producing path (incl. the gated regulatory window) — never show
+    // a car without FSD an ETA it can't receive.
+    if (car.fsdEntitlement === "none") {
+      const capable = f.next || f.current || "FSD";
+      return { notEntitled: true, current: cur, targetLabel: capable, mode: "notEntitled", branch: "fsd",
+        note: `Your ${car.hardware} in ${car.market} is capable of ${capable}, but FSD only activates with a purchase or subscription. Your software updates still arrive on schedule — the FSD features stay dormant until you add FSD.` };
+    }
+
     // 'gated' — regulators haven't cleared the next FSD for this region. Builds may technically
     // carry the package, but you can't legally receive it yet → a modelled regulatory window.
     if (f.mode === "gated") {
@@ -289,15 +300,6 @@ const Predict = (function () {
       out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd";
       out.note = `${f.next} isn't approved for ${car.market} yet. Likely regulatory window ${shortFsd(addDays(today, a.p10))}–${shortFsd(addDays(today, a.p90))}, after which it ships inside an OS build.`;
       return out;
-    }
-
-    // ENTITLEMENT — FSD features only ACTIVATE on cars that have FSD purchased or subscribed.
-    // A car with no FSD plan still receives the software builds that carry FSD, but the module
-    // stays dormant. So we don't hand out an "FSD arrives on X" date; we explain it needs a plan.
-    if (car.fsdEntitlement === "none") {
-      const capable = f.next || f.current || "FSD";
-      return { notEntitled: true, current: cur, targetLabel: capable, mode: "notEntitled", branch: "fsd",
-        note: `Your ${car.hardware} in ${car.market} is capable of ${capable}, but FSD only activates with a purchase or subscription. Your software updates still arrive on schedule — the FSD features stay dormant until you add FSD.` };
     }
 
     // ── FSD rides INSIDE OS builds, but most builds keep the SAME FSD version ───────────────
@@ -342,10 +344,15 @@ const Predict = (function () {
       // (2) genuinely forthcoming FSD — not in ANY build you're about to get (e.g. US 'v14 Lite' for
       //     HW3). It ships in a LATER build, so it must land on/after your next software update —
       //     never before. Floor the timing at the next-OS midpoint.
-      const floorDays = nextIsConcrete && osNext.daysToMedian != null ? osNext.daysToMedian + 7 : 0;
+      // Floor at the next-OS midpoint so a forthcoming FSD can never land before the build that
+      // carries it — even when that next OS update is PROJECTED (you're on the newest in-region build).
+      // Concrete next-OS keeps a +7 buffer; a projected next-OS (already fuzzy/later) floors at itself.
+      const floorDays = osNext.daysToMedian != null ? osNext.daysToMedian + (nextIsConcrete ? 7 : 0) : 0;
       let t0Days = f.t0 ? daysBetween(today, f.t0) : 30;
       t0Days = Math.max(t0Days, floorDays);
-      const out = mcPredict({ t0Days, k: f.k || 0.1, L: 0.9, earliness: car.earlinessPercentile, t0Sigma: f.t0Sigma || 14, today, seedStr: "FSDfb" + car.market });
+      // floor EVERY sample (not just t0) at the next-OS midpoint: an extreme-early earliness pulls
+      // logit(p)/k strongly negative and would otherwise drag the median before your next OS update.
+      const out = mcPredict({ t0Days, k: f.k || 0.1, L: 0.9, earliness: car.earlinessPercentile, t0Sigma: f.t0Sigma || 14, floorDays, today, seedStr: "FSDfb" + car.market });
       out._t0Days = t0Days; out._k = f.k || 0.1;
       out.targetLabel = f.next; out.current = cur; out.mode = f.mode; out.branch = "fsd"; out.fsdChanges = true;
       out.note = `${f.next} for ${car.hardware} in ${car.market} isn't carried by any build you're about to receive yet — it'll ship in a later OS build, after your next software update.`;

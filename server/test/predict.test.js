@@ -68,6 +68,24 @@ test("a fresh, still-rolling build does NOT promise a slow RHD region a near-ter
   assert.equal(us.freshWait, false, "the US leads rollout — no fresh-build wait");
 });
 
+test("a forthcoming FSD never lands before its OS build — even when the next OS is PROJECTED", () => {
+  // Found by the full permutation sweep: a car already on the newest in-region build gets a PROJECTED
+  // next OS, and a forthcoming FSD (NZ AI4 v14.x) with an early t0 — made worse by an extreme-early
+  // earliness pulling logit(p)/k strongly negative — was predicted to arrive BEFORE the build carrying
+  // it (FSD median in the past). FSD ships inside an OS build, so it can never precede your next update.
+  for (const earliness of [0.05, 0.5, 0.92]) {
+    const car = { market: "New Zealand", hardware: "AI4", installedVersion: "2026.20.3", earliness, earlinessSource: "history" };
+    const os = predictNextOS(car);
+    const fsd = predictNextFSD(car);
+    assert.equal(os.kind, "projected", "car on newest in-region build → projected next OS");
+    if (fsd.medianDate && os.medianDate) {
+      const gap = (new Date(fsd.medianDate) - new Date(os.medianDate)) / 86400000;
+      assert.ok(gap >= -1, `FSD must not precede its OS build (gap ${Math.round(gap)}d, earliness ${earliness})`);
+    }
+    assert.ok(!fsd.medianDate || new Date(fsd.medianDate) >= new Date("2026-06-26"), "FSD median must not be in the past");
+  }
+});
+
 test("AU/NZ HW3 FSD is 'promised' with NO invented date (never delivered)", () => {
   for (const market of ["Australia", "New Zealand"]) {
     const p = predictNextFSD({ market, hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
