@@ -123,6 +123,18 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v12** — An audit/review run (parallel agents scanning security, prediction/parity, honesty, client).
+  The agents were great at coverage but **three of their findings were FALSE POSITIVES**, and acting on
+  one ("seed.js is dead code, delete it") broke the suite — the file is imported and served by the
+  sample-mode `/api/fleet/*` endpoints. Added the rule: **VERIFY EVERY AUDIT/AGENT FINDING against the
+  real code before acting** — especially "X is unused / dead / a leak". For "unused/dead": grep for real
+  USAGE (not just the import) — and on macOS that means `-E` for `a|b` alternation, `-a` because emoji-
+  heavy files (app.js, api.js) are treated as binary and silently suppress matches, and a CONSISTENT cwd
+  (a `cd` in a prior compound command had moved it, so the grep was reading nothing). For "it's a
+  leak/bug": reproduce it (the claimed unbounded `Map` simply did not exist). The genuine wins were the
+  cheap, verifiable ones — a `✓ real` label over sample numbers (#103), a region "current" FSD set to a
+  build that region never receives (#104) — not the scary-sounding ones. Net: 4 real fixes (#103 honesty,
+  #104 data, #105 server hygiene, #106 backend-seed cross-surface sync), 2 findings correctly discarded.
 - **v11** — A deep design/aesthetics run. All three wins were the SAME class — **browser-native defaults
   leaking through the custom dark theme**, invisible to the eye until queried: 9 text inputs rendered as
   white default boxes (the themed rule matched `select,input[type=date]` but the inputs carry no `type`
