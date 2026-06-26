@@ -74,13 +74,13 @@ const WEN = (function () {
   //   approval — {earliestDays,modeDays,latestDays} for 'gated' regions
   //   note     — honest plain-language status for 'promised'/'capped'
   // FSD-on-HW3 reality (mid-2026): FSD (Supervised) v14 ships HW4-only. HW3's only path is the
-  // in-development "v14 Lite" — US FIRST (~end-June 2026); international markets are promised but
-  // Tesla has committed to NO dates (regulatory + RHD validation). AU/NZ HW3 never received FSD
-  // (Supervised) at all and are justifiably skeptical — so we model them as 'promised', not a date.
+  // "v14 Lite" for HW3 is PROMISED, not shipping — Tesla teased a reduced FSD for older hardware
+  // (US first) but committed to NO date anywhere, and every build still ships v12.6.4 to HW3. So we
+  // model ALL regions as 'promised' (no fabricated date) — including the US — until it actually lands.
   const regions = {
     "United States": { osLagDays: 0, drive: "LHD", fsd: {
       AI4: { current: "v14.3.4", next: "v14.4.x", mode: "current", k: 0.16, cadenceDays: 28 },
-      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "rolling", k: 0.10, t0: "2026-06-30" } } },
+      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "Tesla has teased a reduced 'v14 Lite' for HW3 — US first — but committed to no date, and these builds still ship v12.6.4 to HW3 cars. We won't fake a date until it actually lands." } } },
     "Canada": { osLagDays: 3, drive: "LHD", fsd: {
       AI4: { current: "v14.3.2", next: "v14.3.4", mode: "rolling", k: 0.18, t0: "2026-06-26" },
       AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "v14 Lite rolls out in the US first; international markets follow with no committed date, and Tesla has flagged Canada as possibly delayed." } } },
