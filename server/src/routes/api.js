@@ -470,8 +470,15 @@ function sampleGrief(region) {
 // --- creator-only stats (signups, vehicles, regions, visits). Gated by ADMIN_TOKEN. ---
 function adminOk(req) {
   const t = String(req.get("x-admin-token") || "");   // header only — never accept the token in a URL (leaks via logs/referrer/history)
-  if (!config.adminToken || !t || t.length !== config.adminToken.length) return false;
-  try { return crypto.timingSafeEqual(Buffer.from(t), Buffer.from(config.adminToken)); } catch { return false; }
+  if (!config.adminToken || !t) return false;
+  // Hash both sides to fixed-width 32-byte digests before the constant-time compare. This removes the
+  // earlier `t.length !== adminToken.length` early-return, which leaked the token's length via a timing
+  // / control-flow difference — partly defeating timingSafeEqual (which already requires equal length).
+  try {
+    const a = crypto.createHash("sha256").update(t).digest();
+    const b = crypto.createHash("sha256").update(config.adminToken).digest();
+    return crypto.timingSafeEqual(a, b);
+  } catch { return false; }
 }
 // --- admin: rollout-event review + manual override (the human-confirmed gate) ---
 apiRouter.get("/admin/events", ah(async (req, res) => {
