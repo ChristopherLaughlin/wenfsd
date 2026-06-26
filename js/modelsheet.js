@@ -20,24 +20,41 @@
     const lag = region.osLagDays || 0;
     // the build the calculator pre-fills with: newest one your region actually receives
     const inRegion = versions.find(b => (!b.markets || b.markets.includes(market)) && (b.status === "rolling" || b.status === "tapering" || b.status === "mature")) || versions[0];
-    const t0Days = daysBetween(today, inRegion.t0) ;        // days from "today" to that build's rollout midpoint
-    const k = inRegion.k || 0.33;
-    const p = v ? (v.earliness || 0.45) : 0.45;
-    const sigma = 8;                                        // ~normal spread (days); the app fits this per-build
+
+    // Seed the calculator from the ACTUAL in-app prediction so the downloadable model can't drift
+    // from (or contradict) the site — the closed form alone misses the region/staleness/fresh-build
+    // logic, which once made this sheet show a fresh AU build "tomorrow" while the site said weeks out.
+    // We fold the app's effective midpoint (_t0Days) and realised 80% window into the input cells;
+    // tinkering still works, we just start from honest, site-matching values.
+    const p = (v && v.earliness != null) ? v.earliness : 0.45;
+    const car = v
+      ? Object.assign({}, v, { earlinessPercentile: (v.earlinessPercentile != null ? v.earlinessPercentile : p) })
+      : { market, hardware: hw, installedVersion: "2026.14.6", earlinessPercentile: p, earlinessSource: "default" };
+    const real = (typeof Predict !== "undefined" && Predict.predictNextOS) ? Predict.predictNextOS(car, today) : null;
+    const dd = (x) => Math.round((new Date(x) - new Date(today + "T00:00:00Z")) / 86400000);
+    let k, t0Days, sigma, targetVer, lowConf;
+    if (real && real.medianDate && real._t0Days != null) {
+      k = real._k || inRegion.k || 0.33;
+      t0Days = Math.round(real._t0Days - lag);             // so t0 + lag reproduces the app's effective midpoint
+      sigma = Math.max(2, Math.round((dd(real.p90Date) - dd(real.p10Date)) / (2 * 1.2816)));
+      targetVer = real.targetLabel; lowConf = !!real.stale;
+    } else {                                               // fallback if the predictor isn't loaded
+      k = inRegion.k || 0.33; t0Days = daysBetween(today, inRegion.t0); sigma = 8; targetVer = inRegion.version; lowConf = false;
+    }
 
     // ---- Calculator sheet ----
     const logit = (x) => Math.log(x / (1 - x));
-    const offsetCached = r2(logit(p) / k + lag);           // cached value for the offset formula
+    const offsetCached = r2(logit(p) / k + t0Days + lag);  // cached value of the median-offset formula (B12)
     const calc = [
       [B("wenFSD prediction model — change the yellow INPUT cells and watch the date move")],
-      [{ t: "Open in Excel or Google Sheets. This is the real model, simplified to closed form so you can tinker." }],
+      [{ t: "Open in Excel or Google Sheets. This is the real model, simplified to closed form so you can tinker — pre-filled to match exactly what the wenFSD site shows for this car." }],
       [],
       [B("INPUTS"), B("value"), B("what it is")],
       ["Your rollout percentile p (0–1)", p, "where your car sits in each update wave. 0.1 = first wave, 0.9 = last."],
       ["Curve steepness k", k, "how fast this build spreads across the fleet (from the data below)."],
-      ["Build rollout midpoint t0 (days from today)", t0Days, "when this build is ~50% rolled out, relative to today."],
+      ["Effective midpoint t0 (days from today)", t0Days, "when this build reaches its rollout midpoint FOR YOUR REGION — already includes the regional + fresh-build wait the site applies."],
       ["Region lag (days)", lag, market + " runs this many days behind the US seed."],
-      ["Window spread σ (days)", sigma, "Gaussian spread → the 80% confidence window."],
+      ["Window spread σ (days)", sigma, lowConf ? "wide on purpose — this is a low-confidence case (laggard, or a fresh build in a slow region), matching the site." : "Gaussian spread → the 80% confidence window."],
       [],
       [B("OUTPUTS"), B("days from today"), B("date")],
       // column B = days-from-today (numbers); column C = the date string (TEXT of TODAY()+B).
@@ -48,7 +65,10 @@
       ["Latest — p90 (80% window)", F("B12 + 1.2816*B9", r2(offsetCached + 1.2816 * sigma)), F('TEXT(TODAY()+B14,"yyyy-mm-dd")', null)],
       [],
       [{ t: "Formula: arrival = t0 + ln(p / (1 − p)) / k + region_lag.  Band = arrival ± 1.2816·σ (the 10th/90th percentiles of a normal)." }],
-      [{ t: "Prefilled for your car: " + (v ? `${v.year} ${v.model} · ${hw} · ${market}, on build ${inRegion.version}` : `a typical ${market} ${hw} car, build ${inRegion.version}`) + ". Edit any input above." }],
+      lowConf
+        ? [{ t: "⚠️ Low-confidence case: this car is a laggard, or it's waiting on a fresh build in a slow right-hand-drive region, so the site widens the window hard and won't commit to a tight date — hence the large σ. The date is a broad guess, not one to bank on." }]
+        : [{ t: "" }],
+      [{ t: "Prefilled for your car: " + (v ? `${v.year} ${v.model} · ${hw} · ${market}, on build ${v.installedVersion || inRegion.version}` : `a typical ${market} ${hw} car`) + " — next build " + targetVer + ". Edit any input above." }],
     ];
 
     // ---- Builds sheet (live data) ----
