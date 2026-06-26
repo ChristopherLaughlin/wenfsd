@@ -1922,8 +1922,9 @@
     if (scopeEl) scopeEl.textContent = sample ? "— illustrative history" : haveAcc ? "— live, measured" : "— back-tested";
     const tiles = [];
     if (bt) {
-      tiles.push([`${bt.coveragePct}%`, `of ${bt.tested} past releases landed inside our 80% window (target ~80%)`, bt.coveragePct >= 70 && bt.coveragePct <= 92]);
-      tiles.push([`±${bt.medianAbsErrorDays}d`, `median miss between predicted and actual release date`, true]);
+      if (bt.coveragePct != null) tiles.push([`${bt.coveragePct}%`, `of ${bt.tested} past releases landed inside our 80% window (target ~80%)`, bt.coveragePct >= 70 && bt.coveragePct <= 92]);
+      else tiles.push([`${bt.tested}/8`, `back-test warming up — the 80%-window hit-rate appears once we've checked 8+ real branch releases`, false]);
+      if (bt.medianAbsErrorDays != null) tiles.push([`±${bt.medianAbsErrorDays}d`, `median miss between predicted and actual release date`, true]);
     }
     if (haveAcc) tiles.push([`${acc.hitRate}%`, `live per-car hit-rate (${acc.scored} connected prediction${acc.scored === 1 ? "" : "s"} scored)`, true]);
     if (cal && cal.fittedCount > 0) tiles.push([`${cal.fittedCount}`, `build${cal.fittedCount === 1 ? "" : "s"} with k + t0 learned from real install timing (not hand-set priors)`, true]);
@@ -1951,8 +1952,12 @@
     // HEADLINE: walk-forward back-test — did the model's 80% window catch the real release date?
     if (bt) {
       const cal2 = bt.bandFactor ? ` · self-calibrated: window ×${bt.bandFactor} to match real history` : "";
-      tiles.push(["Back-test: 80% window hit-rate", `${bt.coveragePct}%`,
-        `the model's 80% window caught the actual release date in ${bt.coveragePct}% of ${bt.tested} historical branch release${bt.tested === 1 ? "" : "s"} (target ~80%; median miss ±${bt.medianAbsErrorDays}d)${cal2}${sample ? " · illustrative history — live uses real tracker dates" : " · real tracker release history"}`, !haveAcc]);
+      if (bt.coveragePct != null)
+        tiles.push(["Back-test: 80% window hit-rate", `${bt.coveragePct}%`,
+          `the model's 80% window caught the actual release date in ${bt.coveragePct}% of ${bt.tested} historical branch release${bt.tested === 1 ? "" : "s"} (target ~80%; median miss ±${bt.medianAbsErrorDays}d)${cal2}${sample ? " · illustrative history — live uses real tracker dates" : " · real tracker release history"}`, !haveAcc]);
+      else
+        tiles.push(["Back-test: warming up", `${bt.tested}/8`,
+          `we only headline a hit-rate once the walk-forward has checked at least 8 real branch releases — so far ${bt.tested} (median miss ±${bt.medianAbsErrorDays}d)${sample ? " · illustrative history" : ""}.`, false]);
     }
     if (haveAcc) tiles.push(["Per-car accuracy (live)", `${acc.hitRate}%`, `${acc.scored} connected-car prediction${acc.scored === 1 ? "" : "s"} scored vs what actually happened${acc.medianAbsErrorDays != null ? ` · median miss ±${acc.medianAbsErrorDays}d` : ""}`, true]);
     if (c) tiles.push(["Release cadence", `~${c.medianDays}d`, `median between OS branches · ${c.meanDays}±${c.sdDays}d mean · from ${c.branches} real branches`]);

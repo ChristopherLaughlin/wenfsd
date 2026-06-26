@@ -64,6 +64,7 @@ function velocity(series) {
 // ingest (tracker first-seen dates) — no connected cars required. A well-calibrated 80% window
 // should capture the truth ~80% of the time; we publish the number we actually get.
 const Z80 = 1.2816;   // two-sided 80% normal quantile
+const COVERAGE_MIN_N = 8;   // don't headline a back-test hit-rate % until ≥8 walk-forward trials
 export function backtest(versions) {
   const branch = {};
   for (const v of versions || []) {
@@ -101,7 +102,11 @@ export function backtest(versions) {
   }
   return {
     tested, branches: dates.length, targetCoverage: 80,
-    coveragePct: Math.round((inWindow / tested) * 100),
+    // A binary hit-rate over a handful of trials is too noisy to headline as "the model works" (with 4
+    // releases, coverage moves in 25% steps — the sample set's 4 points read as a misleading "50%"). Only
+    // publish the coverage % once the walk-forward has tested enough real branches; below COVERAGE_MIN_N
+    // the UI shows "warming up — N/8". medianAbsErrorDays is more robust at small n, so it's always shown.
+    coveragePct: tested >= COVERAGE_MIN_N ? Math.round((inWindow / tested) * 100) : null,
     medianAbsErrorDays: median(errs),
     bandFactor,   // null until enough history; the client widens/narrows its 80% window by this
   };
