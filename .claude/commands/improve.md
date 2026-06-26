@@ -123,6 +123,18 @@ make the NEXT `/improve` run better. Then:
   encode a check for that class so it's caught up front next time.
 
 ### Loop changelog (newest first)
+- **v14** — A prediction-ENGINE audit (1 agent on calibration/confidence-honesty + my own statistical
+  reproduction). New rule: **verify the proposed FIX is correct, not just that the finding is real — for
+  statistical/calibration changes, check the lever measures the right quantity before wiring it in.** A
+  finding can be REAL while its suggested fix is WRONG: the agent correctly flagged that "80% confidence"
+  rides the *unvalidated* distributed branch, but proposed threading the back-test `bandFactor` into it —
+  which would MIS-apply a branch-*cadence* calibration to a per-car *rollout-timing* window, introducing a
+  real miscalibration to patch an honesty nit. Caught by asking "what does this number actually measure?"
+  (cadence residuals ≠ rollout residuals) → rejected the mis-fix. The cheap, correct wins shipped instead:
+  gate the back-test hit-rate % below 8 trials (a "50%-of-4" headline was meaningless, #111) and scope
+  "High confidence" to the rollout *position*, not the validated *date* (#112). Proved the negatives too —
+  MC sampling sound, the 80% interval a genuine model quantile, the L=0.95-curve-vs-L=1-placement bias
+  ≤2d (negligible), no fabricated accuracy, math/parity unchanged + invariant sweep clean (0/480).
 - **v13** — A dedicated SECURITY audit (3 agents per attack-surface + my own npm-audit/SQL/fs/innerHTML
   scans). Refined v12 into: **for an audit pass, make agents PROVE THE NEGATIVE, not just assert "clean."**
   A surface is only trustworthy-clean when the agent shows a *repro that the defense holds* — e.g. "I
