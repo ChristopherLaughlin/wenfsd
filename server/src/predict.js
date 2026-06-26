@@ -96,7 +96,13 @@ export function predictNextOS(car, opts = {}) {
     return applyEventOverlay(out, opts.events, car, today);
   }
   const myKey = W.verKey(car.installedVersion || "0");
-  const newer = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
+  // HARDWARE OS TRACK: HW3 (AI3) cars ride a SEPARATE, lagging OS branch — Tesla seeds fresh builds to
+  // HW4 first and HW3 picks them up only once they've matured. So HW3 considers only matured/tapering
+  // builds (never the freshest 'rolling' one), which is why its "next" is an older build than an HW4
+  // car in the same region. (FSD already diverges by hardware; the OS branch does too.)
+  const ai3 = car.hardware === "AI3";
+  const osTrackOK = (s) => ai3 ? (s === "mature" || s === "tapering") : (s === "rolling" || s === "tapering" || s === "mature");
+  const newer = versions.filter(v => W.verKey(v.version) > myKey && osTrackOK(v.status) && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
   if (newer.length) {
     const v = newer[0];
     let t0Days = daysBetween(today, v.t0) + delta, eff = earliness, t0Sigma;
@@ -126,7 +132,11 @@ export function predictNextOS(car, opts = {}) {
       // normal arrival + a modest nudge, and express uncertainty by widening hard + low confidence
       // (the wide late tail covers "might be offline for ages"). Don't shove the midpoint months out.
       eff = Math.min(0.8, Math.max(eff, 0.55));
-      t0Days += Math.min(21, Math.round(weeksBehind * 0.6));
+      // Floor the base at 0 BEFORE the nudge: a laggard's target can be a mature build whose midpoint
+      // is already in the PAST (esp. HW3, which rides older matured builds) — without the floor the
+      // nudge can't lift the median off "today", re-collapsing to the NOW bug. A deep laggard won't
+      // pull even an available build instantly, so keep a modest forward median + the wide late tail.
+      t0Days = Math.max(t0Days, 0) + Math.min(21, Math.round(weeksBehind * 0.6));
       t0Sigma = Math.max(18, Math.min(60, Math.round(weeksBehind * 1.6)));
     }
     if (freshWait) {
@@ -140,7 +150,7 @@ export function predictNextOS(car, opts = {}) {
     }
     const lowConf = stale || freshWait;
     const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, floorDays: 0, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") + (freshWait ? "f" : "") });
-    out.targetLabel = v.version; out.kind = lowConf ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = lowConf; out.weeksBehind = weeksBehind; out.freshWait = freshWait;
+    out.targetLabel = v.version; out.kind = lowConf ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = lowConf; out.weeksBehind = weeksBehind; out.freshWait = freshWait; out.hwOlderTrack = ai3;
     // does this particular software update change the FSD version, or leave it untouched?
     out.fsdCurrent = curFsd(car);
     out.fsdInBuild = (v.fsdBuild && v.fsdBuild[car.hardware]) || null;
@@ -151,6 +161,9 @@ export function predictNextOS(car, opts = {}) {
         : `This is the OS software update — separate from FSD (see below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped the builds since. That usually means the car hasn't been pulling updates (parked offline, sitting on an old branch, or set to decline them). If it starts updating again it could jump to ${v.version} fairly quickly; until then there's no reliable cadence to fit, so this is a wide, low-confidence guess — not a date to bank on.`;
     } else if (freshWait) {
       out.note = `This is the OS software update — separate from FSD (see below). ${v.version} is still rolling out, and Tesla ships it to the US and Canada first. ${car.market} sits near the back of that queue and usually gets new builds weeks later, on no set schedule — so pinning a confident near-term date here would be fiction. This is a wide, low-confidence guess; when it does land it may jump you straight to ${v.version}. Not a date to bank on.`;
+    }
+    if (ai3) {
+      out.note = (out.note ? out.note + " " : "") + `Heads up: HW3 (AI3) cars ride a separate, slower OS branch than HW4 — Tesla seeds new builds to HW4 first, so ${v.version} is the newest build YOUR hardware actually receives, a step behind the bleeding-edge HW4 build.`;
     }
     return applyEventOverlay(out, opts.events, car, today);
   }

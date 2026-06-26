@@ -17,7 +17,9 @@ test("a car on an old build (2026.8.3.10) still predicts the newest rolling buil
 });
 
 test("a deep laggard is flagged stale + WIDE, but its median stays near the next wave (not months out)", () => {
-  const lag = predictNextOS({ market: "Australia", hardware: "AI3", installedVersion: "2026.2.6.1", earliness: 0.5, earlinessSource: "default" });
+  // all AI4 so they share one OS track — HW3 now rides a separate (older) build track, so comparing a
+  // HW3 laggard against an HW4 near-current car would compare different builds (see the HW3-track test).
+  const lag = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.2.6.1", earliness: 0.5, earlinessSource: "default" });
   const near = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "default" });
   const veryFar = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2025.20", earliness: 0.5, earlinessSource: "default" });
   assert.equal(lag.stale, true, "a ~18-week-behind car should be flagged stale");
@@ -66,6 +68,26 @@ test("a fresh, still-rolling build does NOT promise a slow RHD region a near-ter
   // the US LEADS the rollout — it must NOT get the fresh-build wait (no false delay for fast markets)
   const us = predictNextOS({ market: "United States", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.5, earlinessSource: "default" });
   assert.equal(us.freshWait, false, "the US leads rollout — no fresh-build wait");
+});
+
+test("HW3 rides a separate, older OS track than HW4 (Tesla forks them by hardware)", () => {
+  // Reported by AU users: an HW3 car was shown the freshest HW4 build. HW3 (AI3) gets fresh builds
+  // later — only once they've matured — so its "next" should be an OLDER build than an HW4 car beside
+  // it, never the freshest still-rolling one.
+  for (const market of ["Australia", "New Zealand", "United States"]) {
+    const hw3 = predictNextOS({ market, hardware: "AI3", installedVersion: "2026.8.3", earliness: 0.5, earlinessSource: "default" });
+    const hw4 = predictNextOS({ market, hardware: "AI4", installedVersion: "2026.8.3", earliness: 0.5, earlinessSource: "default" });
+    assert.equal(hw3.hwOlderTrack, true, `${market} HW3 should be flagged on the older OS track`);
+    if (hw3.kind !== "projected") {
+      const tb = versions.find(v => v.version === hw3.targetLabel);
+      assert.ok(tb && tb.status !== "rolling", `${market} HW3 must not target a still-rolling build (got ${hw3.targetLabel})`);
+    }
+    // HW3's next build must be the same as or OLDER than HW4's next
+    if (hw3.kind !== "projected" && hw4.kind !== "projected") {
+      assert.ok(verKey(hw3.targetLabel) <= verKey(hw4.targetLabel), `${market} HW3 (${hw3.targetLabel}) must not be newer than HW4 (${hw4.targetLabel})`);
+    }
+    assert.match(hw3.note || "", /HW3|separate|older/i);
+  }
 });
 
 test("a forthcoming FSD never lands before its OS build — even when the next OS is PROJECTED", () => {
