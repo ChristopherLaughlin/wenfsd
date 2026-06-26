@@ -305,6 +305,10 @@ if (!config.mockMode) {
     catch (e) { console.error("[alerts cron]", e); }
     try { const { runPushAlerts } = await import("./push.js"); const r = await runPushAlerts(); if (r.sent) console.log("[push]", JSON.stringify(r)); }
     catch (e) { console.error("[push cron]", e); }
+    // catch-all for the resume alarm (the immediate trigger on confirm is the main path; this sweeps
+    // up anyone who confirmed their email mid-pause, within the 7-day fresh-resume window)
+    try { const { runResumeAlerts } = await import("./subscribers.js"); const r = await runResumeAlerts(); if (r.sent) console.log("[resume-alerts]", JSON.stringify(r)); }
+    catch (e) { console.error("[resume cron]", e); }
   });
   if (config.allowLiveSources) {
     cron.schedule("17 */6 * * *", async () => {

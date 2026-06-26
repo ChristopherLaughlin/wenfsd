@@ -239,7 +239,11 @@ apiRouter.post("/report", ah(async (req, res) => {
     if (corr && corr.rows[0].n >= 2) {
       const already = await query(`SELECT 1 FROM rollout_events WHERE type='resume' AND region=$1 AND status='confirmed' LIMIT 1`, [region]).catch(() => null);
       await query(`UPDATE rollout_events SET status='confirmed', confirmed_at=now() WHERE type='resume' AND region=$1 AND status='pending'`, [region]).catch(() => {});
-      if (!(already && already.rowCount)) notifyOwnerOfPending({ type: "resume", version: null, region, reason: `Auto-unpaused: ${corr.rows[0].n} owners independently report the rollout has resumed in ${region}. Predictions are live again. If that's wrong, re-pause it in /admin.`, source: "auto-resume" }).catch(() => {});
+      if (!(already && already.rowCount)) {
+        notifyOwnerOfPending({ type: "resume", version: null, region, reason: `Auto-unpaused: ${corr.rows[0].n} owners independently report the rollout has resumed in ${region}. Predictions are live again. If that's wrong, re-pause it in /admin.`, source: "auto-resume" }).catch(() => {});
+        // THE moment the killer hook fires: ping everyone who was waiting in this region, right now.
+        import("../subscribers.js").then(m => m.runResumeAlerts()).catch(() => {});
+      }
     }
   }
   res.json({ ok: true });   // generic success — we don't expose whether/when it goes live (anti-manipulation)
@@ -502,6 +506,13 @@ apiRouter.patch("/admin/events/:id", ah(async (req, res) => {   // confirm / dis
   if (!Number.isInteger(id)) return res.status(400).json({ error: "bad id" });
   if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
   await query(`UPDATE rollout_events SET status=$1, confirmed_at=CASE WHEN $1='confirmed' THEN now() ELSE confirmed_at END WHERE id=$2`, [next, id]);
+  // if an admin just confirmed a RESUME, fire the resume alarm immediately (don't wait for the cron)
+  if (next === "confirmed") {
+    const ev = (await query(`SELECT type FROM rollout_events WHERE id=$1`, [id]).catch(() => null));
+    if (ev && ev.rows[0] && (ev.rows[0].type === "resume" || ev.rows[0].type === "accelerate")) {
+      import("../subscribers.js").then(m => m.runResumeAlerts()).catch(() => {});
+    }
+  }
   res.json({ ok: true });
 }));
 
