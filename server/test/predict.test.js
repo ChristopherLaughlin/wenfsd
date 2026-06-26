@@ -70,23 +70,17 @@ test("a fresh, still-rolling build does NOT promise a slow RHD region a near-ter
   assert.equal(us.freshWait, false, "the US leads rollout — no fresh-build wait");
 });
 
-test("HW3 rides a separate, older OS track than HW4 (Tesla forks them by hardware)", () => {
-  // Reported by AU users: an HW3 car was shown the freshest HW4 build. HW3 (AI3) gets fresh builds
-  // later — only once they've matured — so its "next" should be an OLDER build than an HW4 car beside
-  // it, never the freshest still-rolling one.
-  for (const market of ["Australia", "New Zealand", "United States"]) {
-    const hw3 = predictNextOS({ market, hardware: "AI3", installedVersion: "2026.8.3", earliness: 0.5, earlinessSource: "default" });
-    const hw4 = predictNextOS({ market, hardware: "AI4", installedVersion: "2026.8.3", earliness: 0.5, earlinessSource: "default" });
-    assert.equal(hw3.hwOlderTrack, true, `${market} HW3 should be flagged on the older OS track`);
-    if (hw3.kind !== "projected") {
-      const tb = versions.find(v => v.version === hw3.targetLabel);
-      assert.ok(tb && tb.status !== "rolling", `${market} HW3 must not target a still-rolling build (got ${hw3.targetLabel})`);
-    }
-    // HW3's next build must be the same as or OLDER than HW4's next
-    if (hw3.kind !== "projected" && hw4.kind !== "projected") {
-      assert.ok(verKey(hw3.targetLabel) <= verKey(hw4.targetLabel), `${market} HW3 (${hw3.targetLabel}) must not be newer than HW4 (${hw4.targetLabel})`);
-    }
-    assert.match(hw3.note || "", /HW3|separate|older/i);
+test("HW3 and HW4 get the SAME OS build (software version is hardware-agnostic; only FSD differs)", () => {
+  // Reality check (June 2026): mainstream OS builds like 2026.20.3 reach BOTH HW3 and HW4 — the
+  // hardware split is entirely in the FSD version (HW3 capped at v12.6.4), NOT the OS build number.
+  // (This reverts an earlier wrong assumption that HW3 rides an older OS track.)
+  for (const market of ["Australia", "New Zealand", "United States", "Europe"]) {
+    const hw3 = predictNextOS({ market, hardware: "AI3", installedVersion: "2026.2.6.5", earliness: 0.5, earlinessSource: "default" });
+    const hw4 = predictNextOS({ market, hardware: "AI4", installedVersion: "2026.2.6.5", earliness: 0.5, earlinessSource: "default" });
+    assert.equal(hw3.targetLabel, hw4.targetLabel, `${market}: HW3 and HW4 must get the same OS build`);
+    assert.equal(hw3.hwOlderTrack, undefined, "no hardware OS-track flag anymore");
+    // a mainstream OS build must never claim to bump HW3's FSD (HW3 is capped at v12.6.4)
+    assert.equal(hw3.bringsNewFsd, false, `${market}: an OS build must not bump capped HW3 FSD`);
   }
 });
 
@@ -280,12 +274,16 @@ test("a confirmed RESUME event AUTO-UNPAUSES the AU FSD hold (no manual step)", 
   assert.equal(predictNextFSD(car, { events: [{ type: "resume", region: "Australia", version: "2026.20.3" }] }).paused, true);
 });
 
-test("predictNextOS reports whether the next software build changes FSD", () => {
-  const bumps = predictNextOS(auAI4); // v13.2.9 → next build carries v14.3.4
+test("predictNextOS reports whether the next software build changes FSD (only when FSD is flowing)", () => {
+  // NZ AI4 is actively rolling v14 (not paused), so a build carrying newer FSD DOES bump it.
+  const bumps = predictNextOS(nzAI4); // v13.2.9 → next build carries v14.3.4
   assert.equal(bumps.bringsNewFsd, true);
   assert.match(bumps.fsdInBuild, /^v14/);
-  const maint = predictNextOS({ market: "Australia", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4", earlinessSource: "default" });
+  const maint = predictNextOS({ market: "New Zealand", hardware: "AI4", installedVersion: "2026.14.6.11", fsdVersion: "v14.3.4", earlinessSource: "default" });
   assert.equal(maint.bringsNewFsd, false, "a same-FSD build must not claim to bring new FSD");
+  // AU AI4 is PAUSED — a mainstream OS build must NOT claim to bump its FSD even though the build carries v14
+  const paused = predictNextOS(auAI4);
+  assert.equal(paused.bringsNewFsd, false, "a paused-FSD region's OS build must not claim to bring FSD");
 });
 
 test("EU HW3 FSD is 'promised' (undelivered, no date) — not a fabricated ETA", () => {

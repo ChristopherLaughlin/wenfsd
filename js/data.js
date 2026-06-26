@@ -6,7 +6,7 @@
  * Seeded from mid-2026 tracker snapshots + public FSD rollout reporting; tune freely.
  */
 const WEN = (function () {
-  const today = "2026-06-21";
+  const today = "2026-06-26";
 
   const carPreset = {
     model: "Model Y (Juniper)", year: 2026, hardware: "AI4",
@@ -35,31 +35,41 @@ const WEN = (function () {
   // + RHD validation means they skip many interim builds and jump between majors). When a build
   // omits a region, that region's "previous/next build" is computed from ITS OWN path, not the
   // global list. Region keys must match `regions` below.
+  // Builds in circulation as of late June 2026 (sourced from notateslaapp / Teslascope / TeslaFi /
+  // Tessie public trackers). TWO kinds of build live here, and conflating them is the classic mistake:
+  //   • MAINSTREAM OS builds (2026.20.x) — feature/security updates (parental controls, Grok, dashcam
+  //     encryption). They go to EVERY market and BOTH HW3 + HW4, and they do NOT change your FSD version.
+  //   • FSD-carrying builds — region-specific numbers for the same FSD version because of RHD/regulatory
+  //     forks: North America 2026.14.6.x (v14.3.4), Oceania 2026.16.6 (v14.3.3), Europe 2026.17.5
+  //     (v14.2.2.6). These are HW4-only; HW3 stays on v12.6.4.
+  // So the OS "next build" is REGION-driven (hardware-agnostic); the FSD version is HARDWARE + REGION
+  // driven (see `regions` below). fsdBuild here is the FSD a build CARRIES; whether you actually receive
+  // that FSD is gated by your region's FSD status (a paused/gated region won't get it via a mainstream build).
   const versions = [
-    { version: "2026.20.4", firstSeen: "2026-06-19", fleetPct: 3.2, status: "rolling", branch: "standard",
-      k: 0.30, t0: "2026-06-30", fsdBuild: { AI4: "v14.3.5", AI3: "v12.6.4" },
+    { version: "2026.20.3", firstSeen: "2026-06-09", fleetPct: 37.0, status: "rolling", branch: "standard",
+      k: 0.34, t0: "2026-06-22", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
+      markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
+      notes: "Most widely rolled-out build (~37% of the fleet). Mainstream OS update — parental controls, Grok assistant, encrypted Dashcam. Reaches every market and both HW3 + HW4; it does NOT change your FSD version." },
+    { version: "2026.20", firstSeen: "2026-05-30", fleetPct: 13.9, status: "tapering", branch: "standard",
+      k: 0.31, t0: "2026-06-10", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
+      markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
+      notes: "The .20 base build (rolled Europe-first, then North America). Superseded by 2026.20.3 for most cars." },
+    { version: "2026.17.5", firstSeen: "2026-06-14", fleetPct: 1.4, status: "rolling", branch: "standard",
+      k: 0.12, t0: "2026-06-24", fsdBuild: { AI4: "v14.2.2.6", AI3: "—" },
+      markets: ["Europe"],
+      notes: "Europe's FSD (Supervised) build — carries FSD v14.2.2.6 (HW4). EU sits a step behind North America on the FSD branch due to regulatory approval." },
+    { version: "2026.16.6", firstSeen: "2026-06-19", fleetPct: 0.2, status: "rolling", branch: "standard",
+      k: 0.10, t0: "2026-06-22", fsdBuild: { AI4: "v14.3.3", AI3: "—" },
+      markets: ["Australia", "New Zealand"],
+      notes: "Oceania's FSD (Supervised) build — carried FSD v14.3.3 (HW4) to the first AU/NZ cars around 19 Jun, before Tesla paused the rollout. RHD-specific; HW4 only." },
+    { version: "2026.14.6.10", firstSeen: "2026-06-13", fleetPct: 6.0, status: "mature", branch: "standard",
+      k: 0.33, t0: "2026-06-16", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
       markets: ["United States", "Canada"],
-      notes: "Fresh North-America-only point release. Europe/AU/NZ won't see this one — they wait for the next broad wave." },
-    { version: "2026.20.3", firstSeen: "2026-06-17", fleetPct: 9.8, status: "rolling", branch: "standard",
-      k: 0.34, t0: "2026-06-27", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
+      notes: "North America's FSD (Supervised) build — carries FSD v14.3.4 (HW4), the newest FSD branch. HW3 cars on it stay on v12.6.4." },
+    { version: "2026.2.6.5", firstSeen: "2026-04-18", fleetPct: 7.5, status: "legacy", branch: "standard",
+      k: 0.30, t0: "2026-04-28", fsdBuild: { AI4: "v13.2.9", AI3: "v12.6.4" },
       markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
-      notes: "The broad v14 wave — the build that eventually reaches every market. Dashcam Viewer, charging UI, Sentry power tuning." },
-    { version: "2026.20", firstSeen: "2026-06-10", fleetPct: 6.1, status: "tapering", branch: "standard",
-      k: 0.31, t0: "2026-06-20", fsdBuild: { AI4: "v14.3.2", AI3: "v12.6.4" },
-      markets: ["United States", "Canada"],
-      notes: "Initial .20 branch — North America only. RHD/EU markets skipped straight to 2026.20.3." },
-    { version: "2026.14.6.11", firstSeen: "2026-06-05", fleetPct: 24.4, status: "mature", branch: "standard",
-      k: 0.36, t0: "2026-06-12", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
-      markets: ["United States", "Canada", "Australia"],
-      notes: "Point fix on the .14.6 branch — shipped to NA + Australia; Europe & NZ skipped it." },
-    { version: "2026.14.6", firstSeen: "2026-05-22", fleetPct: 35.7, status: "mature", branch: "standard",
-      k: 0.33, t0: "2026-06-01", fsdBuild: { AI4: "v13.2.9", AI3: "v12.6.4" },
-      markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
-      notes: "Global build. Most-installed in the AU fleet — likely your current version." },
-    { version: "2026.14.2", firstSeen: "2026-05-08", fleetPct: 11.3, status: "legacy", branch: "standard",
-      k: 0.30, t0: "2026-05-18", fsdBuild: { AI4: "v13.2.8", AI3: "v12.6.3" },
-      markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
-      notes: "Older global build. Tapering everywhere as cars move up." },
+      notes: "Older global build still common on cars that update slowly. Pre-v14 for HW4 (v13.2.9)." },
   ];
 
   // ---- Region model: OS lag + per-hardware FSD status ----
@@ -80,58 +90,56 @@ const WEN = (function () {
   const regions = {
     "United States": { osLagDays: 0, drive: "LHD", fsd: {
       AI4: { current: "v14.3.4", next: "v14.4.x", mode: "current", k: 0.16, cadenceDays: 28 },
-      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "Tesla has teased a reduced 'v14 Lite' for HW3 — US first — but committed to no date, and these builds still ship v12.6.4 to HW3 cars. We won't fake a date until it actually lands." } } },
+      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "HW3 is capped at FSD v12.6.4. Tesla has teased a reduced 'v14 Lite' for HW3 — US first, targeted for around late June 2026 — but committed to no firm date, and these builds still ship v12.6.4. We won't fake a date until it actually lands." } } },
     "Canada": { osLagDays: 3, drive: "LHD", fsd: {
-      AI4: { current: "v14.3.2", next: "v14.3.4", mode: "rolling", k: 0.18, t0: "2026-06-26" },
-      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "v14 Lite rolls out in the US first; international markets follow with no committed date, and Tesla has flagged Canada as possibly delayed." } } },
+      AI4: { current: "v14.3.3", next: "v14.3.4", mode: "rolling", k: 0.18, t0: "2026-06-26" },
+      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "HW3 is capped at FSD v12.6.4. v14 Lite rolls out in the US first; international markets follow with no committed date." } } },
     "Europe": { osLagDays: 9, drive: "LHD", fsd: {
-      AI4: { current: "v13.2.8", next: "v14.x", mode: "gated", approval: { earliestDays: 25, modeDays: 90, latestDays: 220 }, k: 0.09 },
+      AI4: { current: "v14.2.2.6", next: "v14.3.x", mode: "gated", approval: { earliestDays: 20, modeDays: 70, latestDays: 180 }, k: 0.09 },
       AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) never shipped to HW3 in Europe. v14 Lite is promised internationally, but EU regulators impose the strictest automated-steering limits and Tesla has given no committed date." } } },
     "Australia": { osLagDays: 12, drive: "RHD", fsd: {
-      AI4: { current: "v13.2.9", next: "v14.x", mode: "early", firstSeen: "2026-06-09", fleetPct: 18, k: 0.11, t0: "2026-06-23", t0Sigma: 6, newDeliveryFirst: true, existingFleetDelayDays: 55, existingFleetSigma: 21, paused: true, pausedSince: "2026-06-23", pauseNote: "FSD (Supervised) v14 started reaching AU HW4 cars in June 2026, then Tesla put the rollout on hold (official messaging + widespread owner reports). No committed resume date — including the many new Model Y / Model Y L deliveries still waiting. We've frozen the estimate rather than show a date that no longer holds. It un-freezes automatically once enough owners report it rolling again." },
+      AI4: { current: "v13.2.9", next: "v14.3.3", mode: "early", firstSeen: "2026-06-19", fleetPct: 1, k: 0.11, t0: "2026-06-22", t0Sigma: 6, newDeliveryFirst: true, existingFleetDelayDays: 55, existingFleetSigma: 21, paused: true, pausedSince: "2026-06-21", pauseNote: "FSD (Supervised) v14.3.3 began reaching AU HW4 cars around 19 June 2026 via build 2026.16.6 — then, after only a small number of cars got it, Tesla paused the rollout. No committed resume date (new Model Y / Model Y L deliveries are still waiting too). We've frozen the estimate rather than show a date that no longer holds; it un-freezes automatically once enough owners report it rolling again." },
       AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in Australia. v14 Lite for older hardware is promised, but it's US-first and right-hand-drive markets need extra validation + regulatory sign-off — Tesla has committed to no date. Owners are right to be skeptical." } } },
     "New Zealand": { osLagDays: 14, drive: "RHD", fsd: {
-      AI4: { current: "v13.2.9", next: "v14.x", mode: "early", firstSeen: "2026-06-19", fleetPct: 9, k: 0.10, t0: "2026-07-01", t0Sigma: 7, newDeliveryFirst: true, existingFleetDelayDays: 60, existingFleetSigma: 24 },
+      AI4: { current: "v13.2.9", next: "v14.3.3", mode: "early", firstSeen: "2026-06-19", fleetPct: 0.5, k: 0.10, t0: "2026-06-24", t0Sigma: 7, newDeliveryFirst: true, existingFleetDelayDays: 60, existingFleetSigma: 24 },
       AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in New Zealand. v14 Lite is promised internationally but US-first, with no committed RHD/NZ date. Skepticism warranted." } } },
   };
 
   // Release notes per version (fleetctrl-style changelog). In real mode these are
   // ingested + merged from the external trackers; this is the seed/offline copy.
   const releaseNotes = {
-    "2026.20.4": { date: "2026-06-19", regions: ["US", "Canada"], fsd: "v14.3.5 (HW4)", source: "Teslascope",
+    "2026.20.3": { date: "2026-06-09", regions: ["Global"], fsd: "unchanged", source: "notateslaapp + Teslascope",
       items: [
-        { tag: "FSD", text: "FSD (Supervised) v14.3.5 for HW4 — North America only; refined merges & roundabout handling" },
-        { tag: "Fix", text: "Hotfix for a charging-session display glitch on 2026.20.3" },
+        { tag: "OS", text: "Mainstream update (most-installed build, ~37% of the fleet). Does NOT change your FSD version." },
+        { tag: "Safety", text: "Parental Controls — block Browser, Theater & Arcade (Controls › Safety › Parental Controls)" },
+        { tag: "Privacy", text: "Dashcam clips are now encrypted on USB — only your car can view them" },
+        { tag: "AI", text: "Grok assistant (xAI) in the App Launcher / long-press voice / “Hey Grok”" },
+        { tag: "Fix", text: "Point fixes on the .20 branch; blind-spot warning while parked" },
       ] },
-    "2026.20.3": { date: "2026-06-17", regions: ["US", "Europe", "Down Under"], fsd: "v14.3.4 (HW4)", source: "FleetCtrl + Teslascope",
+    "2026.20": { date: "2026-05-30", regions: ["Global"], fsd: "unchanged", source: "notateslaapp",
       items: [
-        { tag: "FSD", text: "FSD (Supervised) v14.3.4 for HW4 — smoother lane changes, fewer interventions" },
-        { tag: "Dashcam", text: "Dashcam Viewer timeline scrubbing & clip export" },
-        { tag: "Charging", text: "Redesigned charging stats with cost-per-session breakdown" },
-        { tag: "Sentry", text: "Sentry Mode power-draw optimisation (lower vampire drain)" },
+        { tag: "OS", text: "The .20 base build — rolled Europe-first, then North America. Feature/security update, FSD unchanged." },
+        { tag: "AI", text: "Grok assistant introduced" },
+        { tag: "Privacy", text: "Encrypted Dashcam footage" },
       ] },
-    "2026.20": { date: "2026-06-10", regions: ["US", "Europe"], fsd: "v14.3.2 (HW4)", source: "FleetCtrl",
+    "2026.17.5": { date: "2026-06-14", regions: ["Europe"], fsd: "v14.2.2.6 (HW4)", source: "notateslaapp",
       items: [
-        { tag: "FSD", text: "FSD (Supervised) v14.3.2 for HW4 — initial v14 branch" },
-        { tag: "Nav", text: "New trip planner with smarter charging stops" },
-        { tag: "Fix", text: "Bluetooth reconnection stability fixes" },
+        { tag: "FSD", text: "FSD (Supervised) v14.2.2.6 for HW4 — Europe's FSD branch sits behind North America pending regulatory approval" },
       ] },
-    "2026.14.6.11": { date: "2026-06-05", regions: ["US", "Down Under"], fsd: "v14.3.4 (HW4)", source: "Teslascope",
+    "2026.16.6": { date: "2026-06-19", regions: ["Australia", "New Zealand"], fsd: "v14.3.3 (HW4)", source: "Tesla Oracle + notateslaapp",
       items: [
-        { tag: "FSD", text: "FSD v14.3.4 bundled for HW4 on the .14.6 branch" },
-        { tag: "Nav", text: "Navigation reliability improvements" },
-        { tag: "Fix", text: "Point fix addressing media playback dropouts" },
+        { tag: "FSD", text: "FSD (Supervised) v14.3.3 for HW4 — Oceania's first v14 build (RHD). Reached a small number of cars before Tesla paused the rollout." },
       ] },
-    "2026.14.6": { date: "2026-05-22", regions: ["Global"], fsd: "v13.2.9 (HW4)", source: "TeslaFi",
+    "2026.14.6.10": { date: "2026-06-13", regions: ["United States", "Canada"], fsd: "v14.3.4 (HW4)", source: "Tesla Oracle + notateslaapp",
       items: [
-        { tag: "FSD", text: "FSD v13.2.9 for HW4" },
-        { tag: "Safety", text: "Blind Spot camera image improvements" },
-        { tag: "UI", text: "Refreshed media player interface" },
+        { tag: "FSD", text: "FSD (Supervised) v14.3.4 for HW4 — rebuilt AI compiler (MLIR), ~20% faster reaction time" },
+        { tag: "FSD", text: "Actually Smart Summon for Cybertruck; parking options shown on the map at your destination" },
+        { tag: "Fun", text: "Celebratory confetti when you hit an FSD streak milestone" },
       ] },
-    "2026.14.2": { date: "2026-05-08", regions: ["Global"], fsd: "v13.2.8 (HW4)", source: "TeslaFi",
+    "2026.2.6.5": { date: "2026-04-18", regions: ["Global"], fsd: "v13.2.9 (HW4)", source: "TeslaFi",
       items: [
-        { tag: "FSD", text: "FSD v13.2.8 for HW4" },
-        { tag: "UI", text: "Minor UI polish and localisation fixes" },
+        { tag: "FSD", text: "FSD v13.2.9 for HW4 (pre-v14)" },
+        { tag: "UI", text: "Older global build, still common on slow-updating cars" },
       ] },
   };
 
@@ -158,18 +166,18 @@ const WEN = (function () {
     { version: "2026.2",  firstSeen: "2026-01-19" },
     { version: "2026.8",  firstSeen: "2026-03-09" },
     { version: "2026.14", firstSeen: "2026-05-08" },
-    { version: "2026.20", firstSeen: "2026-06-10" },
+    { version: "2026.20", firstSeen: "2026-05-30" },
   ];
 
   const feedSeeds = [
     { region: "Sydney, AU", model: "Model Y Juniper", hw: "AI4", from: "2026.14.6", to: "2026.20.3" },
-    { region: "Melbourne, AU", model: "Model 3 Highland", hw: "AI4", from: "2026.14.6.11", to: "2026.20.3" },
-    { region: "Brisbane, AU", model: "Model Y Juniper", hw: "AI4", from: "2026.14.6", to: "2026.14.6.11" },
-    { region: "Perth, AU", model: "Model S", hw: "AI3", from: "2026.14.2", to: "2026.14.6" },
-    { region: "Auckland, NZ", model: "Model Y Juniper", hw: "AI4", from: "2026.14.6", to: "2026.20" },
+    { region: "Melbourne, AU", model: "Model 3 Highland", hw: "AI4", from: "2026.2.6.5", to: "2026.20.3" },
+    { region: "Brisbane, AU", model: "Model Y Juniper", hw: "AI4", from: "2026.16.6", to: "2026.20.3" },
+    { region: "Perth, AU", model: "Model S", hw: "AI3", from: "2026.2.6.5", to: "2026.20" },
+    { region: "Auckland, NZ", model: "Model Y Juniper", hw: "AI4", from: "2026.14.6", to: "2026.16.6" },
     { region: "Adelaide, AU", model: "Model 3", hw: "AI4", from: "2026.20", to: "2026.20.3" },
-    { region: "Canberra, AU", model: "Model Y Juniper", hw: "AI4", from: "2026.14.6.11", to: "2026.20.3" },
-    { region: "Gold Coast, AU", model: "Model X", hw: "AI3", from: "2026.14.2", to: "2026.14.6.11" },
+    { region: "Canberra, AU", model: "Model Y Juniper", hw: "AI3", from: "2026.2.6.5", to: "2026.20.3" },
+    { region: "Gold Coast, AU", model: "Model X", hw: "AI3", from: "2026.14.6", to: "2026.20" },
   ];
 
   const stats = { carsTracked: 18432, auCars: 6207, updatesLogged: 312395, versionsTracked: 824, releases2026: 58 };

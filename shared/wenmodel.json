@@ -1,6 +1,6 @@
 {
   "_comment": "Canonical wenFSD data model. The server loads this directly; the client (js/data.js) is checked against it by server/test/parity.test.js so the two can't silently drift.",
-  "today": "2026-06-21",
+  "today": "2026-06-26",
   "earlyAccessShift": -0.3,
   "versionHistory": [
     { "version": "2025.26", "firstSeen": "2025-07-14" },
@@ -10,31 +10,17 @@
     { "version": "2026.2",  "firstSeen": "2026-01-19" },
     { "version": "2026.8",  "firstSeen": "2026-03-09" },
     { "version": "2026.14", "firstSeen": "2026-05-08" },
-    { "version": "2026.20", "firstSeen": "2026-06-10" }
+    { "version": "2026.20", "firstSeen": "2026-05-30" }
   ],
   "versions": [
     {
-      "version": "2026.20.4",
-      "firstSeen": "2026-06-19",
-      "fleetPct": 3.2,
-      "status": "rolling",
-      "branch": "standard",
-      "k": 0.3,
-      "t0": "2026-06-30",
-      "fsdBuild": {
-        "AI4": "v14.3.5",
-        "AI3": "v12.6.4"
-      },
-      "markets": ["United States", "Canada"]
-    },
-    {
       "version": "2026.20.3",
-      "firstSeen": "2026-06-17",
-      "fleetPct": 9.8,
+      "firstSeen": "2026-06-09",
+      "fleetPct": 37.0,
       "status": "rolling",
       "branch": "standard",
       "k": 0.34,
-      "t0": "2026-06-27",
+      "t0": "2026-06-22",
       "fsdBuild": {
         "AI4": "v14.3.4",
         "AI3": "v12.6.4"
@@ -43,57 +29,71 @@
     },
     {
       "version": "2026.20",
-      "firstSeen": "2026-06-10",
-      "fleetPct": 6.1,
+      "firstSeen": "2026-05-30",
+      "fleetPct": 13.9,
       "status": "tapering",
       "branch": "standard",
       "k": 0.31,
-      "t0": "2026-06-20",
-      "fsdBuild": {
-        "AI4": "v14.3.2",
-        "AI3": "v12.6.4"
-      },
-      "markets": ["United States", "Canada"]
-    },
-    {
-      "version": "2026.14.6.11",
-      "firstSeen": "2026-06-05",
-      "fleetPct": 24.4,
-      "status": "mature",
-      "branch": "standard",
-      "k": 0.36,
-      "t0": "2026-06-12",
+      "t0": "2026-06-10",
       "fsdBuild": {
         "AI4": "v14.3.4",
-        "AI3": "v12.6.4"
-      },
-      "markets": ["United States", "Canada", "Australia"]
-    },
-    {
-      "version": "2026.14.6",
-      "firstSeen": "2026-05-22",
-      "fleetPct": 35.7,
-      "status": "mature",
-      "branch": "standard",
-      "k": 0.33,
-      "t0": "2026-06-01",
-      "fsdBuild": {
-        "AI4": "v13.2.9",
         "AI3": "v12.6.4"
       },
       "markets": ["United States", "Canada", "Europe", "Australia", "New Zealand"]
     },
     {
-      "version": "2026.14.2",
-      "firstSeen": "2026-05-08",
-      "fleetPct": 11.3,
+      "version": "2026.17.5",
+      "firstSeen": "2026-06-14",
+      "fleetPct": 1.4,
+      "status": "rolling",
+      "branch": "standard",
+      "k": 0.12,
+      "t0": "2026-06-24",
+      "fsdBuild": {
+        "AI4": "v14.2.2.6",
+        "AI3": "—"
+      },
+      "markets": ["Europe"]
+    },
+    {
+      "version": "2026.16.6",
+      "firstSeen": "2026-06-19",
+      "fleetPct": 0.2,
+      "status": "rolling",
+      "branch": "standard",
+      "k": 0.1,
+      "t0": "2026-06-22",
+      "fsdBuild": {
+        "AI4": "v14.3.3",
+        "AI3": "—"
+      },
+      "markets": ["Australia", "New Zealand"]
+    },
+    {
+      "version": "2026.14.6.10",
+      "firstSeen": "2026-06-13",
+      "fleetPct": 6.0,
+      "status": "mature",
+      "branch": "standard",
+      "k": 0.33,
+      "t0": "2026-06-16",
+      "fsdBuild": {
+        "AI4": "v14.3.4",
+        "AI3": "v12.6.4"
+      },
+      "markets": ["United States", "Canada"]
+    },
+    {
+      "version": "2026.2.6.5",
+      "firstSeen": "2026-04-18",
+      "fleetPct": 7.5,
       "status": "legacy",
       "branch": "standard",
       "k": 0.3,
-      "t0": "2026-05-18",
+      "t0": "2026-04-28",
       "fsdBuild": {
-        "AI4": "v13.2.8",
-        "AI3": "v12.6.3"
+        "AI4": "v13.2.9",
+        "AI3": "v12.6.4"
       },
       "markets": ["United States", "Canada", "Europe", "Australia", "New Zealand"]
     }
@@ -114,7 +114,7 @@
           "current": "v12.6.4",
           "next": "v14 Lite",
           "mode": "promised",
-          "note": "Tesla has teased a reduced 'v14 Lite' for HW3 — US first — but committed to no date, and these builds still ship v12.6.4 to HW3 cars. We won't fake a date until it actually lands."
+          "note": "HW3 is capped at FSD v12.6.4. Tesla has teased a reduced 'v14 Lite' for HW3 — US first, targeted for around late June 2026 — but committed to no firm date, and these builds still ship v12.6.4. We won't fake a date until it actually lands."
         }
       }
     },
@@ -123,7 +123,7 @@
       "drive": "LHD",
       "fsd": {
         "AI4": {
-          "current": "v14.3.2",
+          "current": "v14.3.3",
           "next": "v14.3.4",
           "mode": "rolling",
           "k": 0.18,
@@ -133,7 +133,7 @@
           "current": "v12.6.4",
           "next": "v14 Lite",
           "mode": "promised",
-          "note": "v14 Lite rolls out in the US first; international markets follow with no committed date, and Tesla has flagged Canada as possibly delayed."
+          "note": "HW3 is capped at FSD v12.6.4. v14 Lite rolls out in the US first; international markets follow with no committed date."
         }
       }
     },
@@ -142,13 +142,13 @@
       "drive": "LHD",
       "fsd": {
         "AI4": {
-          "current": "v13.2.8",
-          "next": "v14.x",
+          "current": "v14.2.2.6",
+          "next": "v14.3.x",
           "mode": "gated",
           "approval": {
-            "earliestDays": 25,
-            "modeDays": 90,
-            "latestDays": 220
+            "earliestDays": 20,
+            "modeDays": 70,
+            "latestDays": 180
           },
           "k": 0.09
         },
@@ -166,19 +166,19 @@
       "fsd": {
         "AI4": {
           "current": "v13.2.9",
-          "next": "v14.x",
+          "next": "v14.3.3",
           "mode": "early",
-          "firstSeen": "2026-06-09",
-          "fleetPct": 18,
+          "firstSeen": "2026-06-19",
+          "fleetPct": 1,
           "k": 0.11,
-          "t0": "2026-06-23",
+          "t0": "2026-06-22",
           "t0Sigma": 6,
           "newDeliveryFirst": true,
           "existingFleetDelayDays": 55,
           "existingFleetSigma": 21,
           "paused": true,
-          "pausedSince": "2026-06-23",
-          "pauseNote": "FSD (Supervised) v14 started reaching AU HW4 cars in June 2026, then Tesla put the rollout on hold (official messaging + widespread owner reports). No committed resume date — including the many new Model Y / Model Y L deliveries still waiting. We've frozen the estimate rather than show a date that no longer holds. It un-freezes automatically once enough owners report it rolling again."
+          "pausedSince": "2026-06-21",
+          "pauseNote": "FSD (Supervised) v14.3.3 began reaching AU HW4 cars around 19 June 2026 via build 2026.16.6 — then, after only a small number of cars got it, Tesla paused the rollout. No committed resume date (new Model Y / Model Y L deliveries are still waiting too). We've frozen the estimate rather than show a date that no longer holds; it un-freezes automatically once enough owners report it rolling again."
         },
         "AI3": {
           "current": "none",
@@ -194,12 +194,12 @@
       "fsd": {
         "AI4": {
           "current": "v13.2.9",
-          "next": "v14.x",
+          "next": "v14.3.3",
           "mode": "early",
           "firstSeen": "2026-06-19",
-          "fleetPct": 9,
+          "fleetPct": 0.5,
           "k": 0.1,
-          "t0": "2026-07-01",
+          "t0": "2026-06-24",
           "t0Sigma": 7,
           "newDeliveryFirst": true,
           "existingFleetDelayDays": 60,

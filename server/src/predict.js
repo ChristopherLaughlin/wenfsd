@@ -96,13 +96,10 @@ export function predictNextOS(car, opts = {}) {
     return applyEventOverlay(out, opts.events, car, today);
   }
   const myKey = W.verKey(car.installedVersion || "0");
-  // HARDWARE OS TRACK: HW3 (AI3) cars ride a SEPARATE, lagging OS branch — Tesla seeds fresh builds to
-  // HW4 first and HW3 picks them up only once they've matured. So HW3 considers only matured/tapering
-  // builds (never the freshest 'rolling' one), which is why its "next" is an older build than an HW4
-  // car in the same region. (FSD already diverges by hardware; the OS branch does too.)
-  const ai3 = car.hardware === "AI3";
-  const osTrackOK = (s) => ai3 ? (s === "mature" || s === "tapering") : (s === "rolling" || s === "tapering" || s === "mature");
-  const newer = versions.filter(v => W.verKey(v.version) > myKey && osTrackOK(v.status) && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
+  // The OS build (software version) is REGION-driven and hardware-AGNOSTIC: HW3 and HW4 receive the same
+  // mainstream builds (e.g. 2026.20.3 reaches both). The hardware split lives entirely in the FSD axis
+  // (HW3 capped at v12.6.4 — see predictNextFSD), NOT in the OS version. Don't filter builds by hardware.
+  const newer = versions.filter(v => W.verKey(v.version) > myKey && (v.status === "rolling" || v.status === "tapering" || v.status === "mature") && W.inRegion(v, car.market)).sort((a, b) => W.verKey(b.version) - W.verKey(a.version));
   if (newer.length) {
     const v = newer[0];
     let t0Days = daysBetween(today, v.t0) + delta, eff = earliness, t0Sigma;
@@ -145,25 +142,29 @@ export function predictNextOS(car, opts = {}) {
       // so a deep laggard never predicts a fresh build sooner than a moderately-behind car. The tail
       // is tied to the region's own steady-state lag (~1.8×, capped), pending real AU/NZ arrival
       // data — owner-tunable. Widen the window to honest weeks (keeping any wider laggard sigma).
+      // The region's rollout of this build hasn't started yet, so even a usually-early adopter waits
+      // for the regional delay — clamp earliness up so extreme-early history can't collapse to "today".
+      eff = Math.max(eff, 0.4);
       t0Days += Math.min(45, Math.round(((W.regions[car.market] || {}).osLagDays || 12) * 1.8));
       t0Sigma = Math.max(t0Sigma || 2.4, 16);
     }
     const lowConf = stale || freshWait;
     const out = mcPredict({ t0Days, k: v.k, L: 0.95, earliness: eff, t0Sigma, floorDays: 0, today, seedStr: "OS" + v.version + car.market + eff + (stale ? "s" : "") + (freshWait ? "f" : "") });
-    out.targetLabel = v.version; out.kind = lowConf ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = lowConf; out.weeksBehind = weeksBehind; out.freshWait = freshWait; out.hwOlderTrack = ai3;
-    // does this particular software update change the FSD version, or leave it untouched?
+    out.targetLabel = v.version; out.kind = lowConf ? "stale" : "distributed"; out.branch = "os"; out.earliness = eff; out.stale = lowConf; out.weeksBehind = weeksBehind; out.freshWait = freshWait;
+    // does this particular software update change the FSD version, or leave it untouched? A build only
+    // BRINGS new FSD if the region's FSD for this hardware is actively flowing — a mainstream OS build
+    // never delivers FSD that's paused/gated/promised/capped for your region (that's the OS-vs-FSD split).
     out.fsdCurrent = curFsd(car);
     out.fsdInBuild = (v.fsdBuild && v.fsdBuild[car.hardware]) || null;
-    out.bringsNewFsd = !!(out.fsdInBuild && out.fsdInBuild !== "—" && W.fsdKey(out.fsdInBuild) > W.fsdKey(out.fsdCurrent));
+    const rf = (W.regions[car.market] || {}).fsd && W.regions[car.market].fsd[car.hardware];
+    const fsdActive = !!(rf && !rf.paused && (rf.mode === "rolling" || rf.mode === "current" || rf.mode === "early"));
+    out.bringsNewFsd = !!(out.fsdInBuild && out.fsdInBuild !== "—" && W.fsdKey(out.fsdInBuild) > W.fsdKey(out.fsdCurrent) && fsdActive);
     if (stale) {
       out.note = slowRegion
         ? `This is the OS software update — separate from FSD (see below). ${car.market} gets far fewer OS builds than the US/Canada, and they arrive late and on no set schedule, so a car in ${car.market} sitting ~${weeksBehind} weeks behind the newest build it's even eligible for is closer to normal than alarming — it usually reflects how sparsely Tesla ships here, not anything wrong with your car. When the next one does land it may jump you straight to ${v.version}. Because there's no predictable cadence to fit, this is a wide, low-confidence guess — not a date to bank on.`
         : `This is the OS software update — separate from FSD (see below). Your ${car.installedVersion} is ~${weeksBehind} weeks behind, having skipped the builds since. That usually means the car hasn't been pulling updates (parked offline, sitting on an old branch, or set to decline them). If it starts updating again it could jump to ${v.version} fairly quickly; until then there's no reliable cadence to fit, so this is a wide, low-confidence guess — not a date to bank on.`;
     } else if (freshWait) {
       out.note = `This is the OS software update — separate from FSD (see below). ${v.version} is still rolling out, and Tesla ships it to the US and Canada first. ${car.market} sits near the back of that queue and usually gets new builds weeks later, on no set schedule — so pinning a confident near-term date here would be fiction. This is a wide, low-confidence guess; when it does land it may jump you straight to ${v.version}. Not a date to bank on.`;
-    }
-    if (ai3) {
-      out.note = (out.note ? out.note + " " : "") + `Heads up: HW3 (AI3) cars ride a separate, slower OS branch than HW4 — Tesla seeds new builds to HW4 first, so ${v.version} is the newest build YOUR hardware actually receives, a step behind the bleeding-edge HW4 build.`;
     }
     return applyEventOverlay(out, opts.events, car, today);
   }
