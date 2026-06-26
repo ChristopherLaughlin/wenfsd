@@ -134,7 +134,9 @@ app.get("/index.html", serveIndex);
 async function recordVisit(req) {
   if (config.mockMode || !hasDb()) return;
   try {
-    const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+    // Use req.ip (Express resolves it via `trust proxy = 1`) rather than the raw X-Forwarded-For[0],
+    // which a client can forge to prepend a fake IP and inflate the unique-visitor count.
+    const ip = String(req.ip || req.socket.remoteAddress || "");
     const ua = String(req.headers["user-agent"] || "");
     const day = new Date().toISOString().slice(0, 10);
     const hash = crypto.createHash("sha256").update(day + "|" + ip + "|" + ua + "|" + config.sessionSecret).digest("hex");
