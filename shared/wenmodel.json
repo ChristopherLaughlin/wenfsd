@@ -203,7 +203,10 @@
           "t0Sigma": 7,
           "newDeliveryFirst": true,
           "existingFleetDelayDays": 60,
-          "existingFleetSigma": 24
+          "existingFleetSigma": 24,
+          "paused": true,
+          "pausedSince": "2026-06-21",
+          "pauseNote": "FSD (Supervised) v14.3.3 started rolling to NZ HW4 cars alongside Australia (around 19 June 2026), then Tesla paused the Oceania rollout after only a handful received it — no committed resume date. We've frozen the estimate rather than show a date that no longer holds; it un-freezes automatically once enough owners report it rolling again."
         },
         "AI3": {
           "current": "none",
