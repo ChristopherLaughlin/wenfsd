@@ -85,16 +85,17 @@
   // ---------------- render ----------------
   // unified FSD line: is the next FSD version bundled into your next update, later, or capped?
   // Brutally honest (but very funny) treatment for HW3 cars in Australia / New Zealand —
-  // RHD + our regulators + capped hardware ⇒ realistically, FSD v14 is never landing here.
+  // RHD + our regulators ⇒ FSD v14 Lite comes late + undated here. It STARTED in the US on
+  // 29 Jun 2026 (build 2026.20.5.1); RHD markets follow with no committed date — "eventually", not "never".
   const DOOM_HEAD = [
-    "let's be upfront: this is realistically <strong>never</strong> happening on your car. 🪦",
-    "the honest answer is <strong>no</strong>. Not soon. Not late. <em>No.</em>",
+    "let's be upfront: it <strong>finally</strong> exists — just not for you yet. 🪦",
+    "the honest answer is <em>eventually</em> — the most cursed word in {mkt}. ⏳",
     "we modelled it. The model laughed, then gently closed its laptop. 💻",
     "FSD v14 on HW3 in {mkt}? That's not a rollout, that's a hostage situation with no demands.",
     "you have a better chance of Tesla mailing you a HW4 board personally signed by Elon.",
     "the ETA is best expressed in geological epochs. 🪨",
     "the model checked, double-checked, then offered you a hug instead of a date. 🫂",
-    "your car's hardware and your hope are both, respectfully, end-of-life.",
+    "your car's hardware is end-of-life; your hope, against the odds, just got a pulse back. 🫀",
     "ETA: shortly after the heat death of the universe, give or take a fortnight. 🌌",
     "we ran the numbers. The numbers asked us not to share them with you.",
   ];
@@ -132,7 +133,7 @@
     const adv = fill(fresh ? rnd(DOOM_ADVICE) : flavorPick("doomAdvice", DOOM_ADVICE));
     el.innerHTML = `<div class="fsum fsum-doom" id="doomBox" role="button" tabindex="0" title="Tap for more bad news">` +
       `<div class="doom-h">💀 FSD on your HW3 ${esc(v.market)} car — ${head}</div>` +
-      `<div class="doom-why">The upfront truth: HW3 (AI3) can't run the HW4-only v14 (Supervised). Tesla has <em>promised</em> a stripped-down “v14 Lite” for older hardware — but it's rolling out in the <strong>US first</strong>, and ${esc(v.market)} (right-hand-drive, stricter regulators) has been given <strong>no committed date at all</strong>. HW3 owners here were promised FSD years ago and still have none. Realistically: late 2026, 2027, or never. We're not being mean; we're being <em>accurate</em>, which is worse.</div>` +
+      `<div class="doom-why">The upfront truth: HW3 (AI3) can't run the HW4-only v14 (Supervised). But here's the plot twist — after years of nothing, Tesla <em>actually started</em> a stripped-down “v14 Lite” for older hardware (US early-access, from <strong>29 Jun 2026</strong>, build 2026.20.5.1). The catch: it's <strong>US-first</strong>, and ${esc(v.market)} (right-hand-drive, stricter regulators) has <strong>no committed date</strong> — Tesla says international "in the coming weeks", which in RHD-land has historically meant months. So it's no longer <em>never</em>; you're just <strong>dead last in the queue</strong>. We're not being mean; we're being <em>accurate</em>, which is somehow still worse.</div>` +
       `<div class="doom-luck">${luck}</div>` +
       `<div class="doom-adv">${adv}</div>` +
       `<div class="doom-foot">…but hey, <strong>maybe</strong>. Tap for more bad news. 🔁</div>` +
@@ -166,7 +167,7 @@
     };
     if (!v || !fsd || fsd.unavailable) { set("fsd-none", "", "—", "no FSD data for this car", ""); return; }
     if (fsd.paused) { set("fsd-none", fsd.targetLabel, "⏸ On hold", `${fsd.targetLabel} rollout paused in ${v.market} — no resume date`, "promised"); return; }
-    if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `promised for HW3 in ${v.market}, never delivered`, "promised"); return; }
+    if (isDownUnderHW3(v) || fsd.promised) { set("fsd-none", fsd.targetLabel, "No committed date", `HW3 v14 Lite started overseas — not delivered in ${v.market} yet`, "promised"); return; }
     if (fsd.capped) { set("fsd-none", "", "Not coming", `${v.hardware} can't run newer FSD — capped`, "capped"); return; }
     // car has no FSD plan — feature stays dormant regardless of which build lands
     if (fsd.notEntitled) { set("fsd-same", fsd.targetLabel, "Needs an FSD plan", `your car can run ${fsd.targetLabel}, but FSD activates only with a purchase/subscription`, "notEntitled"); return; }

@@ -50,6 +50,10 @@ const WEN = (function () {
       k: 0.34, t0: "2026-06-22", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
       markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
       notes: "Most widely rolled-out build (~37% of the fleet). Mainstream OS update — parental controls, Grok assistant, encrypted Dashcam. Reaches every market and both HW3 + HW4; it does NOT change your FSD version." },
+    { version: "2026.20.5.1", firstSeen: "2026-06-29", fleetPct: 0.1, status: "early", branch: "standard",
+      k: 0.12, t0: "2026-07-18", fsdBuild: { AI4: "—", AI3: "v14 Lite" },
+      markets: ["United States"],
+      notes: "FSD v14 Lite for HW3 — the FIRST build to bring v14 to AI3 cars (distilled from the HW4 v14 neural net to ~15% its size so it fits HW3's older compute). Began 29 Jun 2026 to US early-access HW3 owners (high Safety Score + influencers), widening 'over the coming weeks' per Tesla AI chief Ashok Elluswamy. Still Level-2 supervised — it does NOT make HW3 self-driving. AU/NZ/EU HW3 expected to follow, no committed date. (status:'early' = real build, shown for reference, but it's the FSD region status — not this row — that drives your v14 Lite estimate.)" },
     { version: "2026.20", firstSeen: "2026-05-30", fleetPct: 13.9, status: "tapering", branch: "standard",
       k: 0.31, t0: "2026-06-10", fsdBuild: { AI4: "v14.3.4", AI3: "v12.6.4" },
       markets: ["United States", "Canada", "Europe", "Australia", "New Zealand"],
@@ -90,19 +94,19 @@ const WEN = (function () {
   const regions = {
     "United States": { osLagDays: 0, drive: "LHD", fsd: {
       AI4: { current: "v14.3.4", next: "v14.4.x", mode: "current", k: 0.16, cadenceDays: 28 },
-      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "HW3 is capped at FSD v12.6.4. Tesla has teased a reduced 'v14 Lite' for HW3 — US first, targeted for around late June 2026 — but committed to no firm date, and these builds still ship v12.6.4. We won't fake a date until it actually lands." } } },
+      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "early", k: 0.12, t0: "2026-07-18", t0Sigma: 12, note: "HW3's first FSD beyond v12.6.4 is finally real. Tesla started rolling FSD v14 Lite (build 2026.20.5.1) to US early-access HW3 cars on 29 Jun 2026 — high Safety Score drivers + influencers first — and says it'll widen 'over the coming weeks' based on feedback. The window below is modelled off that: early-access cars already have it; most HW3 owners are looking at the following few weeks. Still Level-2 supervised." } } },
     "Canada": { osLagDays: 3, drive: "LHD", fsd: {
       AI4: { current: "v13.2.9", next: "v14.3.4", mode: "rolling", k: 0.18, t0: "2026-06-26" },
-      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "HW3 is capped at FSD v12.6.4. v14 Lite rolls out in the US first; international markets follow with no committed date." } } },
+      AI3: { current: "v12.6.4", next: "v14 Lite", mode: "promised", note: "HW3 is capped at FSD v12.6.4. v14 Lite is no longer just a promise — Tesla started the US early-access rollout (build 2026.20.5.1) on 29 Jun 2026 and is widening it 'over the coming weeks.' Canada follows the US, but Tesla has given no committed Canadian date yet, so we won't fake one." } } },
     "Europe": { osLagDays: 9, drive: "LHD", fsd: {
       AI4: { current: "v14.2.2.6", next: "v14.3.x", mode: "gated", approval: { earliestDays: 20, modeDays: 70, latestDays: 180 }, k: 0.09 },
-      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) never shipped to HW3 in Europe. v14 Lite is promised internationally, but EU regulators impose the strictest automated-steering limits and Tesla has given no committed date." } } },
+      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) never shipped to HW3 in Europe. v14 Lite is now real — Tesla started the US early-access rollout (build 2026.20.5.1) on 29 Jun 2026 — but EU regulators impose the strictest automated-steering limits, so Europe follows the US with no committed date. It's coming; the when is genuinely unknown." } } },
     "Australia": { osLagDays: 12, drive: "RHD", fsd: {
       AI4: { current: "v13.2.9", next: "v14.3.3", mode: "early", firstSeen: "2026-06-19", fleetPct: 1, k: 0.11, t0: "2026-06-22", t0Sigma: 6, newDeliveryFirst: true, existingFleetDelayDays: 55, existingFleetSigma: 21, paused: true, pausedSince: "2026-06-21", pauseNote: "FSD (Supervised) v14.3.3 began reaching AU HW4 cars around 19 June 2026 via build 2026.16.6 — then, after only a small number of cars got it, Tesla paused the rollout. No committed resume date (new Model Y / Model Y L deliveries are still waiting too). We've frozen the estimate rather than show a date that no longer holds; it un-freezes automatically once enough owners report it rolling again." },
-      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in Australia. v14 Lite for older hardware is promised, but it's US-first and right-hand-drive markets need extra validation + regulatory sign-off — Tesla has committed to no date. Owners are right to be skeptical." } } },
+      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in Australia — but v14 Lite is no longer vapourware. Tesla started rolling it to US early-access HW3 cars (build 2026.20.5.1) on 29 Jun 2026 and says international markets follow 'in the coming weeks.' For RHD Australia that still means extra validation + regulatory sign-off and NO committed date — but it's real now, and your turn is coming." } } },
     "New Zealand": { osLagDays: 14, drive: "RHD", fsd: {
       AI4: { current: "v13.2.9", next: "v14.3.3", mode: "early", firstSeen: "2026-06-19", fleetPct: 0.5, k: 0.10, t0: "2026-06-24", t0Sigma: 7, newDeliveryFirst: true, existingFleetDelayDays: 60, existingFleetSigma: 24, paused: true, pausedSince: "2026-06-21", pauseNote: "FSD (Supervised) v14.3.3 started rolling to NZ HW4 cars alongside Australia (around 19 June 2026), then Tesla paused the Oceania rollout after only a handful received it — no committed resume date. We've frozen the estimate rather than show a date that no longer holds; it un-freezes automatically once enough owners report it rolling again." },
-      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in New Zealand. v14 Lite is promised internationally but US-first, with no committed RHD/NZ date. Skepticism warranted." } } },
+      AI3: { current: "none", next: "v14 Lite", mode: "promised", note: "FSD (Supervised) has never shipped to HW3 in New Zealand — but v14 Lite is real now: Tesla began the US early-access rollout (build 2026.20.5.1) on 29 Jun 2026, with international markets to follow 'in the coming weeks.' RHD NZ needs extra validation + regulatory sign-off, so there's no committed date — but it's no longer just a promise." } } },
   };
 
   // Release notes per version (fleetctrl-style changelog). In real mode these are
@@ -115,6 +119,12 @@ const WEN = (function () {
         { tag: "Privacy", text: "Dashcam clips are now encrypted on USB — only your car can view them" },
         { tag: "AI", text: "Grok assistant (xAI) in the App Launcher / long-press voice / “Hey Grok”" },
         { tag: "Fix", text: "Point fixes on the .20 branch; blind-spot warning while parked" },
+      ] },
+    "2026.20.5.1": { date: "2026-06-29", regions: ["United States"], fsd: "v14 Lite (HW3)", source: "Tesla / notateslaapp + Tesla Oracle",
+      items: [
+        { tag: "FSD", text: "FSD (Supervised) v14 Lite for HW3 — the first v14 build for AI3 cars, distilled from the HW4 v14 neural net (~15% the size) to fit HW3. Brings v14-style navigation, merges, traffic-light & pedestrian handling, plus parking/unparking/reversing with arrival options." },
+        { tag: "FSD", text: "Began 29 Jun 2026 to US early-access HW3 owners (high Safety Score + influencers); wider rollout 'over the coming weeks' based on feedback. Still Level-2 supervised — hands ready, eyes on the road." },
+        { tag: "Note", text: "International HW3 (Europe, Australia, New Zealand) is expected to follow, with no committed date." },
       ] },
     "2026.20": { date: "2026-05-30", regions: ["Global"], fsd: "unchanged", source: "notateslaapp",
       items: [
@@ -151,8 +161,8 @@ const WEN = (function () {
     { date: "2025", label: "FSD v13 (Supervised) launches for AU/NZ HW4 — the first RHD markets. HW3 gets nothing.", kind: "observed" },
     { date: "2026-04-28", label: "After mounting owner pressure, Tesla promises a stripped-down “v14 Lite” for HW3 — internationally, but with no committed dates", kind: "observed" },
     { date: "2026-06-19", label: "FSD (Supervised) v14 officially rolls out in Australia & New Zealand — HW4 only", kind: "observed" },
-    { date: "2026-06-30 (est.)", label: "FSD v14 Lite for HW3 begins in the US — HW3's first taste of FSD, and the US goes first", kind: "projected" },
-    { date: "AU/NZ HW3 — no date", label: "HW3 in Australia & NZ has never received FSD (Supervised). v14 Lite is promised but US-first and RHD-gated by regulators — realistically late 2026 / 2027 at the earliest, if it ships at all", kind: "projected" },
+    { date: "2026-06-29", label: "FSD v14 Lite for HW3 begins — Tesla starts the US early-access rollout (build 2026.20.5.1). HW3's first FSD beyond v12.6.4, distilled from the HW4 v14 brain to ~15% its size. Widening over the coming weeks.", kind: "observed" },
+    { date: "AU/NZ HW3 — coming, no date", label: "v14 Lite has now started overseas (US, 29 Jun) — so HW3 FSD is real, not vapourware. Tesla says international markets follow 'in the coming weeks,' but RHD Australia & NZ still need extra validation + regulatory sign-off, so there's no committed date yet.", kind: "projected" },
   ];
 
   // Historical OS-branch first-seen anchors (illustrative in sample mode; the LIVE site back-tests

@@ -111,16 +111,25 @@ test("AU/NZ HW3 FSD is 'promised' with NO invented date (never delivered)", () =
   }
 });
 
-test("HW3 v14 Lite is 'promised' (no fabricated date) in every region — the US is no longer special-cased", () => {
-  // Owner-confirmed: v14 Lite for HW3 is teased but UNCONFIRMED and ships in no build (every build keeps
-  // HW3 on v12.6.4), so we refuse to invent a date anywhere — not even the US. (Was: US got a real date,
-  // which contradicted the OS data and over-promised an in-development feature — an early-user report.)
-  const us = predictNextFSD({ market: "United States", hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
-  assert.equal(us.promised, true, "US HW3 v14 Lite must be 'promised', not a confident date");
-  assert.ok(!us.medianDate, "US HW3 must not fabricate a v14 Lite date");
+test("HW3 v14 Lite: US is now ROLLING (early access, started 29 Jun 2026) with a modelled window; AU/NZ/EU stay 'promised'", () => {
+  // Reality flipped 2026-06-29: Tesla started the US early-access rollout of FSD v14 Lite for HW3
+  // (build 2026.20.5.1, AI chief Ashok Elluswamy). So the US is no longer 'promised' — it produces an
+  // honest modelled window (mode 'early'). RHD/EU markets are still genuinely undated and follow the
+  // US "in the coming weeks", so they stay 'promised' (no fabricated date).
+  const us = predictNextFSD({ market: "United States", hardware: "AI3", installedVersion: "2026.20.3", earliness: 0.5 });
+  assert.ok(!us.promised, "US HW3 v14 Lite is no longer 'promised' — it's rolling");
   assert.equal(us.targetLabel, "v14 Lite");
-  const au = predictNextFSD({ market: "Australia", hardware: "AI3", installedVersion: "2026.14.6", earliness: 0.5 });
-  assert.equal(au.promised, true, "AU HW3 stays promised — now consistent with the US");
+  assert.ok(us.medianDate, "US HW3 now gets a modelled v14 Lite window");
+  assert.ok(us.daysToMedian >= 0, "US v14 Lite median is in the (near) future, not the past");
+  // FSD can never beat the OS build that carries it — the v14 Lite window must not precede the next OS update.
+  const osUs = predictNextOS({ market: "United States", hardware: "AI3", installedVersion: "2026.20.3", earliness: 0.5 });
+  if (osUs.daysToMedian != null) assert.ok(us.daysToMedian >= osUs.daysToMedian - 0.001, "v14 Lite floored at the next OS update");
+  for (const market of ["Australia", "New Zealand", "Europe"]) {
+    const p = predictNextFSD({ market, hardware: "AI3", installedVersion: "2026.20.3", earliness: 0.5 });
+    assert.equal(p.promised, true, `${market} HW3 v14 Lite stays promised (no committed date)`);
+    assert.ok(!p.medianDate, `${market} HW3 must not fabricate a v14 Lite date`);
+    assert.equal(p.targetLabel, "v14 Lite");
+  }
 });
 
 const auAI4 = { market: "Australia", hardware: "AI4", installedVersion: "2026.14.6", earliness: 0.45, earlinessSource: "default", earlyAccess: false };
