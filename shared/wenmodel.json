@@ -28,6 +28,20 @@
       "markets": ["United States", "Canada", "Europe", "Australia", "New Zealand"]
     },
     {
+      "version": "2026.20.5.1",
+      "firstSeen": "2026-06-29",
+      "fleetPct": 0.1,
+      "status": "early",
+      "branch": "standard",
+      "k": 0.12,
+      "t0": "2026-07-18",
+      "fsdBuild": {
+        "AI4": "—",
+        "AI3": "v14 Lite"
+      },
+      "markets": ["United States"]
+    },
+    {
       "version": "2026.20",
       "firstSeen": "2026-05-30",
       "fleetPct": 13.9,
@@ -113,8 +127,11 @@
         "AI3": {
           "current": "v12.6.4",
           "next": "v14 Lite",
-          "mode": "promised",
-          "note": "HW3 is capped at FSD v12.6.4. Tesla has teased a reduced 'v14 Lite' for HW3 — US first, targeted for around late June 2026 — but committed to no firm date, and these builds still ship v12.6.4. We won't fake a date until it actually lands."
+          "mode": "early",
+          "k": 0.12,
+          "t0": "2026-07-18",
+          "t0Sigma": 12,
+          "note": "HW3's first FSD beyond v12.6.4 is finally real. Tesla started rolling FSD v14 Lite (build 2026.20.5.1) to US early-access HW3 cars on 29 Jun 2026 — high Safety Score drivers + influencers first — and says it'll widen 'over the coming weeks' based on feedback. The window below is modelled off that: early-access cars already have it; most HW3 owners are looking at the following few weeks. Still Level-2 supervised."
         }
       }
     },
@@ -133,7 +150,7 @@
           "current": "v12.6.4",
           "next": "v14 Lite",
           "mode": "promised",
-          "note": "HW3 is capped at FSD v12.6.4. v14 Lite rolls out in the US first; international markets follow with no committed date."
+          "note": "HW3 is capped at FSD v12.6.4. v14 Lite is no longer just a promise — Tesla started the US early-access rollout (build 2026.20.5.1) on 29 Jun 2026 and is widening it 'over the coming weeks.' Canada follows the US, but Tesla has given no committed Canadian date yet, so we won't fake one."
         }
       }
     },
@@ -156,7 +173,7 @@
           "current": "none",
           "next": "v14 Lite",
           "mode": "promised",
-          "note": "FSD (Supervised) never shipped to HW3 in Europe. v14 Lite is promised internationally, but EU regulators impose the strictest automated-steering limits and Tesla has given no committed date."
+          "note": "FSD (Supervised) never shipped to HW3 in Europe. v14 Lite is now real — Tesla started the US early-access rollout (build 2026.20.5.1) on 29 Jun 2026 — but EU regulators impose the strictest automated-steering limits, so Europe follows the US with no committed date. It's coming; the when is genuinely unknown."
         }
       }
     },
@@ -184,7 +201,7 @@
           "current": "none",
           "next": "v14 Lite",
           "mode": "promised",
-          "note": "FSD (Supervised) has never shipped to HW3 in Australia. v14 Lite for older hardware is promised, but it's US-first and right-hand-drive markets need extra validation + regulatory sign-off — Tesla has committed to no date. Owners are right to be skeptical."
+          "note": "FSD (Supervised) has never shipped to HW3 in Australia — but v14 Lite is no longer vapourware. Tesla started rolling it to US early-access HW3 cars (build 2026.20.5.1) on 29 Jun 2026 and says international markets follow 'in the coming weeks.' For RHD Australia that still means extra validation + regulatory sign-off and NO committed date — but it's real now, and your turn is coming."
         }
       }
     },
@@ -212,7 +229,7 @@
           "current": "none",
           "next": "v14 Lite",
           "mode": "promised",
-          "note": "FSD (Supervised) has never shipped to HW3 in New Zealand. v14 Lite is promised internationally but US-first, with no committed RHD/NZ date. Skepticism warranted."
+          "note": "FSD (Supervised) has never shipped to HW3 in New Zealand — but v14 Lite is real now: Tesla began the US early-access rollout (build 2026.20.5.1) on 29 Jun 2026, with international markets to follow 'in the coming weeks.' RHD NZ needs extra validation + regulatory sign-off, so there's no committed date — but it's no longer just a promise."
         }
       }
     }
