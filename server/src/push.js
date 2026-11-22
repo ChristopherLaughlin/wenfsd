@@ -14,9 +14,24 @@ function ensureVapid() {
   return true;
 }
 
+// Only the browser vendors' push services are valid endpoints (Chrome/Edge/Android → FCM, Firefox →
+// Mozilla autopush, Safari → Apple, legacy Edge/Windows → WNS). Anything else is not a real
+// PushSubscription, and we don't want the server making requests to arbitrary hosts.
+const PUSH_HOSTS = ["fcm.googleapis.com", "updates.push.services.mozilla.com"];
+const PUSH_HOST_SUFFIXES = [".push.apple.com", ".notify.windows.com"];
+export function isAllowedPushEndpoint(endpoint) {
+  if (typeof endpoint !== "string" || endpoint.length > 1024) return false;
+  let u; try { u = new URL(endpoint); } catch { return false; }
+  if (u.protocol !== "https:" || u.username || u.password || (u.port && u.port !== "443")) return false;
+  const host = u.hostname.toLowerCase();
+  return PUSH_HOSTS.includes(host) || PUSH_HOST_SUFFIXES.some((sfx) => host.endsWith(sfx));
+}
+// upper bound on stored subscriptions (the table is written by an unauthenticated endpoint)
+export const MAX_PUSH_SUBSCRIPTIONS = 50000;
+
 // Validate the PushSubscription shape the browser hands us (defends the DB write).
 export function isValidSubscription(s) {
-  return !!(s && typeof s.endpoint === "string" && /^https:\/\//.test(s.endpoint) && s.endpoint.length <= 1024
+  return !!(s && isAllowedPushEndpoint(s.endpoint)
     && s.keys && typeof s.keys.p256dh === "string" && typeof s.keys.auth === "string"
     && s.keys.p256dh.length <= 256 && s.keys.auth.length <= 256);
 }
@@ -25,6 +40,8 @@ export function isValidSubscription(s) {
 // caller can prune it.
 export async function sendPush(sub, payload) {
   if (!ensureVapid()) return { ok: false };
+  // rows stored before the allow-list existed: never contact them, let the caller prune
+  if (!isAllowedPushEndpoint(sub.endpoint)) return { ok: false, gone: true };
   try {
     await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload));
     return { ok: true };
