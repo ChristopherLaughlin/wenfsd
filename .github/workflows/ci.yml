@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "17 5 * * *" # daily: re-run the audit so a newly-disclosed CVE fails even with no push
 
+# least privilege: every job only needs to read the repo (deploy authenticates with RAILWAY_TOKEN)
+permissions:
+  contents: read
+
 jobs:
   test:
     if: github.event_name != 'schedule'
@@ -61,16 +65,17 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Install Railway CLI
-        run: npm i -g @railway/cli
+        run: npm i -g @railway/cli@5.75.0   # pinned — bump deliberately
       - name: Deploy to Railway (only because tests + audit passed)
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME }}   # via env, never interpolated into the script
         run: |
           if [ -z "$RAILWAY_TOKEN" ]; then
             echo "::error::DEPLOY_ENABLED is true but RAILWAY_TOKEN secret is not set."; exit 1
           fi
-          if [ -n "${{ vars.RAILWAY_SERVICE_NAME }}" ]; then
-            railway up --ci --service "${{ vars.RAILWAY_SERVICE_NAME }}"
+          if [ -n "$RAILWAY_SERVICE_NAME" ]; then
+            railway up --ci --service "$RAILWAY_SERVICE_NAME"
           else
             railway up --ci
           fi

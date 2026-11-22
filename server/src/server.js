@@ -13,6 +13,7 @@ import { query, hasDb } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { apiRouter, activeConfirmedEvents } from "./routes/api.js";
 import { pollOnce } from "./poller.js";
+import { sessionCookieName, rejectMockSession } from "./session.js";
 import { decodeSlug, renderPage, renderIndex, ogPng, allSlugs, iconPng } from "./predictionpage.js";
 
 const modeStatus = ensureModeReady();
@@ -58,13 +59,15 @@ app.use(helmet({
 
 app.use(express.json({ limit: "32kb" }));
 app.use(cookieSession({
-  name: "wenfsd",
+  name: sessionCookieName(),   // distinct cookie in mock mode (mode is settled by ensureModeReady above)
   secret: config.sessionSecret,
   maxAge: 30 * 24 * 60 * 60 * 1000,
   httpOnly: true,
   sameSite: "lax",
   secure: config.publicBaseUrl.startsWith("https"),
 }));
+// a session minted in mock/sample mode must never authenticate against real accounts
+app.use(rejectMockSession);
 
 // --- rate limits ---
 const apiLimiter = rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false });

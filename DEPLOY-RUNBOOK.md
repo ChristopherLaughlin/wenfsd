@@ -106,7 +106,8 @@ Confirm `MOCK_MODE=false` and redeploy. The poller starts on its hourly cron (sk
 
 ## Ops notes
 - **Secrets** live only in the host's env + `server/keys` (gitignored). Rotate `SESSION_SECRET`/`TOKEN_ENC_KEY` by setting new values and redeploying (note: rotating `TOKEN_ENC_KEY` invalidates stored tokens — owners re-link).
-- **Rollback:** redeploy a previous GitHub commit, or set `MOCK_MODE=true` to serve safe sample data while you debug.
+- **Rollback:** prefer redeploying a previous GitHub commit. Setting `MOCK_MODE=true` to serve sample data is a last resort.
+  > ⚠️ **Mock mode on the public host is not a neutral "maintenance mode".** In mock mode `/auth/login` hands out a demo session without any Tesla sign-in. Those sessions use a separate cookie and are rejected in real mode, but avoid running production in mock mode at all — and note the server also *falls back* to mock mode by itself if `TESLA_CLIENT_ID`, `TESLA_CLIENT_SECRET`, `DATABASE_URL`, `TOKEN_ENC_KEY` or a ≥32-char `SESSION_SECRET` is missing. After any deploy, check `/healthz` reports `"mock":false`; if production ever ran in mock mode, rotate `SESSION_SECRET` afterwards (signs everyone out).
 - **CI:** every push runs the test suite; a red check means don't deploy that commit.
 
 ## What's still yours (can't be automated)

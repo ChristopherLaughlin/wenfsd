@@ -7,6 +7,9 @@ import { fitLogistic, predictNextOS } from "./predict.js";
 import { encrypt, decrypt } from "./crypto.js";
 import { deliver, arrivalMessage } from "./mailer.js";
 
+// logs identify a car by the last 6 of its VIN only — never the full VIN
+const vinTail = (vin) => String(vin || "").slice(-6);
+
 export async function pollOnce() {
   if (config.mockMode || !hasDb()) {
     console.log("[poller] MOCK_MODE/no DB — skipping real poll.");
@@ -42,7 +45,7 @@ export async function pollOnce() {
         // computation from data already in the DB (no Tesla API call, no need to wake the car),
         // so it must run even for asleep cars. Otherwise a car that's asleep at every poll
         // never gets a prediction despite us knowing its version.
-        if (c.current_version) { try { await ensurePrediction(c); } catch (e) { console.warn(`[poller] ensure ${c.vin}:`, e.message); } }
+        if (c.current_version) { try { await ensurePrediction(c); } catch (e) { console.warn(`[poller] ensure ${vinTail(c.vin)}:`, e.message); } }
 
         // Reading a FRESH version (to detect an update → score) does need the car awake.
         if (state.get(c.vin) && state.get(c.vin) !== "online") { skipped++; continue; } // asleep/offline — don't wake it
@@ -52,7 +55,7 @@ export async function pollOnce() {
           const r = await applyVersionReading(c, version);   // score-on-change + snapshot + ensure
           await persistPendingUpdate(c, update);             // live "update incoming" status
           if (r.changed) changed++;
-        } catch (e) { if (e.code !== 408) console.warn(`[poller] ${c.vin}:`, e.message); }
+        } catch (e) { if (e.code !== 408) console.warn(`[poller] ${vinTail(c.vin)}:`, e.message); }
       }
     } catch (e) { console.warn(`[poller] user ${userId}:`, e.message); }
   }
@@ -80,7 +83,7 @@ export async function ensurePrediction(c) {
       `INSERT INTO predictions(vehicle_id, from_version, target_label, median_date, p10_date, p90_date)
        VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(vehicle_id, from_version) DO NOTHING`,
       [c.id, c.current_version, p.targetLabel || null, p.medianDate, p.p10Date, p.p90Date]);
-  } catch (e) { console.warn(`[poller] ensurePrediction ${c.vin}:`, e.message); }
+  } catch (e) { console.warn(`[poller] ensurePrediction ${vinTail(c.vin)}:`, e.message); }
 }
 
 // Score the open prediction once the car has moved off `fromVersion`: did the update land
@@ -122,7 +125,7 @@ export async function applyVersionReading(c, version) {
     await query(`UPDATE vehicles SET current_version=$1 WHERE id=$2`, [version, c.id]);
     c.current_version = version;
     // the update just LANDED — tell the owner if they opted in. Never let this break the poll.
-    try { await notifyArrival(c, prevVersion, version); } catch (e) { console.warn(`[notify] ${c.vin}:`, e.message); }
+    try { await notifyArrival(c, prevVersion, version); } catch (e) { console.warn(`[notify] ${vinTail(c.vin)}:`, e.message); }
   }
   if (c.current_version) await ensurePrediction(c);
   return { changed, version: c.current_version };

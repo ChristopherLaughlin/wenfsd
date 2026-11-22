@@ -10,7 +10,8 @@ import { applyVersionReading } from "../poller.js";
 export const authRouter = Router();
 
 authRouter.get("/login", (req, res) => {
-  if (config.mockMode) { req.session = { userId: 1, mock: true }; return res.redirect("/?linked=mock"); }
+  // mock sessions never carry a real (numeric) user id, and are flagged so real mode rejects them
+  if (config.mockMode) { req.session = { userId: "mock", mock: true }; return res.redirect("/?linked=mock"); }
   const { verifier, challenge } = tesla.makePkce();
   req.session.pkce = verifier;
   req.session.oauthState = tesla.randomState();

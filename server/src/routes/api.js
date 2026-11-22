@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { config, pushEnabled } from "../config.js";
 import { query, hasDb } from "../db.js";
-import { isValidSubscription } from "../push.js";
+import { isValidSubscription, MAX_PUSH_SUBSCRIPTIONS } from "../push.js";
 import { predictNextOS, predictNextFSD } from "../predict.js";
 import * as W from "../wendata.js";
 import { SEED_VERSIONS, SEED_FEED, SEED_STATS } from "../seed.js";
@@ -105,6 +105,16 @@ function unsubConfirmPage(t) {
     + `<button type="submit" style="background:#e62937;color:#fff;border:0;border-radius:10px;padding:11px 20px;font:inherit;font-weight:700;cursor:pointer">Yes, unsubscribe me</button></form>`
     + `<a href="/" style="color:#39d4ff;text-decoration:none;display:inline-block;margin-top:14px">← keep me subscribed</a></div></body>`;
 }
+function subConfirmPage(t) {
+  // t is reflected only inside a URL-encoded query in the form action (no HTML-attribute breakout)
+  return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>wenFSD</title>`
+    + `<body style="background:#0a0d12;color:#e9eef5;font-family:system-ui,-apple-system,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center;padding:24px">`
+    + `<div><div style="font-size:24px;font-weight:800;margin-bottom:10px">wen<span style="color:#e62937">FSD</span></div>`
+    + `<p style="font-size:16px;max-width:440px;line-height:1.55;color:#9fb0c3">One tap to confirm your wenFSD update alerts.</p>`
+    + `<form method="POST" action="/api/confirm?t=${encodeURIComponent(t)}">`
+    + `<button type="submit" style="background:#e62937;color:#fff;border:0;border-radius:10px;padding:11px 20px;font:inherit;font-weight:700;cursor:pointer">Yes, confirm my alerts</button></form>`
+    + `<a href="/" style="color:#39d4ff;text-decoration:none;display:inline-block;margin-top:14px">← back to wenFSD</a></div></body>`;
+}
 apiRouter.post("/subscribe", ah(async (req, res) => {
   const b = req.body || {};
   const email = String(b.email || "").trim().toLowerCase();
@@ -121,9 +131,9 @@ apiRouter.post("/subscribe", ah(async (req, res) => {
     `INSERT INTO email_subscribers(email, model, market, hardware, version, fsd_entitlement, confirm_token, unsub_token)
        VALUES($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT(email) DO UPDATE SET model=$2, market=$3, hardware=$4, version=$5, fsd_entitlement=$6,
-       unsubscribed_at=NULL,
-       confirm_token=CASE WHEN email_subscribers.confirmed THEN email_subscribers.confirm_token ELSE $7 END,
-       unsub_token=COALESCE(email_subscribers.unsub_token, $8)`,
+       unsubscribed_at=NULL, confirm_token=$7,
+       unsub_token=COALESCE(email_subscribers.unsub_token, $8)
+     WHERE NOT email_subscribers.confirmed`,   // a confirmed subscriber's row can't be rewritten by whoever types their address
     [email, model, market, hardware, version, fsd, confirm_token, unsub_token]);
   const row = (await query(`SELECT confirmed, confirm_token, unsub_token FROM email_subscribers WHERE email=$1`, [email])).rows[0] || {};
   if (!row.confirmed) {
@@ -135,7 +145,14 @@ apiRouter.post("/subscribe", ah(async (req, res) => {
   // addresses are already subscribed
   res.json({ ok: true });
 }));
+// GET only renders a one-tap button (same pattern as unsubscribe below): mail scanners and link
+// previewers fetch the URL, and a fetch alone must not confirm an address. The same-origin POST does.
 apiRouter.get("/confirm", ah(async (req, res) => {
+  const t = String(req.query.t || "");
+  if (config.mockMode || !hasDb() || !t) return res.type("html").send(confirmPage("Confirmation isn't available right now."));
+  res.type("html").send(subConfirmPage(t));
+}));
+apiRouter.post("/confirm", ah(async (req, res) => {
   const t = String(req.query.t || "");
   if (config.mockMode || !hasDb() || !t) return res.type("html").send(confirmPage("Confirmation isn't available right now."));
   const r = await query(`UPDATE email_subscribers SET confirmed=true, confirmed_at=now() WHERE confirm_token=$1 AND confirmed=false RETURNING email`, [t]);
@@ -170,6 +187,9 @@ apiRouter.post("/push/subscribe", ah(async (req, res) => {
   const version = typeof b.version === "string" ? b.version.replace(/[^0-9.]/g, "").slice(0, 24) : null;
   if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
   const s = b.subscription;
+  // cap the table: new endpoints are refused once it is full (existing ones can still update)
+  const room = (await query(`SELECT (SELECT count(*) FROM push_subscriptions) < $2 OR EXISTS(SELECT 1 FROM push_subscriptions WHERE endpoint=$1) AS ok`, [s.endpoint, MAX_PUSH_SUBSCRIPTIONS])).rows[0];
+  if (!room || !room.ok) return res.status(503).json({ ok: false, error: "push sign-ups are full right now" });
   await query(
     `INSERT INTO push_subscriptions(endpoint, p256dh, auth, market, hardware, version) VALUES($1,$2,$3,$4,$5,$6)
      ON CONFLICT(endpoint) DO UPDATE SET p256dh=$2, auth=$3, market=$4, hardware=$5, version=$6`,
@@ -200,11 +220,29 @@ apiRouter.get("/events", ah(async (req, res) => {
 // community report (UGC): owners tell us what they saw (e.g. the "rollout paused" email). Reports
 // land as 'pending' and NEVER touch the public prediction until a human confirms them in /admin.
 // No PII — submitter is a salted daily hash, free text is sanitised + length-capped.
-function submitterHash(req) {
-  const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
-  const ua = String(req.get("user-agent") || "").slice(0, 200);
+// Keyed on req.ip only (Express resolves it through `trust proxy`). The raw X-Forwarded-For head and
+// the User-Agent are client-chosen, so they must not make one client look like several submitters.
+export function submitterHash(req) {
+  const ip = String(req.ip || (req.socket && req.socket.remoteAddress) || "");
   const day = new Date().toISOString().slice(0, 10);
-  return crypto.createHash("sha256").update(day + "|" + ip + "|" + ua + "|" + config.sessionSecret).digest("hex").slice(0, 32);
+  return crypto.createHash("sha256").update(day + "|" + ip + "|" + config.sessionSecret).digest("hex").slice(0, 32);
+}
+// Corroborated RESUME reports for a region that currently has an FSD hold. This path is
+// unauthenticated, so it only ever ASKS the owner to confirm: it never changes an event's status and
+// never mails subscribers. Confirming in /admin is what clears the freeze and fires the resume alert.
+// Pings once per newly-corroborating submitter (not on repeats). q/notify are injectable for tests.
+export async function flagCorroboratedResume({ region, submitter }, { q = query, notify = notifyOwnerOfPending } = {}) {
+  if (!(region && W.regions[region] && W.regions[region].fsd
+      && Object.values(W.regions[region].fsd).some(h => h && h.paused))) return { flagged: false };
+  const corr = await q(
+    `SELECT count(DISTINCT submitted_by)::int AS n, count(*) FILTER (WHERE submitted_by=$2)::int AS mine
+       FROM rollout_events WHERE type='resume' AND region=$1 AND source='community-report' AND detected_at > now() - interval '14 days'`,
+    [region, submitter]).catch(() => null);
+  if (!corr || corr.rows[0].n < 2 || corr.rows[0].mine !== 1) return { flagged: false };
+  const already = await q(`SELECT 1 FROM rollout_events WHERE type='resume' AND region=$1 AND status='confirmed' LIMIT 1`, [region]).catch(() => null);
+  if (already && already.rowCount) return { flagged: false };
+  notify({ type: "resume", version: null, region, reason: `${corr.rows[0].n} separate reports say the rollout has resumed in ${region}. Still frozen for users — confirm the resume in /admin to un-freeze it and alert subscribers.`, source: "resume-corroborated" }).catch(() => {});
+  return { flagged: true, submitters: corr.rows[0].n };
 }
 apiRouter.post("/report", ah(async (req, res) => {
   const b = req.body || {};
@@ -217,10 +255,11 @@ apiRouter.post("/report", ah(async (req, res) => {
   const version = cleanVersion(b.version) || (guess && cleanVersion(guess.version)) || null;
   const reason = cleanReason(b.reason || text);
   if (config.mockMode || !hasDb()) return res.json({ ok: true, mock: true });
+  const submitter = submitterHash(req);
   await query(
     `INSERT INTO rollout_events(type, version, region, status, reason, source, submitted_by, confidence)
      VALUES($1,$2,$3,'pending',$4,'community-report',$5,$6)`,
-    [type, version, region, reason, submitterHash(req), guess ? guess.confidence : 0.4]);
+    [type, version, region, reason, submitter, guess ? guess.confidence : 0.4]);
   // owner alert — only on the FIRST pending of this (type,version,region) in 24h (dedupe a flood of
   // duplicate reports into a single ping). Fire-and-forget so the response isn't blocked.
   const fresh = await query(
@@ -229,23 +268,7 @@ apiRouter.post("/report", ah(async (req, res) => {
     [type, version, region]).catch(() => null);
   if (fresh && fresh.rows[0].n === 1) notifyOwnerOfPending({ type, version, region, reason, source: "community-report" }).catch(() => {});
 
-  // AUTO-UNPAUSE: if owners corroborate that a held rollout is rolling again, clear it automatically
-  // (no manual step). Triggers only for a region that currently HAS an FSD hold, and only once
-  // ≥2 distinct submitters report a resume — then we confirm it (so /api/events clears the freeze)
-  // and email the owner so they can sanity-check. A wrong auto-unpause is recoverable from /admin.
-  if (type === "resume" && region && W.regions[region] && W.regions[region].fsd
-      && Object.values(W.regions[region].fsd).some(h => h && h.paused)) {
-    const corr = await query(`SELECT count(DISTINCT submitted_by)::int AS n FROM rollout_events WHERE type='resume' AND region=$1 AND detected_at > now() - interval '14 days'`, [region]).catch(() => null);
-    if (corr && corr.rows[0].n >= 2) {
-      const already = await query(`SELECT 1 FROM rollout_events WHERE type='resume' AND region=$1 AND status='confirmed' LIMIT 1`, [region]).catch(() => null);
-      await query(`UPDATE rollout_events SET status='confirmed', confirmed_at=now() WHERE type='resume' AND region=$1 AND status='pending'`, [region]).catch(() => {});
-      if (!(already && already.rowCount)) {
-        notifyOwnerOfPending({ type: "resume", version: null, region, reason: `Auto-unpaused: ${corr.rows[0].n} owners independently report the rollout has resumed in ${region}. Predictions are live again. If that's wrong, re-pause it in /admin.`, source: "auto-resume" }).catch(() => {});
-        // THE moment the killer hook fires: ping everyone who was waiting in this region, right now.
-        import("../subscribers.js").then(m => m.runResumeAlerts()).catch(() => {});
-      }
-    }
-  }
+  if (type === "resume") await flagCorroboratedResume({ region, submitter });
   res.json({ ok: true });   // generic success — we don't expose whether/when it goes live (anti-manipulation)
 }));
 
@@ -302,7 +325,7 @@ apiRouter.get("/sources", ah(async (req, res) => {
 
 apiRouter.get("/fleet/feed", ah(async (req, res) => {
   if (config.mockMode || !hasDb()) return res.json({ source: "mock", mode: "sample", feed: SEED_FEED });
-  const r = await query(`SELECT s.version AS "to", s.market AS region, s.hardware AS hw, s.observed_at FROM version_snapshots s ORDER BY s.observed_at DESC LIMIT 30`);
+  const r = await query(`SELECT s.version AS "to", s.market AS region, s.hardware AS hw, s.observed_at FROM version_snapshots s JOIN vehicles v ON v.id = s.vehicle_id WHERE v.opted_in ORDER BY s.observed_at DESC LIMIT 30`);   // opted-in cars only
   res.json({ source: "db", mode: "live", feed: r.rows });
 }));
 
@@ -660,7 +683,12 @@ apiRouter.get("/predict", ah(async (req, res) => {
   earliness = Math.min(0.97, Math.max(0.03, earliness));
 
   const entitlement = ["owned", "subscription", "none", "unknown"].includes(req.query.fsdEntitlement) ? req.query.fsdEntitlement : "unknown";
-  const car = { market, hardware, installedVersion: req.query.installed || "2026.14.6", earliness, earlinessSource: "default", earlyAccess: req.query.earlyAccess === "true", fsdVersion: req.query.fsd, fsdEntitlement: entitlement };
+  // query values can arrive as arrays/objects (?installed[]=…) — accept plain strings only
+  for (const k of ["market", "installed", "fsd", "vin"]) {
+    if (req.query[k] != null && typeof req.query[k] !== "string") return res.status(400).json({ error: `bad ${k}` });
+  }
+  const installed = (req.query.installed || "").slice(0, 32), fsdVersion = req.query.fsd ? req.query.fsd.slice(0, 32) : undefined;
+  const car = { market, hardware, installedVersion: installed || "2026.14.6", earliness, earlinessSource: "default", earlyAccess: req.query.earlyAccess === "true", fsdVersion, fsdEntitlement: entitlement };
 
   // VIN lookup is scoped to the signed-in owner — never reveal another user's car attributes.
   if (!config.mockMode && hasDb() && req.query.vin && req.session && req.session.userId) {

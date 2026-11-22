@@ -17,6 +17,10 @@ services:
         value: https://wenfsd.info
       - key: SESSION_SECRET
         generateValue: true
+      # 32-byte key (base64/hex) for token-at-rest encryption. REQUIRED: without it the server
+      # falls back to sample (mock) mode. Generate with: openssl rand -base64 32
+      - key: TOKEN_ENC_KEY
+        sync: false
       - key: TESLA_CLIENT_ID
         sync: false
       - key: TESLA_CLIENT_SECRET
