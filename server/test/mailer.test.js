@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { arrivalMessage, deliver, resumeAlertMessage } from "../src/mailer.js";
+import { arrivalMessage, deliver, resumeAlertMessage, maskEmail } from "../src/mailer.js";
 
 test("resumeAlertMessage announces the resume with region + version + unsub, and stays honest", () => {
   const m = resumeAlertMessage({ version: "v14.x", region: "Australia", siteUrl: "https://wenfsd.info", unsubUrl: "https://wenfsd.info/api/unsubscribe?t=abc" });
@@ -58,4 +58,11 @@ test("deliver() sends via the Resend API when configured (right endpoint, auth, 
   } finally {
     globalThis.fetch = origFetch; config.resendApiKey = saved.k; config.notifyFromEmail = saved.f;
   }
+});
+
+test("maskEmail keeps logs free of full addresses", () => {
+  assert.equal(maskEmail("jane.doe@example.com"), "j***@example.com");
+  assert.equal(maskEmail(""), "***");
+  assert.equal(maskEmail("not-an-email"), "***");
+  assert.ok(!maskEmail("jane.doe@example.com").includes("jane.doe"));
 });

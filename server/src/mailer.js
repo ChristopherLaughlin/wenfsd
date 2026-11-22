@@ -4,6 +4,12 @@
 // feature is safe to ship before any provider is wired, and never blocks the poller.
 import { config } from "./config.js";
 
+// Log-safe form of an address: first character + domain ("j***@example.com"). Never log the full address.
+export function maskEmail(e) {
+  const s = String(e || ""), at = s.lastIndexOf("@");
+  return at > 0 ? `${s[0]}***${s.slice(at)}` : "***";
+}
+
 export async function deliver({ to, subject, text, event, from }) {
   // Provider order: a real email sender (Resend HTTP API) if configured, else a generic webhook,
   // else log-only. All dependency-free (plain fetch). Pick whichever you've set env for.
@@ -17,13 +23,13 @@ export async function deliver({ to, subject, text, event, from }) {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.resendApiKey}` },
         body: JSON.stringify({ from: sender, to: [to], subject, text }),
       });
-      if (!res.ok) { console.warn(`[notify] resend ${res.status} for ${to}`); return { delivered: false, channel: "resend", status: res.status }; }
+      if (!res.ok) { console.warn(`[notify] resend ${res.status} for ${maskEmail(to)}`); return { delivered: false, channel: "resend", status: res.status }; }
       return { delivered: true, channel: "resend" };
-    } catch (e) { console.warn(`[notify] resend error for ${to}:`, e.message); return { delivered: false, channel: "resend", error: e.message }; }
+    } catch (e) { console.warn(`[notify] resend error for ${maskEmail(to)}:`, e.message); return { delivered: false, channel: "resend", error: e.message }; }
   }
   const url = config.notifyWebhookUrl;
   if (!url) {
-    console.log(`[notify] (no email provider / webhook configured) would send to ${to}: ${subject}`);
+    console.log(`[notify] (no email provider / webhook configured) would send to ${maskEmail(to)}: ${subject}`);
     return { delivered: false, channel: "none" };
   }
   try {
@@ -32,10 +38,10 @@ export async function deliver({ to, subject, text, event, from }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ to, subject, text, event, sentAt: new Date().toISOString() }),
     });
-    if (!res.ok) { console.warn(`[notify] webhook ${res.status} for ${to}`); return { delivered: false, channel: "webhook", status: res.status }; }
+    if (!res.ok) { console.warn(`[notify] webhook ${res.status} for ${maskEmail(to)}`); return { delivered: false, channel: "webhook", status: res.status }; }
     return { delivered: true, channel: "webhook" };
   } catch (e) {
-    console.warn(`[notify] webhook error for ${to}:`, e.message);
+    console.warn(`[notify] webhook error for ${maskEmail(to)}:`, e.message);
     return { delivered: false, channel: "webhook", error: e.message };
   }
 }
