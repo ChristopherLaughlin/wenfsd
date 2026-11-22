@@ -1,7 +1,14 @@
 node_modules/
 .env
+.env.*
+!.env.example
 server/.env
+# private keys never belong in git. (The Tesla partner PUBLIC key is served from the
+# TESLA_PUBLIC_KEY env var / server/keys at runtime; if you ever commit one under
+# .well-known/, add a `!` exception for that exact file here.)
+keys/
 server/keys/*.pem
+*.pem
 *.log
 .DS_Store
 .claude/launch.json
